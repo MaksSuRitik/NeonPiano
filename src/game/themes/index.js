@@ -5,14 +5,16 @@ import { CLASSIC_THEME } from "./classic.js";
 import { PHROLOVA_THEME } from "./phrolova.js";
 import { DARK_ANGEL_THEME } from "./darkAngel.js";
 import { COSMIC_THEME } from "./cosmic.js";
+import { IUNO_THEME } from "./iuno.js";
 
-export { CLASSIC_THEME, PHROLOVA_THEME, DARK_ANGEL_THEME, COSMIC_THEME };
+export { CLASSIC_THEME, PHROLOVA_THEME, DARK_ANGEL_THEME, COSMIC_THEME, IUNO_THEME };
 
 export const FIELD_THEMES = [
   CLASSIC_THEME,
   PHROLOVA_THEME,
   DARK_ANGEL_THEME,
-  COSMIC_THEME
+  COSMIC_THEME,
+  IUNO_THEME
 ];
 
 /**

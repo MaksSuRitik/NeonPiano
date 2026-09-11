@@ -8,6 +8,7 @@ import {
   PHROLOVA_THEME, 
   DARK_ANGEL_THEME, 
   COSMIC_THEME, 
+  IUNO_THEME,
   getThemeById 
 } from "./themes/index.js";
 
@@ -17,6 +18,7 @@ export {
   PHROLOVA_THEME, 
   DARK_ANGEL_THEME, 
   COSMIC_THEME, 
+  IUNO_THEME,
   getThemeById 
 };
 
@@ -192,15 +194,22 @@ export function purchaseTheme(themeId, songsDB = []) {
 
 /**
  * Applies cloud theme and bonus coins data to local storage.
+ * FIXED: UNION local+cloud unlocked themes so purchased themes are never lost.
  */
 export function applyCloudThemes(cloudData = {}) {
-  let unlocked = ['classic'];
+  // Read local themes first to merge (union), never overwrite locally-purchased themes
+  const localUnlocked = getUnlockedThemes(); // always includes 'classic'
+
+  let cloudUnlocked = ['classic'];
   if (Array.isArray(cloudData.unlockedFieldThemes) && cloudData.unlockedFieldThemes.length > 0) {
-    unlocked = Array.from(new Set(['classic', ...cloudData.unlockedFieldThemes]));
-    localStorage.setItem('neon_unlocked_field_themes', JSON.stringify(unlocked));
+    cloudUnlocked = cloudData.unlockedFieldThemes;
   }
-  
-  if (cloudData.activeFieldTheme && unlocked.includes(cloudData.activeFieldTheme)) {
+
+  // Union: keep all locally-unlocked AND all cloud-unlocked themes
+  const merged = Array.from(new Set(['classic', ...localUnlocked, ...cloudUnlocked]));
+  localStorage.setItem('neon_unlocked_field_themes', JSON.stringify(merged));
+
+  if (cloudData.activeFieldTheme && merged.includes(cloudData.activeFieldTheme)) {
     localStorage.setItem('neon_active_field_theme', cloudData.activeFieldTheme);
   }
 

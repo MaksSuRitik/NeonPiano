@@ -9,7 +9,6 @@ export const PHROLOVA_THEME = {
   badgeKey: 'themePhrolovaBadge',
   price: 10,
   unlockedByDefault: false,
-  image: 'assets/themes/phrolova.png',
   accentColor: '#e11d48',
   previewBg: 'linear-gradient(135deg, #2a0812, #4c0519, #881337)',
   colors: {

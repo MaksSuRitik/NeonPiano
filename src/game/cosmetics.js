@@ -262,28 +262,43 @@ export function resetLocalCosmetics() {
 /**
  * Safely applies cloud cosmetics to local storage for the currently authenticated user,
  * preventing any bleed from previous accounts or stale local data.
+ * FIXED: We UNION local+cloud unlocked titles/frames so earned achievements are never lost.
  */
 export function applyCloudCosmetics(cloudData = {}) {
-  const avatarUrl = cloudData.avatarUrl || '';
-  const selectedFrame = (cloudData.selectedFrame && cloudData.selectedFrame !== 'frame_none') 
-    ? cloudData.selectedFrame 
-    : 'frame_none';
-  const selectedTitle = (cloudData.selectedTitle && cloudData.selectedTitle !== 'title_novice') 
-    ? cloudData.selectedTitle 
-    : 'title_novice';
-  const unlockedFrames = (Array.isArray(cloudData.unlockedFrames) && cloudData.unlockedFrames.length > 0)
-    ? Array.from(new Set(['frame_none', ...cloudData.unlockedFrames]))
-    : ['frame_none'];
-  const unlockedTitles = (Array.isArray(cloudData.unlockedTitles) && cloudData.unlockedTitles.length > 0)
-    ? Array.from(new Set(['title_novice', ...cloudData.unlockedTitles]))
-    : ['title_novice'];
-  const userStatus = (cloudData.userStatus || '').slice(0, 60);
-  const favoriteTrack = cloudData.favoriteTrack || '';
+  // Read what is currently stored locally BEFORE overwriting anything
+  const local = getLocalCosmetics();
+
+  const avatarUrl = cloudData.avatarUrl || local.avatarUrl || '';
+
+  // For selected frame: prefer cloud if it is a real unlock, else keep local selection
+  const selectedFrame = (cloudData.selectedFrame && cloudData.selectedFrame !== 'frame_none')
+    ? cloudData.selectedFrame
+    : local.selectedFrame || 'frame_none';
+
+  // For selected title: prefer cloud if it is a real non-novice title, else keep local selection
+  const selectedTitle = (cloudData.selectedTitle && cloudData.selectedTitle !== 'title_novice')
+    ? cloudData.selectedTitle
+    : (local.selectedTitle && local.selectedTitle !== 'title_novice' ? local.selectedTitle : 'title_novice');
+
+  // UNION of local and cloud unlocked frames — never lose locally-earned frames
+  const cloudFrames = Array.isArray(cloudData.unlockedFrames) ? cloudData.unlockedFrames : [];
+  const unlockedFrames = Array.from(new Set(['frame_none', ...local.unlockedFrames, ...cloudFrames]));
+
+  // UNION of local and cloud unlocked titles — never lose locally-earned titles
+  const cloudTitles = Array.isArray(cloudData.unlockedTitles) ? cloudData.unlockedTitles : [];
+  const unlockedTitles = Array.from(new Set(['title_novice', ...local.unlockedTitles, ...cloudTitles]));
+
+  const userStatus = (cloudData.userStatus || local.userStatus || '').slice(0, 60);
+  const favoriteTrack = cloudData.favoriteTrack || local.favoriteTrack || '';
+
+  // Validate that selected frame/title is actually in the unlocked set
+  const finalSelectedFrame = unlockedFrames.includes(selectedFrame) ? selectedFrame : 'frame_none';
+  const finalSelectedTitle = unlockedTitles.includes(selectedTitle) ? selectedTitle : 'title_novice';
 
   saveLocalCosmetics({
     avatarUrl,
-    selectedFrame,
-    selectedTitle,
+    selectedFrame: finalSelectedFrame,
+    selectedTitle: finalSelectedTitle,
     unlockedFrames,
     unlockedTitles,
     userStatus,
@@ -292,8 +307,8 @@ export function applyCloudCosmetics(cloudData = {}) {
 
   return {
     avatarUrl,
-    selectedFrame,
-    selectedTitle,
+    selectedFrame: finalSelectedFrame,
+    selectedTitle: finalSelectedTitle,
     unlockedFrames,
     unlockedTitles,
     userStatus,

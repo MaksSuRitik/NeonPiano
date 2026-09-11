@@ -5,6 +5,45 @@
    Навчальний заклад: Національний університет «Полтавська політехніка імені Юрія Кондратюка»
    ========================================== */
 
+// ==========================================
+// POLYFILL: CanvasRenderingContext2D.prototype.roundRect
+// Required for Android < 12 / Chrome < 99 (e.g. Redmi Note 9 with Chrome 88 WebView).
+// Without this polyfill, any call to ctx.roundRect() throws TypeError and crashes the render loop.
+// ==========================================
+(function patchRoundRect() {
+  if (typeof CanvasRenderingContext2D === 'undefined') return;
+  if (typeof CanvasRenderingContext2D.prototype.roundRect === 'function') return;
+
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+    let r = 0;
+    if (typeof radii === 'number') {
+      r = radii;
+    } else if (Array.isArray(radii) && radii.length > 0) {
+      r = radii[0];
+    } else if (radii && typeof radii === 'object') {
+      r = radii.topLeft || 0;
+    }
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.arcTo(x + w, y,     x + w, y + r,     r);
+    this.lineTo(x + w, y + h - r);
+    this.arcTo(x + w, y + h, x + w - r, y + h, r);
+    this.lineTo(x + r, y + h);
+    this.arcTo(x,     y + h, x,     y + h - r, r);
+    this.lineTo(x, y + r);
+    this.arcTo(x,     y,     x + r, y,          r);
+    this.closePath();
+  };
+})();
+
+// Also patch OffscreenCanvasRenderingContext2D if present (some browsers)
+if (typeof OffscreenCanvasRenderingContext2D !== 'undefined' &&
+    typeof OffscreenCanvasRenderingContext2D.prototype.roundRect !== 'function') {
+  OffscreenCanvasRenderingContext2D.prototype.roundRect =
+    CanvasRenderingContext2D.prototype.roundRect;
+}
+
 // Імпорт модулів Firebase та локальних сервісів
 import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
@@ -1989,8 +2028,24 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
             }
             if (sessionId !== State.currentSessionId) return null;
             
-            // Захист від detaching буфера через slice(0)
-            const decodedAudio = await State.audioCtx.decodeAudioData(arrayBuffer.slice(0));
+            // Захист від detaching буфера через slice(0).
+            // decodeAudioDataSafe: підтримує і старий callback-стиль (Redmi Note 9 / Chrome < 64 WebView)
+            // і сучасний Promise-стиль — без помилок на бюджетних Android.
+            const decodedAudio = await new Promise((resolve, reject) => {
+                try {
+                    const result = State.audioCtx.decodeAudioData(
+                        arrayBuffer.slice(0),
+                        (buf) => resolve(buf),    // legacy callback (Chrome < 64)
+                        (err) => reject(err)       // legacy error callback
+                    );
+                    // Modern browsers return a Promise; handle both cases
+                    if (result && typeof result.then === 'function') {
+                        result.then(resolve, reject);
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            });
             if (sessionId !== State.currentSessionId) return null;
 
             let isSecret = songsDB[State.currentSongIndex] ? songsDB[State.currentSongIndex].isSecret : false;
@@ -3016,52 +3071,44 @@ function update(songTime) {
                         spawnDissolveParticles(x, hitY, w);
                     }
 
-                    if (!SpriteCache.dissolveCanvas) {
-                        SpriteCache.dissolveCanvas = document.createElement('canvas');
-                    }
-                    const dc = SpriteCache.dissolveCanvas;
-                    if (dc.width !== State.gameWidth || dc.height !== State.gameHeight) {
-                        dc.width = State.gameWidth;
-                        dc.height = State.gameHeight;
-                    }
-                    const dctx = dc.getContext('2d');
-                    const clipBoxY = Math.max(0, Math.floor(yTail - 20));
-                    const clipBoxH = Math.min(State.gameHeight, Math.ceil(yHead + 60)) - clipBoxY;
+                    // FIX: Замість offscreen canvas з destination-out (що спричиняло чорне поле),
+                    // використовуємо ctx.clip() на основному canvas обмежений зоною ВИЩЕ hitY.
+                    // Це абсолютно безпечно для будь-якого Android GPU та WebView.
+                    const clipTop = Math.max(0, Math.round(yTail - 20));
+                    const clipBottom = Math.min(Math.round(hitY + 2), State.gameHeight); // СТОП на рівні струн
+                    const clipH = clipBottom - clipTop;
 
-                    if (clipBoxH > 0) {
-                        dctx.clearRect(x - 20, clipBoxY, w + 40, clipBoxH);
-
-                        // 1. Малюємо попелясто-сірий хвіст та голову на буферному полотні
-                        if (tailH > 1 && relTailSprite) {
-                            dctx.drawImage(relTailSprite, 0, 0, relTailSprite.width, relTailSprite.height, x + 8, yTail, w - 16, tailH + 10);
-                        }
-                        if (relHeadSprite && actualYHeadTop > -headH + 4) {
-                            dctx.drawImage(relHeadSprite, x - 16, actualYHeadTop - 16);
-                        }
-
-                        // 2. Ефект занурення крізь струни в невидимий простір:
-                        // Все, що опускається на рівень струн (hitY) і нижче, плавно розчиняється в невидимий простір
-                        dctx.save();
-                        dctx.globalCompositeOperation = 'destination-out';
-                        
-                        // Плавний перехід розчинення прямо на струнах (від hitY - 8 до hitY + 42)
-                        const dissolveGrad = dctx.createLinearGradient(0, hitY - 8, 0, hitY + 42);
-                        dissolveGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                        dissolveGrad.addColorStop(1, 'rgba(0, 0, 0, 1)');
-                        dctx.fillStyle = dissolveGrad;
-                        dctx.fillRect(x - 20, hitY - 8, w + 40, 50);
-
-                        // Повний невидимий простір нижче струн: жодних залишків ноти на клавішах
-                        if (hitY + 42 < State.gameHeight) {
-                            dctx.fillStyle = 'rgba(0, 0, 0, 1)';
-                            dctx.fillRect(x - 20, hitY + 42, w + 40, State.gameHeight - (hitY + 42));
-                        }
-                        dctx.restore();
-
-                        // 3. Виводимо розчинену сіру ноту на основне полотно з загальним затуханням
+                    if (clipH > 0) {
                         ctx.save();
                         ctx.globalAlpha = overallAlpha;
-                        ctx.drawImage(dc, x - 20, clipBoxY, w + 40, clipBoxH, x - 20, clipBoxY, w + 40, clipBoxH);
+                        // Обрізаємо полотно: нота буде видима тільки ВИЩЕ hitY (рецептора)
+                        ctx.beginPath();
+                        ctx.rect(Math.round(x - 20), clipTop, Math.round(w + 40), clipH);
+                        ctx.clip();
+
+                        // Малюємо попелясто-сірий хвіст
+                        if (tailH > 1 && relTailSprite) {
+                            ctx.drawImage(relTailSprite, 0, 0, relTailSprite.width, relTailSprite.height,
+                                Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
+                        }
+                        // Малюємо голову
+                        if (relHeadSprite && actualYHeadTop > -headH + 4) {
+                            ctx.drawImage(relHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
+                        }
+
+                        // Плавний fade-out шару на рівні струн (gradient overlay прямо на main ctx)
+                        const fadeZoneTop = hitY - 28;
+                        const fadeZoneH = 30;
+                        if (fadeZoneTop < clipBottom) {
+                            const dissolveGrad = ctx.createLinearGradient(0, fadeZoneTop, 0, fadeZoneTop + fadeZoneH);
+                            dissolveGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                            dissolveGrad.addColorStop(1, 'rgba(0,0,0,0.85)');
+                            ctx.globalCompositeOperation = 'source-atop';
+                            ctx.fillStyle = dissolveGrad;
+                            ctx.fillRect(Math.round(x - 20), fadeZoneTop, Math.round(w + 40), fadeZoneH);
+                            ctx.globalCompositeOperation = 'source-over';
+                        }
+
                         ctx.restore();
                     }
                     continue;
@@ -3070,14 +3117,16 @@ function update(songTime) {
                 const curTailSprite = tile.failed ? deadTailSprite : longTailSprite;
                 const curHeadSprite = tile.failed ? deadHeadSprite : longHeadSprite;
 
-                // Відмальовування "хвоста" довгої ноти через розтягування кешованого спрайту
+                // Відмальовування "хвоста" довгої ноти через розтягування кешованого спрайту.
+                // Math.round() усуває субпіксельне мерехтіння на мобільних GPU (Redmi Note 9, тощо).
                 if (tailH > 1 && curTailSprite) {
-                    ctx.drawImage(curTailSprite, 0, 0, curTailSprite.width, curTailSprite.height, x + 8, yTail, w - 16, tailH + 10);
+                    ctx.drawImage(curTailSprite, 0, 0, curTailSprite.width, curTailSprite.height,
+                        Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
                 }
 
                 // Відмальовування "голови" довгої ноти через кешований спрайт
                 if (curHeadSprite && actualYHeadTop > -headH + 4) {
-                    ctx.drawImage(curHeadSprite, x - 16, actualYHeadTop - 16);
+                    ctx.drawImage(curHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
                     if (activeTheme && typeof activeTheme.drawNoteDetails === 'function' && !tile.failed) {
                         activeTheme.drawNoteDetails(ctx, x, actualYHeadTop, w, headH, isLight, comboTier);
                     }
@@ -5220,6 +5269,16 @@ function updateRipples(dt) {
                 const laneW = State.gameWidth / 4;
                 const lane = Math.max(0, Math.min(3, Math.floor(touchX / laneW)));
                 activePointerLanes.set(e.pointerId, lane);
+
+                // setPointerCapture: утримуємо pointer навіть при мікрорухах пальця за межі кнопки.
+                // Критично для Android браузерів де pointercancel виникає при мікро-скролі пальця.
+                try { if (e.target && typeof e.target.setPointerCapture === 'function') e.target.setPointerCapture(e.pointerId); } catch (_) {}
+
+                // Гарантоване розблокування Web Audio API на першому дотику (Autoplay Policy мобільних браузерів).
+                if (State.audioCtx && State.audioCtx.state === 'suspended') {
+                    State.audioCtx.resume().catch(() => {});
+                }
+
                 handleInputDown(lane, touchY, touchX);
             };
 
