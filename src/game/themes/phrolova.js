@@ -91,9 +91,12 @@ export const PHROLOVA_THEME = {
 
     ctx.strokeStyle = col;
     ctx.lineWidth = isActive ? 2.2 : 1.2;
-    if (isActive && !isLight) {
+    const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
+    if (isActive && !isLight && !isMob) {
       ctx.shadowColor = '#e11d48';
       ctx.shadowBlur = 12;
+    } else {
+      ctx.shadowBlur = 0;
     }
 
     if (ctx.roundRect) {
@@ -269,8 +272,13 @@ export const PHROLOVA_THEME = {
       } else {
         // Falling spider lily petal
         ctx.fillStyle = (i % 2 === 0) ? '#e11d48' : '#be123c';
-        ctx.shadowColor = 'rgba(225, 29, 72, 0.4)';
-        ctx.shadowBlur = 4;
+        const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
+        if (!isMob) {
+          ctx.shadowColor = 'rgba(225, 29, 72, 0.4)';
+          ctx.shadowBlur = 4;
+        } else {
+          ctx.shadowBlur = 0;
+        }
         ctx.beginPath();
         ctx.moveTo(0, -p.size * 1.3);
         ctx.bezierCurveTo(p.size * 0.45, -p.size * 0.4, p.size * 0.35, p.size * 0.7, 0, p.size * 1.3);

@@ -84,9 +84,12 @@ export const CLASSIC_THEME = {
     
     ctx.strokeStyle = col;
     ctx.lineWidth = isActive ? 2 : 1;
-    if (isActive && !isLight) {
+    const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
+    if (isActive && !isLight && !isMob) {
       ctx.shadowColor = '#38bdf8';
       ctx.shadowBlur = 10;
+    } else {
+      ctx.shadowBlur = 0;
     }
 
     if (ctx.roundRect) {

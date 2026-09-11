@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Neon Rhythm — Neon Piano</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="css/style.css?v=42.0">
+  <link rel="stylesheet" href="css/style.css?v=44.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
 </head>
 <body data-theme="dark">
@@ -370,13 +370,14 @@
        ========================================== -->
   <div id="admin-modal" class="modal-overlay hidden">
     <div class="admin-modal-content">
-      <button type="button" id="admin-close-btn" class="modal-close-btn" title="Закрити панель (Esc)"></button>
-      
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h2 data-i18n="adminTitle" style="color: var(--highlight); margin: 0; font-size: 1.8rem;">Панель адміністратора</h2>
-        <p data-i18n="adminSubtitle" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px;">
-          Управління фонотекою: завантаження в Firebase Storage та Firestore
-        </p>
+      <div class="admin-sticky-header">
+        <div class="admin-header-title-wrap">
+          <h2 data-i18n="adminTitle" class="admin-header-title">Панель адміністратора</h2>
+          <p data-i18n="adminSubtitle" class="admin-header-subtitle">
+            Управління фонотекою: завантаження в Firebase Storage та Firestore
+          </p>
+        </div>
+        <button type="button" id="admin-close-btn" class="modal-close-btn admin-sticky-close-btn" title="Закрити панель (Esc)" aria-label="Close"></button>
       </div>
 
       <!-- Admin Auto-Play Level (Auto-Bot) Control -->
@@ -1104,6 +1105,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=60.0"></script>
+  <script type="module" src="src/main.js?v=62.0"></script>
 </body>
 </html>

@@ -89,9 +89,12 @@ export const COSMIC_THEME = {
 
     ctx.strokeStyle = col;
     ctx.lineWidth = isActive ? 2.2 : 1.2;
-    if (isActive && !isLight) {
+    const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
+    if (isActive && !isLight && !isMob) {
       ctx.shadowColor = '#6366f1';
       ctx.shadowBlur = 12;
+    } else {
+      ctx.shadowBlur = 0;
     }
 
     if (ctx.roundRect) {

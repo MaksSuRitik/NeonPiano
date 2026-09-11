@@ -90,9 +90,12 @@ export const DARK_ANGEL_THEME = {
 
     ctx.strokeStyle = col;
     ctx.lineWidth = isActive ? 2.2 : 1.2;
-    if (isActive && !isLight) {
+    const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
+    if (isActive && !isLight && !isMob) {
       ctx.shadowColor = '#a855f7';
       ctx.shadowBlur = 12;
+    } else {
+      ctx.shadowBlur = 0;
     }
 
     if (ctx.roundRect) {
@@ -318,8 +321,13 @@ export const DARK_ANGEL_THEME = {
 
       // Ascending mystical flame/wisp shape
       ctx.fillStyle = (i % 2 === 0) ? '#a855f7' : '#7c3aed';
-      ctx.shadowColor = 'rgba(168, 85, 247, 0.45)';
-      ctx.shadowBlur = 6;
+      const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
+      if (!isMob) {
+        ctx.shadowColor = 'rgba(168, 85, 247, 0.45)';
+        ctx.shadowBlur = 6;
+      } else {
+        ctx.shadowBlur = 0;
+      }
       ctx.beginPath();
       ctx.moveTo(0, p.size * 1.5);
       ctx.quadraticCurveTo(p.size * 0.8, 0, 0, -p.size * 1.8);

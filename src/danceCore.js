@@ -1415,6 +1415,12 @@ function bootGame() {
                 themeGold = { black: '#e0e7ff', choco: '#4338ca', glow: 'rgba(129, 140, 248, 0.45)', border: '#e0e7ff', long1: '#6366f1', long2: '#312e81' };
                 themeCosmic = { core: '#eef2ff', accent: '#3730a3', glow: 'rgba(165, 180, 252, 0.55)', border: '#eef2ff', long1: '#818cf8', long2: '#1e1b4b' };
                 themeLegendary = { tap1: '#ffffff', tap2: '#4f46e5', glow: 'rgba(255, 255, 255, 0.65)', border: '#ffffff', long1: '#818cf8', long2: '#312e81' };
+            } else if (activeFieldTheme.id === 'iuno') {
+                themeSteel = { light: '#e0f2fe', main: '#38bdf8', dark: '#0369a1', glow: 'rgba(56, 189, 248, 0.45)', border: '#fbbf24', long1: '#38bdf8', long2: '#0284c7' };
+                themeElectric = { tap1: '#fef3c7', tap2: '#fbbf24', glow: 'rgba(251, 191, 36, 0.45)', border: '#7dd3fc', long1: '#fbbf24', long2: '#d97706' };
+                themeGold = { black: '#fffbeb', choco: '#d97706', glow: 'rgba(251, 191, 36, 0.55)', border: '#fef3c7', long1: '#f59e0b', long2: '#b45309' };
+                themeCosmic = { core: '#f0fdf4', accent: '#2dd4bf', glow: 'rgba(45, 212, 191, 0.55)', border: '#99f6e4', long1: '#2dd4bf', long2: '#0f766e' };
+                themeLegendary = { tap1: '#ffffff', tap2: '#fbbf24', glow: 'rgba(255, 255, 255, 0.70)', border: '#ffffff', long1: '#fbbf24', long2: '#38bdf8' };
             }
 
             const styles = [
@@ -2549,6 +2555,7 @@ function update(songTime) {
                     const hitZoneBottom = hitY + basePadY * 1.5;
                     if (yStart >= hitZoneTop && yStart <= hitZoneBottom) {
                         tile.hit = true;
+                        tile.holding = true;
                         tile.hitVisualY = yStart;
                         tile.hitRating = 'perfect';
                         State.totalHits++;
@@ -2663,6 +2670,8 @@ function update(songTime) {
         State.themeCosmicStars = null;
         State.themeConstellation = null;
         State.currentAtmosphereTheme = null;
+        const activeTheme = FieldThemes.getActiveTheme();
+        if (activeTheme && activeTheme._atm) activeTheme._atm = null;
     }
     window.applyActiveThemeVisuals = applyActiveThemeVisuals;
 
@@ -2937,7 +2946,7 @@ function update(songTime) {
             if (tile.type === 'long' && tile.completed) continue;
 
             const progressStart = 1 - (tile.time - songTime) / State.currentSpeed;
-            const visualY = (tile.hit && tile.hitVisualY > 0) ? tile.hitVisualY : progressStart * hitY;
+            const visualY = (tile.hit && tile.hitVisualY > 0 && tile.type === 'tap') ? tile.hitVisualY : progressStart * hitY;
             const yTop = visualY - CONFIG.noteHeight;
 
             // Viewport Culling
@@ -3050,7 +3059,7 @@ function update(songTime) {
                 } else {
                     const progressEnd = 1 - (tile.endTime - songTime) / State.currentSpeed;
                     yTail = Math.min(progressEnd * hitY, hitY);
-                    yHead = (tile.hit && tile.holding) ? (visualY >= hitY ? hitY : visualY) : visualY;
+                    yHead = (tile.hit && tile.holding) ? hitY : (visualY >= hitY ? hitY : visualY);
                     if (yTail > yHead) yTail = yHead;
                 }
 
@@ -3564,6 +3573,7 @@ function handleInputDown(lane, touchY, touchX) {
             }
 
             if (target.type === 'long') {
+                target.holding = true;
                 State.holdingTiles[lane] = target;
                 target.lastValidHoldTime = now;
                 toggleHoldEffect(lane, true);
@@ -4101,7 +4111,10 @@ function updateRipples(dt) {
         const isSecret = Boolean(currentSong?.isSecret);
         const total = isSecret ? 5 : 3;
 
-        // Облік усіх незіграних нот як промахів при завершенні треку
+        // Облік незіграних нот на екрані при завершенні треку
+        // ВАЖЛИВО: Лише активні ноти, які вже були на екрані і які гравець не встиг натиснути.
+        // Ненароджені майбутні ноти треку (mapTiles) КАТЕГОРИЧНО НЕ додаються до промахів,
+        // бо це показувало 700+ промахів при поразці або передчасному завершенні.
         let leftoverMisses = 0;
         if (Array.isArray(State.activeTiles)) {
             State.activeTiles.forEach(t => {
@@ -4110,10 +4123,7 @@ function updateRipples(dt) {
                 }
             });
         }
-        if (Array.isArray(State.mapTiles) && State.nextSpawnIndex < State.mapTiles.length) {
-            leftoverMisses += (State.mapTiles.length - State.nextSpawnIndex);
-        }
-        if (leftoverMisses > 0) {
+        if (victory && leftoverMisses > 0) {
             State.totalMisses = (State.totalMisses || 0) + leftoverMisses;
         }
 
@@ -5853,7 +5863,10 @@ function updateRipples(dt) {
             if (adminModal) adminModal.classList.add('hidden');
         }
 
-        if (adminCloseBtn) adminCloseBtn.onclick = closeAdminPanel;
+        if (adminCloseBtn) {
+            adminCloseBtn.innerHTML = icons.close(20);
+            adminCloseBtn.onclick = closeAdminPanel;
+        }
         if (adminBottomCloseBtn) adminBottomCloseBtn.onclick = closeAdminPanel;
 
         if (adminModal) {

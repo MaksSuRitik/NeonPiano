@@ -53,6 +53,8 @@ export const IUNO_THEME = {
 
     ctx.save();
 
+    const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
+
     // Top & bottom gold filigree lines (antique border)
     ctx.strokeStyle = gold;
     ctx.globalAlpha = 0.55;
@@ -77,8 +79,10 @@ export const IUNO_THEME = {
     ctx.globalAlpha = 0.80;
     ctx.strokeStyle = gold;
     ctx.lineWidth = 1.5;
-    ctx.shadowColor = gold;
-    ctx.shadowBlur = 8;
+    if (!isMob) {
+      ctx.shadowColor = gold;
+      ctx.shadowBlur = 8;
+    }
     ctx.beginPath();
     ctx.arc(cx, cy, r, -Math.PI * 0.7, Math.PI * 0.7);
     ctx.stroke();
@@ -91,8 +95,10 @@ export const IUNO_THEME = {
     // Small star dots at crescent tips
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = '#fde68a';
-    ctx.shadowColor = '#fbbf24';
-    ctx.shadowBlur = 5;
+    if (!isMob) {
+      ctx.shadowColor = '#fbbf24';
+      ctx.shadowBlur = 5;
+    }
     ctx.beginPath();
     ctx.arc(cx, cy - r * 0.98, 1.5, 0, Math.PI * 2);
     ctx.fill();
@@ -113,6 +119,7 @@ export const IUNO_THEME = {
     const gold = '#fbbf24';
     const azure = '#38bdf8';
     const teal = '#2dd4bf';
+    const isMob = (typeof window !== 'undefined' && (window.innerWidth <= 768 || ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 1)));
 
     ctx.save();
 
@@ -122,8 +129,10 @@ export const IUNO_THEME = {
     ctx.globalAlpha = haloAlpha;
     ctx.strokeStyle = isPerfect ? gold : azure;
     ctx.lineWidth = isPerfect ? 3 : 2;
-    ctx.shadowColor = isPerfect ? gold : azure;
-    ctx.shadowBlur = isPerfect ? 18 : 10;
+    if (!isMob) {
+      ctx.shadowColor = isPerfect ? gold : azure;
+      ctx.shadowBlur = isPerfect ? 18 : 10;
+    }
     ctx.beginPath();
     ctx.arc(cx, cy, haloR, 0, Math.PI * 2);
     ctx.stroke();
@@ -134,8 +143,10 @@ export const IUNO_THEME = {
       ctx.globalAlpha = haloAlpha * 0.6;
       ctx.strokeStyle = teal;
       ctx.lineWidth = 1.5;
-      ctx.shadowColor = teal;
-      ctx.shadowBlur = 8;
+      if (!isMob) {
+        ctx.shadowColor = teal;
+        ctx.shadowBlur = 8;
+      }
       ctx.beginPath();
       ctx.arc(cx, cy, ring2R, 0, Math.PI * 2);
       ctx.stroke();
@@ -149,8 +160,10 @@ export const IUNO_THEME = {
         ctx.globalAlpha = Math.max(0, 0.9 - p * 1.6);
         ctx.strokeStyle = gold;
         ctx.lineWidth = 2.5;
-        ctx.shadowColor = gold;
-        ctx.shadowBlur = 14;
+        if (!isMob) {
+          ctx.shadowColor = gold;
+          ctx.shadowBlur = 14;
+        }
         ctx.beginPath();
         ctx.arc(cx, cy, cr, -Math.PI * 0.7, Math.PI * 0.7);
         ctx.stroke();
@@ -167,8 +180,10 @@ export const IUNO_THEME = {
     ctx.globalAlpha = arcAlpha;
     ctx.strokeStyle = gold;
     ctx.lineWidth = 1.8;
-    ctx.shadowColor = gold;
-    ctx.shadowBlur = 10;
+    if (!isMob) {
+      ctx.shadowColor = gold;
+      ctx.shadowBlur = 10;
+    }
     ctx.beginPath();
     ctx.arc(cx - arcSpread * 0.5, cy, arcSpread * 0.4, Math.PI * 0.1, Math.PI * 0.9);
     ctx.stroke();
@@ -183,8 +198,10 @@ export const IUNO_THEME = {
       ctx.globalAlpha = rayAlpha;
       ctx.strokeStyle = azure;
       ctx.lineWidth = 1.5;
-      ctx.shadowColor = azure;
-      ctx.shadowBlur = 8;
+      if (!isMob) {
+        ctx.shadowColor = azure;
+        ctx.shadowBlur = 8;
+      }
       const angles = [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75];
       for (const a of angles) {
         const startR = w * 0.15;
@@ -200,13 +217,9 @@ export const IUNO_THEME = {
       const flashR = (w * 0.18) * (1 - p * 2.8);
       if (flashR > 0) {
         const flashAlpha = Math.max(0, 0.9 - p * 2.5);
-        const flashGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, flashR);
-        flashGrad.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha})`);
-        flashGrad.addColorStop(0.5, `rgba(251, 191, 36, ${flashAlpha * 0.8})`);
-        flashGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = flashAlpha;
         ctx.shadowBlur = 0;
-        ctx.fillStyle = flashGrad;
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(cx, cy, flashR, 0, Math.PI * 2);
         ctx.fill();
@@ -335,43 +348,26 @@ export const IUNO_THEME = {
 
     ctx.save();
 
-    // ── 1. Background: solid fill on mobile (gradient costs fill-rate) ──
+    // ── 1. Lunar eclipse top halo — drawn smoothly EVERY frame (no frame-skipping flicker) ──
+    const lunaAlpha = 0.09 + 0.03 * Math.sin(t * 0.7);
     if (isMobile) {
-      ctx.fillStyle = '#0a1020';
-      ctx.fillRect(0, 0, W, H);
+      const linGrad = ctx.createLinearGradient(0, 0, 0, H * 0.36);
+      linGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha * 0.6})`);
+      linGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = linGrad;
+      ctx.fillRect(0, 0, W, H * 0.36);
     } else {
-      const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-      bgGrad.addColorStop(0, '#030810');
-      bgGrad.addColorStop(0.35, '#0b132b');
-      bgGrad.addColorStop(0.7, '#081020');
-      bgGrad.addColorStop(1, '#050d1a');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, W, H);
+      const lunaGrad = ctx.createRadialGradient(W * 0.5, H * 0.10, 0, W * 0.5, H * 0.10, W * 0.38);
+      lunaGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha})`);
+      lunaGrad.addColorStop(0.4, `rgba(251, 191, 36, ${lunaAlpha * 0.35})`);
+      lunaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = lunaGrad;
+      ctx.fillRect(0, 0, W, H * 0.5);
     }
 
-    // ── 2. Lunar eclipse halo — skip every other frame on mobile ──
-    if (!isMobile || (this._frameCount & 1) === 0) {
-      const lunaAlpha = 0.10 + 0.04 * Math.sin(t * 0.7);
-      if (isMobile) {
-        // On mobile: simple linear gradient instead of radial (much cheaper)
-        const linGrad = ctx.createLinearGradient(0, 0, 0, H * 0.45);
-        linGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha * 0.7})`);
-        linGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = linGrad;
-        ctx.fillRect(0, 0, W, H * 0.45);
-      } else {
-        const lunaGrad = ctx.createRadialGradient(W * 0.5, H * 0.10, 0, W * 0.5, H * 0.10, W * 0.38);
-        lunaGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha})`);
-        lunaGrad.addColorStop(0.4, `rgba(251, 191, 36, ${lunaAlpha * 0.35})`);
-        lunaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = lunaGrad;
-        ctx.fillRect(0, 0, W, H * 0.5);
-      }
-    }
-
-    // ── 3. Aero wind stream ribbons — NO shadowBlur on mobile ──
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 0; // always 0 here; shadowBlur kills mobile perf
+    // ── 2. Aero wind stream ribbons — lightweight paths, zero shadowBlur ──
+    ctx.lineWidth = 1.4;
+    ctx.shadowBlur = 0;
     for (const s of atm.streams) {
       ctx.globalAlpha = s.alpha * (1 + 0.3 * Math.sin(t * 0.9 + s.phase));
       ctx.strokeStyle = '#38bdf8';
@@ -385,7 +381,7 @@ export const IUNO_THEME = {
       ctx.stroke();
     }
 
-    // ── 4. Silk ribbon strands — desktop only ──
+    // ── 3. Silk ribbon strands — desktop only ──
     if (!isMobile) {
       ctx.lineWidth = 1.0;
       for (const rb of atm.ribbons) {
@@ -402,8 +398,7 @@ export const IUNO_THEME = {
       }
     }
 
-    // ── 5. Floating laurel leaf motes ──
-    // Mobile: simple filled rect instead of ellipse + vein
+    // ── 4. Floating laurel leaf motes ──
     for (const lf of atm.leaves) {
       lf.x += lf.vx + 0.15 * Math.sin(t * 0.5 + lf.phase);
       lf.y += lf.vy;
@@ -413,15 +408,12 @@ export const IUNO_THEME = {
       if (lf.x > W + 10) lf.x = -10;
 
       const leafAlpha = lf.alpha * Math.abs(Math.sin(t * 0.4 + lf.phase));
-      if (leafAlpha < 0.04) continue; // skip invisible leaves early
+      if (leafAlpha < 0.04) continue;
 
       ctx.globalAlpha = leafAlpha;
       if (isMobile) {
-        // Simple rotated rect — no ctx.save/restore per leaf, no ellipse
         ctx.fillStyle = '#fbbf24';
         const s = lf.size * 0.6;
-        const cos = Math.cos(lf.rot);
-        const sin = Math.sin(lf.rot);
         ctx.fillRect(lf.x - s * 0.5, lf.y - s, s, s * 2);
       } else {
         ctx.save();
@@ -440,17 +432,15 @@ export const IUNO_THEME = {
       }
     }
 
-    // ── 6. Star mote glimmer — skip odd frames on mobile ──
-    if (!isMobile || (this._frameCount & 1) === 0) {
-      for (const m of atm.motes) {
-        const a = m.alpha * (0.5 + 0.5 * Math.sin(t * 1.2 + m.phase));
-        if (a < 0.05) continue;
-        ctx.globalAlpha = a;
-        ctx.fillStyle = m.isGold ? '#fbbf24' : '#7dd3fc';
-        ctx.beginPath();
-        ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    // ── 5. Star mote glimmer — drawn every frame smoothly ──
+    for (const m of atm.motes) {
+      const a = m.alpha * (0.5 + 0.5 * Math.sin(t * 1.2 + m.phase));
+      if (a < 0.05) continue;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = m.isGold ? '#fbbf24' : '#7dd3fc';
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     ctx.globalAlpha = 1;
