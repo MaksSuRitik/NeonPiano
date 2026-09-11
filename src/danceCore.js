@@ -52,7 +52,7 @@ import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB }
 import { addTrackByUrl, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=39.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=60.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=63.0";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -2576,7 +2576,12 @@ function update(songTime) {
                 const isKeyPressed = State.keyState[tile.lane];
                 if (isKeyPressed) tile.lastValidHoldTime = now;
 
-                if (isKeyPressed) {
+                // Захисний буфер утримання: 220мс толерантності для сенсорних екранів.
+                // Капаситивні тач-сенсори на смартфонах при грі кількома пальцями можуть пропускати
+                // 1-3 цикли опитування сенсора (20-80мс). Буфер гарантує, що довга нота НЕ зірветься завчасно.
+                const isHoldingActive = isKeyPressed || (now - (tile.lastValidHoldTime || 0) < 220);
+
+                if (isHoldingActive) {
                     // Обробка стану, коли гравець успішно утримує кнопку. Я нараховую очки за кожен тік утримання.
                     if (songTime < tile.endTime) {
                         tile.holdTicks++;
@@ -2595,13 +2600,12 @@ function update(songTime) {
                         completeLongNote(tile);
                     }
                 } else {
-                    // Обробка ситуації, коли гравець відпустив кнопку.
-                    
-                    // ВИПРАВЛЕННЯ 2: Допуск на фініші. Якщо гравець відпустив клавішу менш ніж за 100 мілісекунд до фактичного завершення довгої ноти, я все одно зараховую її як успішну для кращого ігрового досвіду.
-                    if (tile.endTime - songTime < 100) {
+                    // Обробка ситуації, коли гравець дійсно відпустив кнопку понад 220мс:
+                    // Допуск на фініші: якщо відпущено менш ніж за 160мс до фактичного кінця — зараховуємо успіх
+                    if (tile.endTime - songTime < 160) {
                         completeLongNote(tile);
                     } else {
-                        // Якщо кнопку відпущено занадто рано, я фіксую зрив ноти та запускаю анімацію зникнення.
+                        // Якщо відпущено занадто рано, фіксуємо зрив ноти та запускаємо плавне зникнення
                         if (songTime < tile.endTime) {
                             tile.holding = false;
                             tile.released = true;
@@ -2730,16 +2734,21 @@ function update(songTime) {
             ctx.fillStyle = "rgba(255,255,255,0.95)"; 
             ctx.fillRect(0, 0, State.gameWidth, State.gameHeight); 
         } else {
-            // Аудіо-реактивна динамічна неонова аура або фон активної теми поля
+            // Аудіо-реактивна динамічна неонова аура або фон активної теми поля (кешований градієнт)
             if (activeTheme.id !== 'classic' && activeTheme.colors?.bgCenter) {
-                const bgGrad = ctx.createRadialGradient(
-                    State.gameWidth / 2, hitY * 0.45, 20,
-                    State.gameWidth / 2, hitY * 0.45, Math.max(State.gameHeight * 0.85, 500)
-                );
-                bgGrad.addColorStop(0, activeTheme.colors.bgCenter);
-                bgGrad.addColorStop(0.55, activeTheme.colors.bgMid);
-                bgGrad.addColorStop(1, activeTheme.colors.bgOuter);
-                ctx.fillStyle = bgGrad;
+                const bgKey = `${activeTheme.id}_${State.gameWidth}_${State.gameHeight}`;
+                if (!GRADIENT_CACHE.bgGrad || GRADIENT_CACHE.bgGradKey !== bgKey) {
+                    const bgGrad = ctx.createRadialGradient(
+                        State.gameWidth / 2, hitY * 0.45, 20,
+                        State.gameWidth / 2, hitY * 0.45, Math.max(State.gameHeight * 0.85, 500)
+                    );
+                    bgGrad.addColorStop(0, activeTheme.colors.bgCenter);
+                    bgGrad.addColorStop(0.55, activeTheme.colors.bgMid);
+                    bgGrad.addColorStop(1, activeTheme.colors.bgOuter);
+                    GRADIENT_CACHE.bgGrad = bgGrad;
+                    GRADIENT_CACHE.bgGradKey = bgKey;
+                }
+                ctx.fillStyle = GRADIENT_CACHE.bgGrad;
                 ctx.fillRect(0, 0, State.gameWidth, State.gameHeight);
             }
 
@@ -2768,22 +2777,22 @@ function update(songTime) {
                 activeTheme.updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State);
             }
 
-            // Тонкі неонові лінії перспективи шосе (Horizon Highway Grid)
+            // Тонкі неонові лінії перспективи шосе (Horizon Highway Grid) — пакетне малювання
             const gridTime = (songTime * 0.0008 * warpMult) % 1.0;
             ctx.save();
             ctx.strokeStyle = (activeTheme.id !== 'classic' && activeTheme.colors?.receptorBorder) 
                 ? activeTheme.colors.receptorBorder 
                 : (p.border || 'rgba(56, 189, 248, 0.2)');
             ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.06 + State.bgPulse * 0.05;
+            ctx.beginPath();
             for (let g = 0; g < 5; g++) {
                 const gyRatio = ((g / 5) + gridTime * (1 / 5)) % 1.0;
                 const gy = Math.pow(gyRatio, 1.7) * hitY;
-                ctx.globalAlpha = 0.03 + gyRatio * (0.09 + State.bgPulse * 0.07);
-                ctx.beginPath();
                 ctx.moveTo(6, gy);
                 ctx.lineTo(State.gameWidth - 6, gy);
-                ctx.stroke();
             }
+            ctx.stroke();
             ctx.restore();
         }
 
@@ -3634,8 +3643,13 @@ function handleInputDown(lane, touchY, touchX) {
         State.keyState[lane] = false;
         if (laneElements[lane]) laneElements[lane].classList.remove('active');
         if (laneKeyElements[lane]) laneKeyElements[lane].classList.remove('active');
-        toggleHoldEffect(lane, false);
-        if (State.holdingTiles[lane]) State.holdingTiles[lane] = null;
+        // Якщо довга нота активна і утримується, НЕ скидаємо ефект утримання миттєво при мікро-розриві,
+        // а дозволяємо буферу толерантності в update() коректно завершити або плавно згасити її
+        const activeTile = State.holdingTiles[lane];
+        if (!activeTile || activeTile.completed || activeTile.released || activeTile.failed) {
+            toggleHoldEffect(lane, false);
+            State.holdingTiles[lane] = null;
+        }
     }
 
     function missNote(tile, isSpawnedMiss) {
@@ -3877,44 +3891,52 @@ function handleInputDown(lane, touchY, touchX) {
 function updateProgressBar(current, total) {
     if (!progressBar) return;
     const ratio = Math.min(1, Math.max(0, current / total));
-    progressBar.style.width = `${ratio * 100}%`;
+    
+    // Оновлюємо стиль прогрес-бару лише якщо є відчутна зміна (мінімум 0.2%)
+    const pct = (ratio * 100).toFixed(1);
+    if (progressBar._lastPct !== pct) {
+        progressBar._lastPct = pct;
+        progressBar.style.width = `${pct}%`;
+    }
 
-    // Динамічне оновлення поточної швидкості в індикаторі HUD
-    const modSpeedEl = document.getElementById('game-mod-speed');
+    // Динамічне оновлення швидкості в HUD лише якщо швидкість реально змінилась
+    // Це усуває 60-120 важких DOM innerHTML парсингів на секунду під час гри!
+    if (!State._modSpeedEl) State._modSpeedEl = document.getElementById('game-mod-speed');
+    const modSpeedEl = State._modSpeedEl;
     if (modSpeedEl) {
         const dynamicSpd = (State.dynamicSpeedMultiplier || (State.selectedSpeed || 1.0)).toFixed(2);
-        modSpeedEl.innerHTML = `${icons.zap(12)} <span>${dynamicSpd}x</span>`;
-        modSpeedEl.classList.remove('hidden');
+        if (modSpeedEl._lastSpd !== dynamicSpd) {
+            modSpeedEl._lastSpd = dynamicSpd;
+            modSpeedEl.innerHTML = `${icons.zap(12)} <span>${dynamicSpd}x</span>`;
+            modSpeedEl.classList.remove('hidden');
+        }
     }
     
-    // Пороги прогресу для отримання зірок: строго 33.3%, 66.6% та 99.9%
+    // Пороги прогресу для зірок: оновлюємо DOM лише в момент фактичного переходу статусу!
     const isSecret = Boolean(songsDB[State.currentSongIndex]?.isSecret);
     const limits = isSecret ? [0.2, 0.4, 0.6, 0.8, 0.999] : [0.333, 0.666, 0.999];
 
     limits.forEach((limit, i) => {
-        if (!starsElements[i]) return;
+        const starEl = starsElements[i];
+        if (!starEl) return;
 
-        // Якщо поточний прогрес пісні перетнув необхідний поріг
+        let targetStatus = 0;
         if (ratio >= limit) {
-            const isFirst = (State.starStatus[i] === 0);
-            if (isFirst) {
-                // Якщо без помилок - діамантова (2), якщо з помилками - звичайна золота (1)
-                State.starStatus[i] = (State.totalMisses === 0) ? 2 : 1;
-            } else if (State.totalMisses > 0 && State.starStatus[i] === 2) {
-                State.starStatus[i] = 1;
-            }
-            
-            starsElements[i].classList.add('active');
-            if (State.starStatus[i] === 2) {
-                starsElements[i].classList.add('diamond'); 
-                starsElements[i].innerHTML = icons.diamond(16); 
+            targetStatus = (State.totalMisses === 0) ? 2 : 1;
+        }
+
+        if (State.starStatus[i] !== targetStatus) {
+            State.starStatus[i] = targetStatus;
+            if (targetStatus === 2) {
+                starEl.className = 'hud-star active diamond';
+                starEl.innerHTML = icons.diamond(16);
+            } else if (targetStatus === 1) {
+                starEl.className = 'hud-star active';
+                starEl.innerHTML = icons.starFilled(16);
             } else {
-                starsElements[i].classList.remove('diamond');
-                starsElements[i].innerHTML = icons.starFilled(16);
+                starEl.className = 'hud-star';
+                starEl.innerHTML = icons.starEmpty(16);
             }
-        } else {
-            starsElements[i].classList.remove('active', 'diamond');
-            starsElements[i].innerHTML = icons.starEmpty(16);
         }
     });
 }
@@ -5340,12 +5362,56 @@ function updateRipples(dt) {
                 }
             };
 
+            const handlePointerMove = (e) => {
+                if (e.cancelable) e.preventDefault();
+                // Під час руху пальця по екрану оновлюємо таймер утримання
+                const lane = activePointerLanes.get(e.pointerId);
+                if (lane !== undefined) {
+                    State.keyState[lane] = true;
+                    const heldTile = State.holdingTiles[lane];
+                    if (heldTile && !heldTile.completed && !heldTile.released && !heldTile.failed) {
+                        heldTile.lastValidHoldTime = Date.now();
+                    }
+                }
+            };
+
+            const handlePointerCancel = (e) => {
+                if (e.cancelable) e.preventDefault();
+                // Захист від системного зриву утримання при мультитач-диспатчі на Android:
+                const lane = activePointerLanes.get(e.pointerId);
+                if (lane !== undefined) {
+                    const heldTile = State.holdingTiles[lane];
+                    if (heldTile && !heldTile.completed && !heldTile.released && !heldTile.failed) {
+                        heldTile.lastValidHoldTime = Date.now();
+                    }
+                }
+                activePointerLanes.delete(e.pointerId);
+
+                let otherInLane = false;
+                for (const l of activePointerLanes.values()) {
+                    if (l === lane) { otherInLane = true; break; }
+                }
+                if (!otherInLane && lane !== undefined && lane >= 0 && lane < 4) {
+                    handleInputUp(lane);
+                }
+            };
+
             // Інвалідуємо rect при ресайзі вікна щоб не використовувати застарілі координати
             window.addEventListener('resize', () => { gameRect = null; }, { passive: true });
 
             canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
+            canvas.addEventListener('pointermove', handlePointerMove, { passive: false });
+            window.addEventListener('pointermove', (e) => {
+                if (State.isPlaying && e.cancelable) e.preventDefault();
+            }, { passive: false });
             window.addEventListener('pointerup', handlePointerUp, { passive: false });
-            window.addEventListener('pointercancel', handlePointerUp, { passive: false });
+            window.addEventListener('pointercancel', handlePointerCancel, { passive: false });
+            window.addEventListener('contextmenu', (e) => {
+                if (State.isPlaying) e.preventDefault();
+            }, { passive: false });
+            window.addEventListener('selectstart', (e) => {
+                if (State.isPlaying) e.preventDefault();
+            }, { passive: false });
         }
 
         // Гарантована ізоляція введення в текстових полях (включаючи пробіл та спеціальні клавіші в адмінці)
@@ -7617,24 +7683,65 @@ function updateRipples(dt) {
             }
 
             // ------------------------------------------
-            // Улюблений трек (Favorite Track)
+            // Улюблений трек (Favorite Track) з пошуковим фільтром
             // ------------------------------------------
             const favTitleEl = document.getElementById('up-favorite-track-title');
+            const favControlsEl = document.getElementById('up-favorite-track-controls');
+            const favSearchEl = document.getElementById('up-favorite-track-search');
+            const favClearEl = document.getElementById('up-favorite-track-clear');
             const favSelectEl = document.getElementById('up-favorite-track-select');
             if (favTitleEl) favTitleEl.textContent = playerData.favoriteTrack || '—';
 
-            if (isMe && favSelectEl) {
-                favSelectEl.classList.remove('hidden');
-                let optionsHtml = `<option value="">${getText('profileSelectFavTrack') || 'Оберіть улюблений трек...'}</option>`;
-                songsDB.forEach(s => {
-                    if (!s || !s.title) return;
-                    const isSel = s.title === playerData.favoriteTrack;
-                    optionsHtml += `<option value="${escapeHtml(s.title)}" ${isSel ? 'selected' : ''}>${escapeHtml(s.artist || '')} — ${escapeHtml(s.title)}</option>`;
-                });
-                favSelectEl.innerHTML = optionsHtml;
+            if (isMe && favControlsEl && favSelectEl) {
+                favControlsEl.classList.remove('hidden');
+
+                const renderFavOptions = (query = '') => {
+                    const q = query.trim().toLowerCase();
+                    let optionsHtml = `<option value="">${getText('profileSelectFavTrack') || 'Оберіть улюблений трек...'}</option>`;
+                    let matchCount = 0;
+                    songsDB.forEach(s => {
+                        if (!s || !s.title) return;
+                        const fullText = `${s.artist || ''} ${s.title}`.toLowerCase();
+                        if (q && !fullText.includes(q)) return;
+                        matchCount++;
+                        const isSel = s.title === playerData.favoriteTrack;
+                        optionsHtml += `<option value="${escapeHtml(s.title)}" ${isSel ? 'selected' : ''}>${escapeHtml(s.artist || '')} — ${escapeHtml(s.title)}</option>`;
+                    });
+                    if (q && matchCount === 0) {
+                        optionsHtml += `<option value="" disabled>Нічого не знайдено</option>`;
+                    }
+                    favSelectEl.innerHTML = optionsHtml;
+                };
+
+                if (favSearchEl) {
+                    favSearchEl.value = '';
+                    if (favClearEl) favClearEl.classList.add('hidden');
+                    favSearchEl.oninput = () => {
+                        const val = favSearchEl.value;
+                        if (favClearEl) favClearEl.classList.toggle('hidden', !val);
+                        renderFavOptions(val);
+                    };
+                }
+
+                if (favClearEl) {
+                    favClearEl.onclick = () => {
+                        playClick();
+                        if (favSearchEl) {
+                            favSearchEl.value = '';
+                            favClearEl.classList.add('hidden');
+                            favSearchEl.focus();
+                        }
+                        renderFavOptions('');
+                    };
+                }
+
+                renderFavOptions('');
+
                 favSelectEl.onchange = async () => {
                     playClick();
                     const newFav = favSelectEl.value;
+                    if (!newFav) return;
+                    playerData.favoriteTrack = newFav;
                     Cosmetics.saveLocalCosmetics({ favoriteTrack: newFav });
                     if (favTitleEl) favTitleEl.textContent = newFav || '—';
                     showNotification(getText('favTrackUpdated') || 'Улюблений трек оновлено!');
@@ -7646,8 +7753,8 @@ function updateRipples(dt) {
                         syncGlobalProgress();
                     }
                 };
-            } else if (favSelectEl) {
-                favSelectEl.classList.add('hidden');
+            } else if (favControlsEl) {
+                favControlsEl.classList.add('hidden');
             }
 
             // ------------------------------------------

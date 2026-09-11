@@ -336,6 +336,7 @@ export default {
   profileBioPlaceholder: "Your motto or status (up to 60 chars)...",
   profileFavoriteTrack: "Favorite Track:",
   profileSelectFavTrack: "Select favorite track...",
+  searchFavTrackPlaceholder: "🔍 Search track or artist...",
   custTabFrames: "Frames",
   custTabTitles: "Titles",
   custLocked: "Locked",

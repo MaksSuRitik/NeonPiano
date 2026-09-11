@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Neon Rhythm — Neon Piano</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="css/style.css?v=44.0">
+  <link rel="stylesheet" href="css/style.css?v=45.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
 </head>
 <body data-theme="dark">
@@ -377,8 +377,13 @@
             Управління фонотекою: завантаження в Firebase Storage та Firestore
           </p>
         </div>
-        <button type="button" id="admin-close-btn" class="modal-close-btn admin-sticky-close-btn" title="Закрити панель (Esc)" aria-label="Close"></button>
+        <button type="button" id="admin-close-btn" class="modal-close-btn admin-sticky-close-btn" title="Закрити панель (Esc)" aria-label="Close">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
+
+      <!-- Admin Modal Isolated Scroll Area -->
+      <div class="admin-modal-scroll-area">
 
       <!-- Admin Auto-Play Level (Auto-Bot) Control -->
       <div class="admin-autobot-banner">
@@ -681,11 +686,12 @@
         </div>
       </div>
 
-      <!-- Bottom Exit Button -->
-      <div style="display: flex; justify-content: center; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--surface-border);">
-        <button type="button" id="admin-bottom-close-btn" class="action-btn" data-i18n="adminReturnToGame" style="padding: 10px 28px; font-size: 0.95rem;">
-          Повернутися до вибору пісень
-        </button>
+        <!-- Bottom Exit Button -->
+        <div style="display: flex; justify-content: center; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--surface-border);">
+          <button type="button" id="admin-bottom-close-btn" class="action-btn" data-i18n="adminReturnToGame" style="padding: 10px 28px; font-size: 0.95rem;">
+            Повернутися до вибору пісень
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -906,9 +912,15 @@
           <span class="fav-label" data-i18n="profileFavoriteTrack">Улюблений трек:</span>
           <span class="fav-title" id="up-favorite-track-title">—</span>
         </div>
-        <select id="up-favorite-track-select" class="modern-select hidden" style="margin-top: 6px; font-size: 0.85rem; width: 100%;">
-          <option value="" data-i18n="profileSelectFavTrack">Оберіть улюблений трек...</option>
-        </select>
+        <div id="up-favorite-track-controls" class="hidden" style="margin-top: 8px;">
+          <div class="fav-search-wrap" style="position: relative; margin-bottom: 6px;">
+            <input type="text" id="up-favorite-track-search" class="modern-input" placeholder="🔍 Пошук треку або виконавця..." data-i18n-placeholder="searchFavTrackPlaceholder" style="width: 100%; font-size: 0.82rem; padding: 7px 28px 7px 10px; border-radius: 8px; box-sizing: border-box;">
+            <button type="button" id="up-favorite-track-clear" class="fav-search-clear hidden" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 0;" title="Очистити">✕</button>
+          </div>
+          <select id="up-favorite-track-select" class="modern-select" style="font-size: 0.85rem; width: 100%; border-radius: 8px;">
+            <option value="" data-i18n="profileSelectFavTrack">Оберіть улюблений трек...</option>
+          </select>
+        </div>
       </div>
 
       <!-- Profile Stats Grid -->
@@ -1105,6 +1117,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=62.0"></script>
+  <script type="module" src="src/main.js?v=63.0"></script>
 </body>
 </html>

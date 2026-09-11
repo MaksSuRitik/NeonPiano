@@ -348,22 +348,28 @@ export const IUNO_THEME = {
 
     ctx.save();
 
-    // ── 1. Lunar eclipse top halo — drawn smoothly EVERY frame (no frame-skipping flicker) ──
+    // ── 1. Lunar eclipse top halo — кешуємо градієнт один раз для усунення важких алокацій ──
     const lunaAlpha = 0.09 + 0.03 * Math.sin(t * 0.7);
-    if (isMobile) {
-      const linGrad = ctx.createLinearGradient(0, 0, 0, H * 0.36);
-      linGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha * 0.6})`);
-      linGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = linGrad;
-      ctx.fillRect(0, 0, W, H * 0.36);
-    } else {
-      const lunaGrad = ctx.createRadialGradient(W * 0.5, H * 0.10, 0, W * 0.5, H * 0.10, W * 0.38);
-      lunaGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha})`);
-      lunaGrad.addColorStop(0.4, `rgba(251, 191, 36, ${lunaAlpha * 0.35})`);
-      lunaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = lunaGrad;
-      ctx.fillRect(0, 0, W, H * 0.5);
+    if (!this._lunaGrad || this._lunaW !== W || this._lunaH !== H || this._lunaIsMobile !== isMobile) {
+      this._lunaW = W;
+      this._lunaH = H;
+      this._lunaIsMobile = isMobile;
+      if (isMobile) {
+        const linGrad = ctx.createLinearGradient(0, 0, 0, H * 0.36);
+        linGrad.addColorStop(0, 'rgba(56, 189, 248, 0.6)');
+        linGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this._lunaGrad = linGrad;
+      } else {
+        const lunaGrad = ctx.createRadialGradient(W * 0.5, H * 0.10, 0, W * 0.5, H * 0.10, W * 0.38);
+        lunaGrad.addColorStop(0, 'rgba(56, 189, 248, 1.0)');
+        lunaGrad.addColorStop(0.4, 'rgba(251, 191, 36, 0.35)');
+        lunaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this._lunaGrad = lunaGrad;
+      }
     }
+    ctx.globalAlpha = lunaAlpha;
+    ctx.fillStyle = this._lunaGrad;
+    ctx.fillRect(0, 0, W, isMobile ? H * 0.36 : H * 0.5);
 
     // ── 2. Aero wind stream ribbons — lightweight paths, zero shadowBlur ──
     ctx.lineWidth = 1.4;
@@ -432,16 +438,29 @@ export const IUNO_THEME = {
       }
     }
 
-    // ── 5. Star mote glimmer — drawn every frame smoothly ──
+    // ── 5. Star mote glimmer — пакетне малювання (batching) золотих та блакитних зірок ──
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
     for (const m of atm.motes) {
+      if (!m.isGold) continue;
       const a = m.alpha * (0.5 + 0.5 * Math.sin(t * 1.2 + m.phase));
       if (a < 0.05) continue;
-      ctx.globalAlpha = a;
-      ctx.fillStyle = m.isGold ? '#fbbf24' : '#7dd3fc';
-      ctx.beginPath();
+      ctx.moveTo(m.x + m.r, m.y);
       ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
-      ctx.fill();
     }
+    ctx.fill();
+
+    ctx.fillStyle = '#7dd3fc';
+    ctx.beginPath();
+    for (const m of atm.motes) {
+      if (m.isGold) continue;
+      const a = m.alpha * (0.5 + 0.5 * Math.sin(t * 1.2 + m.phase));
+      if (a < 0.05) continue;
+      ctx.moveTo(m.x + m.r, m.y);
+      ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+    }
+    ctx.fill();
 
     ctx.globalAlpha = 1;
     ctx.restore();

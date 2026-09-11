@@ -10,7 +10,7 @@ import {
   COSMIC_THEME, 
   IUNO_THEME,
   getThemeById 
-} from "./themes/index.js";
+} from "./themes/index.js?v=63.0";
 
 export { 
   FIELD_THEMES, 

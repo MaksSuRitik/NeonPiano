@@ -273,18 +273,20 @@ export const COSMIC_THEME = {
     const ccy = gh * 0.36;
     const cRadius = Math.min(gw, gh) * 0.42;
 
-    const computedNodes = constel.map(node => {
-      // Relative offset from center rotated slowly
+    if (!State._computedNodes || State._computedNodes.length !== constel.length) {
+      State._computedNodes = constel.map(node => ({ x: 0, y: 0, conn: node.conn }));
+    }
+    const computedNodes = State._computedNodes;
+    const cosR = Math.cos(rotSpeed);
+    const sinR = Math.sin(rotSpeed);
+    for (let i = 0; i < constel.length; i++) {
+      const node = constel[i];
       const dx = (node.nx - 0.5) * cRadius;
       const dy = (node.ny - 0.35) * cRadius;
-      const cosR = Math.cos(rotSpeed);
-      const sinR = Math.sin(rotSpeed);
-      return {
-        x: ccx + (dx * cosR - dy * sinR),
-        y: ccy + (dx * sinR + dy * cosR),
-        conn: node.conn
-      };
-    });
+      computedNodes[i].x = ccx + (dx * cosR - dy * sinR);
+      computedNodes[i].y = ccy + (dx * sinR + dy * cosR);
+      computedNodes[i].conn = node.conn;
+    }
 
     const constelAlpha = isLight ? 0.12 : 0.18;
     ctx.strokeStyle = isLight ? `rgba(79, 70, 229, ${constelAlpha})` : `rgba(129, 140, 248, ${constelAlpha})`;

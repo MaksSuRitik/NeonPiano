@@ -336,6 +336,7 @@ export default {
   profileBioPlaceholder: "Ваш девиз или статус (до 60 симв.)...",
   profileFavoriteTrack: "Любимый трек:",
   profileSelectFavTrack: "Выберите любимый трек...",
+  searchFavTrackPlaceholder: "🔍 Поиск трека или исполнителя...",
   custTabFrames: "Рамки",
   custTabTitles: "Титулы",
   custLocked: "Заблокировано",

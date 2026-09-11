@@ -225,43 +225,43 @@ export const CLASSIC_THEME = {
       ctx.rect(0, horizonY - 1, gw, gridH + 2);
       ctx.clip();
 
-      // Soft cyan / purple cyber fog at horizon
-      const fogGrad = ctx.createLinearGradient(0, horizonY, 0, horizonY + gridH * 0.4);
-      fogGrad.addColorStop(0, isLight ? 'rgba(56, 189, 248, 0.22)' : 'rgba(56, 189, 248, 0.18)');
-      fogGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = fogGrad;
+      // Soft cyan / purple cyber fog at horizon — кешовано
+      if (!this._fogGrad || this._fogKey !== `${gw}_${gh}_${isLight}`) {
+        this._fogKey = `${gw}_${gh}_${isLight}`;
+        const fogGrad = ctx.createLinearGradient(0, horizonY, 0, horizonY + gridH * 0.4);
+        fogGrad.addColorStop(0, isLight ? 'rgba(56, 189, 248, 0.22)' : 'rgba(56, 189, 248, 0.18)');
+        fogGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this._fogGrad = fogGrad;
+      }
+      ctx.fillStyle = this._fogGrad;
       ctx.fillRect(0, horizonY, gw, gridH * 0.4);
 
-      // Horizontal perspective grid lines (spaced exponentially toward viewer)
+      // Horizontal perspective grid lines (пакетне малювання в один виклик stroke)
       const lineCount = 7;
       const gridScroll = (songTime * 0.0012 * warpMult * speedBoost) % 1.0;
       ctx.lineWidth = 1;
-      
+      ctx.strokeStyle = isLight ? 'rgba(2, 132, 199, 0.22)' : 'rgba(56, 189, 248, 0.25)';
+      ctx.beginPath();
       for (let i = 0; i < lineCount; i++) {
         const norm = (i + gridScroll) / lineCount;
         const curve = Math.pow(norm, 2.2); // Exponential perspective spacing
         const ly = horizonY + curve * gridH;
-        const lineAlpha = curve * (isLight ? 0.25 : 0.30);
-
-        ctx.strokeStyle = isLight ? `rgba(2, 132, 199, ${lineAlpha})` : `rgba(56, 189, 248, ${lineAlpha})`;
-        ctx.beginPath();
         ctx.moveTo(0, ly);
         ctx.lineTo(gw, ly);
-        ctx.stroke();
       }
+      ctx.stroke();
 
-      // Vanishing perspective lines fanning out from horizon center
+      // Vanishing perspective lines fanning out from horizon center (пакетне малювання)
       const vanishingX = gw / 2;
       const vLineCount = 10;
+      ctx.strokeStyle = isLight ? 'rgba(2, 132, 199, 0.15)' : 'rgba(56, 189, 248, 0.18)';
+      ctx.beginPath();
       for (let v = 0; v <= vLineCount; v++) {
         const bottomX = (gw / vLineCount) * v;
-        const vAlpha = isLight ? 0.14 : 0.18;
-        ctx.strokeStyle = isLight ? `rgba(2, 132, 199, ${vAlpha})` : `rgba(56, 189, 248, ${vAlpha})`;
-        ctx.beginPath();
         ctx.moveTo(vanishingX, horizonY);
         ctx.lineTo(bottomX, gridBottomY);
-        ctx.stroke();
       }
+      ctx.stroke();
       ctx.restore();
     }
 

@@ -276,26 +276,23 @@ export const DARK_ANGEL_THEME = {
     ctx.strokeStyle = isLight ? `rgba(147, 51, 234, ${baseAlpha})` : `rgba(168, 85, 247, ${baseAlpha})`;
     ctx.lineWidth = 1.2;
 
-    // Outer cathedral circle
+    // Cathedral Gothic Rosette (пакетне малювання за 1 виклик stroke)
     ctx.beginPath();
     ctx.arc(cx, cy, roseR, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Inner concentric rose circles
-    ctx.beginPath();
+    ctx.moveTo(cx + roseR * 0.65, cy);
     ctx.arc(cx, cy, roseR * 0.65, 0, Math.PI * 2);
+    ctx.moveTo(cx + roseR * 0.32, cy);
     ctx.arc(cx, cy, roseR * 0.32, 0, Math.PI * 2);
-    ctx.stroke();
 
-    // Cathedral 8-petal arch geometry (Gothic Rosette)
+    // Cathedral 8-petal arch geometry
     for (let a = 0; a < 8; a++) {
       const ang = a * Math.PI / 4;
       const ax = cx + Math.cos(ang) * roseR * 0.65;
       const ay = cy + Math.sin(ang) * roseR * 0.65;
-      ctx.beginPath();
+      ctx.moveTo(ax + roseR * 0.35, ay);
       ctx.arc(ax, ay, roseR * 0.35, 0, Math.PI * 2);
-      ctx.stroke();
     }
+    ctx.stroke();
 
     // 2. Ascending Ethereal Amethyst Soul Wisps & Incense Smoke (floating UPWARD)
     const parts = State.themeAtmosphereParticles;
