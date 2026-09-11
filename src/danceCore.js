@@ -3454,7 +3454,7 @@ function handleInputDown(lane, touchY, touchX) {
         if (!State.isPlaying || State.isPaused) return;
         const now = Date.now();
         
-        // Захист від надмірного спаму клавішами тільки для клавіатури (для тачу/миші кожен дотик пальця — окремий намір)
+        // Захист від надмірного спаму клавішами тільки для клавіатури
         if (touchY === undefined) {
             if (now - (State.laneLastInputTime[lane] || 0) < 40) return;
             State.laneLastInputTime[lane] = now;
@@ -3472,10 +3472,17 @@ function handleInputDown(lane, touchY, touchX) {
         const laneLeft = lane * laneW;
         const laneRight = (lane + 1) * laneW;
         
-        // Вертикальний запас хітбокса: виступає і зверху, і знизу на 30% від власного розміру ноти
-        const basePadY = Math.round(CONFIG.noteHeight * 0.30);
+        // Вертикальний хітбокс: адаптивний до швидкості.
+        // При вищій швидкості (1.6x warp, тощо) ноти швидше пролітають — hitbox стає ширшим
+        // щоб гравцеві легше потрапити при одночасних натисканнях.
+        const speedFactor = Math.min(State.currentSpeed / CONFIG.speedStart, 1.8);
+        const basePadY = Math.round(CONFIG.noteHeight * (0.30 + speedFactor * 0.08));
         const padTop = basePadY;
         const padBottom = basePadY;
+
+        // Горизонтальний margin для touch: 12px (було 4px).
+        // Пальці на межі між лейнами завжди потраплять в правильний лейн.
+        const laneHitPad = touchY !== undefined ? 12 : 0;
 
         const isTouch = (touchY !== undefined);
 
@@ -3487,8 +3494,8 @@ function handleInputDown(lane, touchY, touchX) {
             const visualY = (1 - (t.time - songTime) / State.currentSpeed) * hitY;
 
             if (isTouch) {
-                // Повна ширина стовпця без мертвих зон (плюс 4px запас на стиках колонок для пальців)
-                if (touchX !== undefined && (touchX < laneLeft - 4 || touchX > laneRight + 4)) {
+                // Горизонтальна перевірка з розширеним margin для пальців
+                if (touchX !== undefined && (touchX < laneLeft - laneHitPad || touchX > laneRight + laneHitPad)) {
                     return false;
                 }
 
@@ -3505,7 +3512,7 @@ function handleInputDown(lane, touchY, touchX) {
                 }
                 return false;
             } else {
-                // Клавіатура (S, D, J, K / стрілки) або бот: нижня 1/3 екрана біля лінії рецептора
+                // Клавіатура: нижня 1/3 екрана біля лінії рецептора
                 const bottomAreaTop = State.gameHeight * 0.66;
                 const yTop = visualY - CONFIG.noteHeight;
                 return (visualY >= bottomAreaTop && yTop <= State.gameHeight + 50);
@@ -3578,7 +3585,7 @@ function handleInputDown(lane, touchY, touchX) {
         if (activeHold) {
             let validHoldTouch = true;
             if (touchY !== undefined) {
-                if (touchX !== undefined && (touchX < laneLeft - 4 || touchX > laneRight + 4)) {
+                if (touchX !== undefined && (touchX < laneLeft - laneHitPad || touchX > laneRight + laneHitPad)) {
                     validHoldTouch = false;
                 } else {
                     const progressEnd = 1 - (activeHold.endTime - songTime) / State.currentSpeed;
@@ -5260,14 +5267,22 @@ function updateRipples(dt) {
         }
 
         if (canvas) {
-            // Оптимізована система обробки multi-touch: відстежуємо кожне натискання (pointerId) окремо.
-            // Це повністю виключає зависання та зриви довгих нот при грі кількома пальцями на смартфонах.
+            // Multi-touch: відстежуємо кожен pointer (палець) окремо.
+            // activePointerLanes: Map<pointerId, lane> — який палець тримає яку доріжку
             const activePointerLanes = new Map();
+
+            // Кешуємо getBoundingClientRect() і оновлюємо тільки при справжньому pointerdown,
+            // щоб не викликати layout thrash 60 разів на секунду при русі пальців.
+            let gameRect = null;
+            const refreshRect = () => { gameRect = canvas.getBoundingClientRect(); };
 
             const handlePointerDown = (e) => {
                 if (e.cancelable) e.preventDefault();
-                gameRect = canvas.getBoundingClientRect();
-                if (!gameRect.width || !gameRect.height) return;
+
+                // Оновлюємо rect тільки якщо він ще не кешований або перший палець
+                if (!gameRect || activePointerLanes.size === 0) refreshRect();
+                if (!gameRect || !gameRect.width || !gameRect.height) return;
+
                 const scaleX = State.gameWidth / gameRect.width;
                 const scaleY = State.gameHeight / gameRect.height;
                 const touchX = (e.clientX - gameRect.left) * scaleX;
@@ -5278,11 +5293,12 @@ function updateRipples(dt) {
                 const lane = Math.max(0, Math.min(3, Math.floor(touchX / laneW)));
                 activePointerLanes.set(e.pointerId, lane);
 
-                // setPointerCapture: утримуємо pointer навіть при мікрорухах пальця за межі кнопки.
-                // Критично для Android браузерів де pointercancel виникає при мікро-скролі пальця.
-                try { if (e.target && typeof e.target.setPointerCapture === 'function') e.target.setPointerCapture(e.pointerId); } catch (_) {}
+                // НЕ використовуємо setPointerCapture — у Chrome для Android < 100
+                // setPointerCapture на canvas блокує отримання нових pointerdown від ІНШИХ пальців.
+                // Баг підтверджений: https://crbug.com/1001806
+                // Замість цього використовуємо pointercancel на window для обробки drift.
 
-                // Гарантоване розблокування Web Audio API на першому дотику (Autoplay Policy мобільних браузерів).
+                // Гарантоване розблокування Web Audio API на першому дотику
                 if (State.audioCtx && State.audioCtx.state === 'suspended') {
                     State.audioCtx.resume().catch(() => {});
                 }
@@ -5294,8 +5310,8 @@ function updateRipples(dt) {
                 if (e.cancelable) e.preventDefault();
                 let lane = activePointerLanes.get(e.pointerId);
                 if (lane === undefined) {
-                    gameRect = canvas.getBoundingClientRect();
-                    if (gameRect.width) {
+                    // Fallback: обчислюємо лейн з позиції пальця
+                    if (gameRect && gameRect.width) {
                         const scaleX = State.gameWidth / gameRect.width;
                         const touchX = (e.clientX - gameRect.left) * scaleX;
                         const laneW = State.gameWidth / 4;
@@ -5313,6 +5329,9 @@ function updateRipples(dt) {
                     handleInputUp(lane);
                 }
             };
+
+            // Інвалідуємо rect при ресайзі вікна щоб не використовувати застарілі координати
+            window.addEventListener('resize', () => { gameRect = null; }, { passive: true });
 
             canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
             window.addEventListener('pointerup', handlePointerUp, { passive: false });
