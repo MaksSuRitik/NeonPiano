@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Test Direct</title></head>
+<body>
+<div id="game-container" class="hidden">
+  <canvas id="rhythmCanvas" width="800" height="600"></canvas>
+  <div id="game-progress-bar"></div>
+  <div id="hold-effects-container"></div>
+  <div id="result-screen" class="hidden">
+    <button id="btn-restart"></button>
+    <button id="btn-menu-end"></button>
+  </div>
+</div>
+<div id="menu-layer"><div id="song-list"></div></div>
+<div id="loader" class="hidden"></div>
+<script>
+window.alert = function(msg) {
+  fetch('http://127.0.0.1:3002', { method: 'POST', body: 'ALERT: ' + msg }).catch(()=>{});
+};
+window.onerror = (m, u, l, c, e) => {
+  fetch('http://127.0.0.1:3002', { method: 'POST', body: 'WINDOW ERR: ' + m + ' at ' + u + ':' + l }).catch(()=>{});
+};
+window.onunhandledrejection = (e) => {
+  fetch('http://127.0.0.1:3002', { method: 'POST', body: 'REJECTION: ' + (e.reason ? (e.reason.stack||e.reason) : e) }).catch(()=>{});
+};
+</script>
+<script type="module" src="src/danceCore.js?v=test2"></script>
+<script type="module">
+  function send(msg) {
+    console.log(msg);
+    fetch('http://127.0.0.1:3002', { method: 'POST', body: msg }).catch(()=>{});
+  }
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 200));
+    if (window.__gameDebug && window.__gameDebug.songsDB().length > 0) break;
+  }
+  const dbg = window.__gameDebug;
+  const songs = dbg.songsDB();
+  send('Tracks count: ' + songs.length);
+  for (let i = 0; i < songs.length; i++) {
+    send('Track ' + i + ': title="' + songs[i].title + '" url="' + songs[i].audioUrl + '"');
+  }
+
+  // Let's test analyzeAudio directly on Track 0
+  send('Calling analyzeAudio on track 0...');
+  try {
+    const tiles0 = await dbg.analyzeAudio(songs[0].audioUrl, dbg.State.currentSessionId);
+    send('Track 0 tiles generated: ' + (tiles0 ? tiles0.length : 'NULL'));
+  } catch (e) {
+    send('analyzeAudio track 0 error: ' + (e.stack || e));
+  }
+
+  // Let's test analyzeAudio directly on Track 1
+  send('Calling analyzeAudio on track 1...');
+  try {
+    const tiles1 = await dbg.analyzeAudio(songs[1].audioUrl, dbg.State.currentSessionId);
+    send('Track 1 tiles generated: ' + (tiles1 ? tiles1.length : 'NULL'));
+  } catch (e) {
+    send('analyzeAudio track 1 error: ' + (e.stack || e));
+  }
+
+  // Now let's test the ACTUAL game flow:
+  send('\n--- Testing Full Game Flow ---');
+  dbg.startGame(0);
+  // Wait until isPlaying or timeout
+  for (let i = 0; i < 50; i++) {
+    await new Promise(r => setTimeout(r, 200));
+    if (dbg.State.isPlaying) break;
+  }
+  send('Game 0 isPlaying=' + dbg.State.isPlaying + ', mapTiles=' + dbg.State.mapTiles.length);
+  
+  // Wait 2 seconds of gameplay
+  await new Promise(r => setTimeout(r, 2000));
+  send('Game 0 running: activeTiles=' + dbg.State.activeTiles.length + ', nextSpawn=' + dbg.State.nextSpawnIndex);
+
+  // Complete level
+  send('Simulating victory: endGame(true)...');
+  await dbg.endGame(true);
+  send('endGame complete. isPlaying=' + dbg.State.isPlaying);
+
+  // Quit to menu
+  send('Simulating quitGame()...');
+  dbg.quitGame();
+  send('quitGame complete. inGame=' + document.body.classList.contains('in-game'));
+
+  // Start Track 1!
+  send('\n--- Now Starting Track 1 (Transition to another level) ---');
+  dbg.startGame(1);
+  for (let i = 0; i < 50; i++) {
+    await new Promise(r => setTimeout(r, 200));
+    if (dbg.State.isPlaying) break;
+  }
+  send('Game 1 isPlaying=' + dbg.State.isPlaying + ', mapTiles=' + dbg.State.mapTiles.length);
+
+  // Wait 2 seconds of gameplay for Track 1
+  await new Promise(r => setTimeout(r, 2000));
+  send('Game 1 running: activeTiles=' + dbg.State.activeTiles.length + ', nextSpawn=' + dbg.State.nextSpawnIndex);
+
+  send('=== ALL FLOW TESTS COMPLETE ===');
+</script>
+</body>
+</html>

@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ua">
+<head>
+  <meta charset="UTF-8">
+  <title>Neon Rhythm — Neon Piano</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="css/style.css?v=42.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
+</head>
+<body data-theme="dark">
+
+  <!-- Ambient Lava Lamp Background -->
+  <div class="lava-lamp-container" id="lava-lamp-bg" aria-hidden="true">
+    <div class="lava-blob blob-1"></div>
+    <div class="lava-blob blob-2"></div>
+    <div class="lava-blob blob-3"></div>
+    <div class="lava-blob blob-4"></div>
+    <div class="lava-blob blob-5"></div>
+  </div>
+
+  <!-- Professional Header Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-badge">
+        <span class="logo-icon-container"></span>
+        <span class="logo-title" data-i18n="appTitle">NEON PIANO</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- User Profile & Auth Controls -->
+      <div class="header-group auth-group">
+        <button id="btn-open-auth" class="nav-btn nav-btn-primary">
+          <span class="icon-login-container"></span>
+          <span data-i18n="login">Вхід</span>
+        </button>
+        <div id="user-badge" class="user-badge-pill" style="display: none;" title="Переглянути статистику" data-i18n-title="viewStats" role="button" tabindex="0">
+          <span class="icon-user-container"></span>
+          <span id="username-span">Гравець</span>
+        </div>
+        <button id="btn-open-friends" class="nav-btn nav-btn-icon" title="Друзі" data-i18n-title="friendsTitle" aria-label="Friends">
+          <span class="icon-friends-container"></span>
+          <span class="friends-badge-count" id="friends-badge-count" style="display: none;">0</span>
+        </button>
+        <button id="btn-open-admin" class="nav-btn nav-btn-admin" style="display: none;" title="Панель адміністратора" data-i18n-title="adminTitle">
+          <span class="icon-admin-container"></span>
+          <span data-i18n="adminPanel">Адмінка</span>
+        </button>
+        <button id="btn-open-settings" class="nav-btn nav-btn-icon" title="Налаштування" data-i18n-title="settingsTitle" aria-label="Settings">
+          <span class="icon-settings-container"></span>
+        </button>
+        <button id="btn-fullscreen" class="nav-btn nav-btn-icon" title="Повний екран" data-i18n-title="fullscreen" aria-label="Fullscreen">
+          <span id="fullscreen-icon-container"></span>
+        </button>
+        <button id="btn-logout" class="nav-btn nav-btn-icon nav-btn-danger" style="display: none;" title="Вийти з акаунта" data-i18n-title="logout">
+          <span class="icon-logout-container"></span>
+        </button>
+      </div>
+
+      <div class="header-divider"></div>
+
+      <!-- Settings & Controls (Theme, Sound, Lang) -->
+      <div class="header-group settings-group">
+        <button id="themeToggle" class="nav-btn nav-btn-icon" title="Змінити тему" data-i18n-title="toggleTheme" aria-label="Toggle Theme">
+          <span id="theme-icon-container"></span>
+        </button>
+        <button id="soundToggle" class="nav-btn nav-btn-icon" title="Звук" data-i18n-title="toggleSound" aria-label="Toggle Sound">
+          <span id="sound-icon-container"></span>
+        </button>
+        <div class="lang-wrapper">
+          <button id="langToggle" class="nav-btn" title="Мова" data-i18n-title="settingsLang">
+            <span class="icon-globe-container"></span>
+            <span id="current-lang-text">UA</span>
+          </button>
+          <div class="lang-dropdown">
+            <button data-lang="UA">Українська (UA)</button>
+            <button data-lang="EN">English (EN)</button>
+            <button data-lang="RU">Русский (RU)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MENU LAYER -->
+  <div id="menu-layer" class="song-selection">
+    <h1 class="shimmer-text">NEON PIANO</h1>
+
+    <div class="song-catalog-container">
+      <!-- Catalog Toolbar: Stats & Leaderboard Button -->
+      <div class="catalog-toolbar">
+        <div class="catalog-stats-badge" id="catalog-summary-stats">
+          <span class="stats-icon-music"></span>
+          <span id="catalog-tracks-count">Треків: 0</span>
+          <span style="opacity: 0.5;">•</span>
+          <span class="stats-icon-trophy"></span>
+          <span id="catalog-passed-count">Пройдено: 0</span>
+        </div>
+
+        <button type="button" id="btn-open-leaderboard" class="btn-leaderboard" style="width: auto; margin: 0 !important; padding: 8px 18px !important;">
+          <span class="btn-lb-icon"></span>
+          <span data-i18n="leaderboard">Таблиця лідерів</span>
+        </button>
+      </div>
+
+      <!-- Filter Chips -->
+      <div class="catalog-filter-bar">
+        <button type="button" class="filter-chip active" data-filter="all">
+          <span class="filter-icon-all"></span>
+          <span data-i18n="filterAll">Всі треки</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="completed">
+          <span class="filter-icon-check"></span>
+          <span data-i18n="filterCompleted">Пройдені</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="unplayed">
+          <span class="filter-icon-play"></span>
+          <span data-i18n="filterUnplayed">Не пройдені</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="hardcore">
+          <span class="filter-icon-skull"></span>
+          <span data-i18n="filterHardcore">Хардкор</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="secret">
+          <span class="filter-icon-lock"></span>
+          <span data-i18n="filterSecret">Секретні</span>
+        </button>
+      </div>
+
+      <!-- Search & Sort Row -->
+      <div class="catalog-controls-row">
+        <div class="search-container">
+          <span class="search-icon-inside"></span>
+          <input type="text" id="song-search-input" data-i18n-placeholder="searchPlaceholder" placeholder="Пошук треку або автора...">
+        </div>
+        <select id="catalog-sort-select" class="catalog-sort-select" aria-label="Sort tracks">
+          <option value="default" data-i18n="sortDefault">За замовчуванням</option>
+          <option value="score" data-i18n="sortScore">За рекордом</option>
+          <option value="title" data-i18n="sortTitle">За назвою (А-Я)</option>
+          <option value="duration" data-i18n="sortDuration">За тривалістю</option>
+        </select>
+      </div>
+
+      <!-- No songs message -->
+      <div id="no-songs-msg" class="hidden" style="text-align:center; padding: 40px 20px; color:var(--text-color); opacity:0.8;">
+        <h3 data-i18n="noSongsFound">Жодних пісень не знайдено</h3>
+      </div>
+
+      <!-- Song Grid Container -->
+      <div class="song-grid" id="song-list">
+        <!-- Dynamic cloud track cards in responsive grid -->
+      </div>
+    </div>
+
+    <div class="instruction-text" data-i18n="instructions" style="margin-top: 14px;">
+      Гра здійснюється за допомогою клавіш S D J K (або дотиків до екрана)
+    </div>
+  </div>
+
+  <!-- Game Container -->
+  <div id="game-container" class="hidden">
+    <div class="game-header">
+      <div class="progress-container">
+        <div id="game-progress-bar" class="progress-fill"></div>
+        <div class="stars-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;">
+          <div class="star-marker" id="star-1" style="left: 33.3%;"></div>
+          <div class="star-marker" id="star-2" style="left: 66.6%;"></div>
+          <div class="star-marker" id="star-3" style="left: 99.9%;"></div>
+        </div>
+      </div>
+      <h2 id="score-display" style="font-size: 3rem; margin: 10px 0 0 0; color: white; text-shadow: 0 0 10px var(--highlight);">0</h2>
+      <div id="game-bot-indicator" class="game-bot-pill hidden">
+        <span class="bot-pill-dot"></span>
+        <span data-i18n="autoBotActive">AUTO-BOT ACTIVE</span>
+      </div>
+      <div id="game-mod-indicators" class="game-mod-row">
+        <div id="game-mod-speed" class="game-mod-pill speed hidden"></div>
+        <div id="game-mod-hardcore" class="game-mod-pill hardcore hidden"></div>
+        <div id="game-mod-mult" class="game-mod-pill mult hidden"></div>
+      </div>
+      <div id="game-combo-row" class="game-combo-row">
+        <div id="game-combo-pill" class="game-combo-pill hidden">
+          <span class="combo-icon" id="combo-icon"></span>
+          <span id="combo-count" class="combo-value">0</span>
+          <span class="combo-title" data-i18n="combo">COMBO</span>
+          <span id="combo-mult" class="combo-mult-badge">x1.0</span>
+          <div class="combo-progress-track">
+            <div id="combo-progress-fill" class="combo-progress-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+      
+    <div id="legendary-border-overlay"></div>
+    <div id="miss-flash-overlay"></div>
+
+    <div id="lanes-bg">
+      <div class="lane-col"></div>
+      <div class="lane-col"></div>
+      <div class="lane-col"></div>
+      <div class="lane-col"></div>
+    </div>
+
+    <div id="hold-effects-container" style="position: absolute; top:0; left:0; width:100%; height:100%;"></div>
+
+    <button id="btn-pause" class="pause-btn" aria-label="Pause" style="display: flex; align-items: center; justify-content: center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+    </button>
+      
+    <div style="position: absolute; top: 30%; width: 100%; text-align: center; pointer-events: none; z-index: 20;">
+      <h3 id="combo-display" style="font-size: 2.5rem; color: var(--highlight); opacity: 0;">Combo x0</h3>
+    </div>
+      
+    <div id="rating-container"></div>
+    <canvas id="rhythmCanvas"></canvas>
+      
+    <div class="hit-line"></div>
+      
+    <div class="lane-hints">
+      <div class="lane-key">S</div>
+      <div class="lane-key">D</div>
+      <div class="lane-key">J</div>
+      <div class="lane-key">K</div>
+    </div>
+
+    <div id="loader" class="loading-overlay hidden">
+      <div class="spinner"></div>
+      <h3 data-i18n="loadingTrack" style="color:white; margin-top:20px;">Аналіз треку та створення нот...</h3>
+    </div>
+
+    <!-- Pause Modal -->
+    <div id="pause-modal" class="pause-overlay hidden">
+      <div class="pause-modal-card">
+        <div class="pause-header">
+          <div class="pause-icon-badge">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          </div>
+          <h2 data-i18n="pauseTitle">ПАУЗА</h2>
+          <div id="pause-song-title" class="pause-song-title">Трек</div>
+        </div>
+
+        <div class="pause-stats-row">
+          <div class="pause-stat-item">
+            <span class="pause-stat-label" data-i18n="pauseScore">Рахунок</span>
+            <span id="pause-stat-score" class="pause-stat-value">0</span>
+          </div>
+          <div class="pause-stat-divider"></div>
+          <div class="pause-stat-item">
+            <span class="pause-stat-label" data-i18n="pauseCombo">Комбо</span>
+            <span id="pause-stat-combo" class="pause-stat-value">0</span>
+          </div>
+        </div>
+
+        <div class="pause-actions">
+          <button id="btn-resume" class="action-btn action-btn-primary" data-i18n="resume">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+            <span data-i18n="resume">Продовжити</span>
+          </button>
+          <button id="btn-pause-restart" class="action-btn action-btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span data-i18n="pauseRestart">Почати спочатку</span>
+          </button>
+          <button id="btn-pause-fullscreen" class="action-btn action-btn-secondary">
+            <span id="pause-fullscreen-icon"></span>
+            <span id="pause-fullscreen-text" data-i18n="fullscreen">Повний екран</span>
+          </button>
+          <button id="btn-quit" class="action-btn action-btn-danger">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <span data-i18n="quit">Вийти в меню</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="result-screen" class="pause-overlay hidden">
+      <div class="results-modal-card">
+        <div class="results-header">
+          <div id="res-grade-badge" class="res-grade-badge grade-s">S</div>
+          <h1 id="end-title" data-i18n="complete">ЧУДОВО!</h1>
+          <div id="res-track-title" class="res-track-title">Трек</div>
+          <div id="final-difficulty" class="res-difficulty-pill"></div>
+          <div id="final-stars" class="res-stars-row"></div>
+          <div id="res-stars-text" class="res-stars-summary"></div>
+        </div>
+
+        <div class="res-stats-grid">
+          <div class="res-stat-card">
+            <span class="res-stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34c3-.78 5-3.5 5-6.66V3H6v5c0 3.16 2 5.88 5 6.66z"/></svg></span>
+            <span class="res-stat-label" data-i18n="score">Рахунок</span>
+            <span id="final-score" class="res-stat-value">0</span>
+          </div>
+          <div class="res-stat-card">
+            <span class="res-stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+            <span class="res-stat-label" data-i18n="resAccuracy">Точність</span>
+            <span id="res-stat-accuracy" class="res-stat-value">100%</span>
+          </div>
+          <div class="res-stat-card">
+            <span class="res-stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+            <span class="res-stat-label" data-i18n="resMaxCombo">Макс. комбо</span>
+            <span id="res-stat-combo" class="res-stat-value">0</span>
+          </div>
+          <div class="res-stat-card">
+            <span class="res-stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
+            <span class="res-stat-label" data-i18n="resMisses">Промахи</span>
+            <span id="res-stat-misses" class="res-stat-value">0</span>
+          </div>
+        </div>
+
+        <div class="res-actions-row">
+          <button id="btn-restart" class="action-btn action-btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span data-i18n="restart">Ще раз</span>
+          </button>
+          <button id="btn-menu-end" class="action-btn action-btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span data-i18n="menu">В меню</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: AUTHENTICATION (LOGIN / REGISTER)
+       ========================================== -->
+  <div id="auth-modal" class="modal-overlay hidden">
+    <div class="name-input-content" style="max-width: 420px; position: relative;">
+      <button type="button" class="modal-close-btn modal-close" title="Закрити"></button>
+      
+      <!-- Вкладки вибору режиму: Вхід / Реєстрація -->
+      <div class="auth-tabs">
+        <button type="button" id="auth-tab-login" class="auth-tab-btn active" data-i18n="authLoginTitle">Вхід у гру</button>
+        <button type="button" id="auth-tab-register" class="auth-tab-btn" data-i18n="authRegisterTitle">Реєстрація акаунта</button>
+      </div>
+
+      <h2 id="auth-title" data-i18n="authLoginTitle" style="color: var(--highlight); margin-bottom: 15px;">Вхід у гру</h2>
+
+      <form id="auth-form-element">
+        <input type="text" id="auth-input-user" class="name-input-field" data-i18n-placeholder="authUsernamePlaceholder" placeholder="Логін (ім'я гравця)" required autocomplete="username">
+        <input type="password" id="auth-input-pass" class="name-input-field" data-i18n-placeholder="authPasswordPlaceholder" placeholder="Пароль" required autocomplete="current-password">
+        <div data-i18n="authCryptoNote" style="font-size: 0.8rem; color: var(--highlight); margin-bottom: 15px; opacity: 0.85;">
+          Клієнтське шифрування (SHA-256)
+        </div>
+        <div id="auth-error-msg" class="auth-error-msg hidden"></div>
+        <button type="submit" id="auth-submit" class="action-btn" data-i18n="authLoginSubmit" style="padding: 10px 30px; font-size: 1.05rem; width: 100%;">
+          Увійти
+        </button>
+      </form>
+
+      <button type="button" id="auth-toggle-mode" class="nav-btn" data-i18n="authToRegister" style="margin-top: 15px; width: 100%;">
+        Немає акаунта? Зареєструватися
+      </button>
+      <button type="button" id="auth-guest-play-btn" class="nav-btn" data-i18n="authPlayAsGuest" style="margin-top: 8px; width: 100%; opacity: 0.82; font-size: 0.9rem;">
+        Грати як гість
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: ADMIN PANEL (TRACK UPLOADER)
+       ========================================== -->
+  <div id="admin-modal" class="modal-overlay hidden">
+    <div class="admin-modal-content">
+      <button type="button" id="admin-close-btn" class="modal-close-btn" title="Закрити панель (Esc)"></button>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 data-i18n="adminTitle" style="color: var(--highlight); margin: 0; font-size: 1.8rem;">Панель адміністратора</h2>
+        <p data-i18n="adminSubtitle" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px;">
+          Управління фонотекою: завантаження в Firebase Storage та Firestore
+        </p>
+      </div>
+
+      <!-- Admin Auto-Play Level (Auto-Bot) Control -->
+      <div class="admin-autobot-banner">
+        <div class="admin-autobot-info">
+          <span class="admin-bot-icon-container"></span>
+          <div>
+            <div class="admin-autobot-title" data-i18n="adminAutoPlayTitle">Автоматичне проходження (Auto-Bot)</div>
+            <div class="admin-autobot-desc" data-i18n="adminAutoPlayDesc">Бот автоматично ідеально натискає ноти для перевірки ритму та проходження рівнів</div>
+          </div>
+        </div>
+        <button type="button" id="admin-toggle-bot-btn" class="nav-btn admin-bot-btn" title="Перемкнути авто-бота" data-i18n-title="adminToggleBot">
+          <span id="admin-bot-status-indicator" class="bot-status-dot"></span>
+          <span id="admin-bot-status-text" data-i18n="adminAutoPlayInactive">Вимкнено</span>
+        </button>
+      </div>
+
+      <!-- Admin Navigation Tabs -->
+      <div class="admin-tabs" style="display: flex; gap: 10px; margin: 18px 0; border-bottom: 1px solid var(--surface-border); padding-bottom: 12px;">
+        <button type="button" id="admin-tab-btn-tracks" class="admin-tab-btn active">
+          <span class="admin-tab-icon-tracks"></span>
+          <span data-i18n="adminTabTracks">Фонотека треків</span>
+        </button>
+        <button type="button" id="admin-tab-btn-scores" class="admin-tab-btn">
+          <span class="admin-tab-icon-scores"></span>
+          <span data-i18n="adminTabScores">Результати гравців</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Tracks Management -->
+      <div id="admin-tab-tracks-view" class="admin-grid" style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 24px;">
+        
+        <!-- Column 1: Add Track via URL -->
+        <div class="admin-card">
+          <div class="admin-hint-chip">
+            <span class="tab-icon-url"></span>
+            <span data-i18n-html="catboxHintHtml">Рекомендований сервіс: <a href="https://catbox.moe/" target="_blank" rel="noopener">Catbox.moe</a> — завантажте аудіо та скопіюйте пряме посилання (наприклад: <code>https://files.catbox.moe/...mp3</code>)</span>
+          </div>
+
+          <form id="admin-track-form">
+            <!-- Spotify Autofill Box -->
+            <div class="admin-spotify-box" style="background: rgba(30, 215, 96, 0.08); border: 1px solid rgba(30, 215, 96, 0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;">
+              <div class="admin-spotify-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <label for="admin-spotify-input" class="admin-spotify-label" style="font-size: 0.82rem; color: #1ed760; font-weight: 700; display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer;">
+                  <span class="admin-spotify-icon-container">
+                    <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="#1ed760" aria-hidden="true"><path d="M12 2C6.477 2 2 6.477 2 12c0 5.523 4.477 10 10 10s10-4.476 10-10c0-5.523-4.477-10-10-10zm4.586 14.424a.625.625 0 0 1-.861.208c-2.358-1.441-5.326-1.766-8.822-.967a.625.625 0 0 1-.277-1.219c3.826-.874 7.108-.506 9.752 1.117.297.182.39.574.208.861zm1.222-2.718a.782.782 0 0 1-1.077.257c-2.7-1.66-6.816-2.14-10.008-1.171a.782.782 0 1 1-.452-1.498c3.649-1.108 8.196-.577 11.28 1.335a.782.782 0 0 1 .257 1.077zm.106-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.938.938 0 1 1-.546-1.794c3.526-1.07 9.409-.866 13.197 1.383a.938.938 0 1 1-.948 1.621z"/></svg>
+                  </span>
+                  <span data-i18n="adminSpotifyLabel">Автозаповнення зі Spotify:</span>
+                </label>
+                <span id="admin-spotify-status" class="admin-spotify-status"></span>
+              </div>
+              <div class="admin-spotify-input-row" style="display: flex; gap: 8px; align-items: center;">
+                <input type="url" id="admin-spotify-input" class="modern-input admin-spotify-input" data-i18n-placeholder="adminSpotifyPlaceholder" placeholder="https://open.spotify.com/track/..." style="flex: 1;">
+                <button type="button" id="admin-spotify-btn" class="modern-btn admin-spotify-btn" title="Отримати дані зі Spotify" style="background: #1ed760; color: #06180e; font-weight: 700; white-space: nowrap;">
+                  <span class="admin-spotify-btn-icon"></span>
+                  <span data-i18n="adminSpotifyFetchBtn">Отримати дані</span>
+                </button>
+              </div>
+              <div id="admin-spotify-feedback" class="admin-spotify-feedback"></div>
+            </div>
+
+            <!-- Direct URL Input -->
+            <div id="admin-url-group">
+              <label data-i18n="adminUrlLabel" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">
+                Пряме посилання на аудіофайл (URL):
+              </label>
+              <input type="url" id="admin-url-input" class="modern-input" data-i18n-placeholder="adminUrlPlaceholder" placeholder="https://files.catbox.moe/xxxxxx.mp3" required>
+              <div id="admin-duration-feedback" class="duration-feedback-row"></div>
+            </div>
+
+            <div class="admin-grid-2col" style="margin-bottom: 6px;">
+              <div>
+                <label data-i18n="adminTrackTitle" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">Назва треку:</label>
+                <input type="text" id="admin-title-input" class="modern-input" placeholder="Track Title" required>
+              </div>
+              <div>
+                <label data-i18n="adminArtist" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">Виконавець / Автор:</label>
+                <input type="text" id="admin-artist-input" class="modern-input" placeholder="Artist" required>
+              </div>
+            </div>
+
+            <div>
+              <label data-i18n="adminDuration" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">Тривалість (сек.):</label>
+              <input type="number" id="admin-duration-input" class="modern-input" placeholder="0.0" step="0.1" required>
+            </div>
+
+            <button type="submit" id="admin-upload-btn" class="modern-btn modern-btn-primary" data-i18n="adminUploadBtn" style="width: 100%; margin-top: 6px;">
+              Додати трек у фонотеку
+            </button>
+          </form>
+        </div>
+
+        <!-- Column 2: Track Library in Firestore -->
+        <div class="admin-card" style="display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 data-i18n="adminCloudTracks" class="admin-card-title">Треки у фонотеці</h3>
+            <button type="button" id="admin-refresh-tracks" class="modern-btn modern-btn-secondary">
+              <span class="refresh-icon-container"></span>
+              <span data-i18n="adminRefresh">Оновити</span>
+            </button>
+          </div>
+
+          <div id="admin-track-list" style="max-height: 380px; overflow-y: auto; padding-right: 4px;">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab 2: Player Level Results Editor -->
+      <div id="admin-tab-scores-view" class="admin-scores-view hidden">
+        <!-- Top Selection Bar: Choose Level & Choose Player -->
+        <div class="admin-card" style="margin-bottom: 16px;">
+          <div class="admin-grid-2col">
+            <div>
+              <label data-i18n="adminSelectLevel" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
+                1. Оберіть рівень (пісню):
+              </label>
+              <select id="admin-select-level" class="modern-select" style="width: 100%;">
+                <option value="">(Завантаження рівнів...)</option>
+              </select>
+            </div>
+            <div>
+              <label data-i18n="adminSelectPlayer" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
+                2. Оберіть гравця:
+              </label>
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                <input type="text" id="admin-player-search" class="modern-input" data-i18n-placeholder="adminSearchPlayerPlaceholder" placeholder="Швидкий пошук гравця за ім'ям..." style="margin: 0 !important;">
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+                <select id="admin-select-player" class="modern-select" style="flex: 1; margin: 0 !important;">
+                  <option value="">(Оберіть гравця...)</option>
+                </select>
+                <button type="button" id="admin-btn-delete-player" class="modern-btn modern-btn-danger" title="Видалити гравця та всі його дані" data-i18n-title="adminDeletePlayerTooltip">
+                  <span class="btn-icon-trash-player"></span>
+                  <span data-i18n="adminDeletePlayerBtn">Видалити</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor Card for Selected Player & Level -->
+        <div id="admin-score-editor-card" class="admin-card" style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--surface-border); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <h4 id="admin-edit-player-title" data-i18n="adminEditScoreTitle" class="admin-card-title">
+                Редагування результату
+              </h4>
+              <div id="admin-edit-player-subtitle" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+                Оберіть рівень та гравця для налаштування результату
+              </div>
+            </div>
+            <div id="admin-edit-status-badge"></div>
+          </div>
+
+          <!-- Edit Form Fields -->
+          <div class="admin-grid-3col" style="margin-bottom: 14px;">
+            <!-- Score -->
+            <div>
+              <label style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">
+                <span data-i18n="score">Рахунок</span>:
+              </label>
+              <input type="number" id="admin-input-score" class="modern-input" min="0" max="10000000" placeholder="0">
+            </div>
+
+            <!-- Stars Count (0 - 5) -->
+            <div>
+              <label data-i18n="adminStarsCount" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">
+                Зірки:
+              </label>
+              <select id="admin-input-stars" class="modern-select">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+
+            <!-- Difficulty -->
+            <div>
+              <label data-i18n="adminDifficulty" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">
+                Складність:
+              </label>
+              <select id="admin-input-difficulty" class="modern-select">
+                <option value="">(Не вказано)</option>
+                <option value="easy">Easy (Легко)</option>
+                <option value="normal">Normal (Нормально)</option>
+                <option value="hard">Hard (Складно)</option>
+                <option value="hardcore">Hardcore (Хардкор)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Star Types (Gold vs Diamond) & Hardcore switch -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 16px; align-items: center;">
+            <div>
+              <label data-i18n="adminStarTypes" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
+                Типи зірок (клік для перемикання: Пуста / Золото / Діамант):
+              </label>
+              <div id="admin-star-types-selector" style="display: flex; gap: 6px;">
+                <!-- 5 interactive star buttons -->
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
+                Hardcore:
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="admin-input-is-hardcore" style="width: 16px; height: 16px; accent-color: #f43f5e; cursor: pointer;">
+                <span data-i18n="adminHardcorePassed" style="font-size: 0.82rem; color: #f43f5e; font-weight: 600;">Пройдено в Hardcore</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+            <button type="button" id="admin-btn-reset-score" class="modern-btn modern-btn-warning">
+              <span class="btn-icon-reset"></span>
+              <span data-i18n="adminResetScore">Скинути до 0</span>
+            </button>
+            <button type="button" id="admin-btn-save-score" class="modern-btn modern-btn-primary">
+              <span class="btn-icon-save"></span>
+              <span data-i18n="adminSaveScore">Зберегти результат</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Level Player Leaderboard Table (Live view of all players on this level) -->
+        <div class="admin-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 data-i18n="adminLevelPlayersTitle" class="admin-card-title">
+              <span class="admin-lb-icon"></span>
+              <span>Результати всіх гравців на цьому рівні</span>
+            </h3>
+            <button type="button" id="admin-refresh-scores-btn" class="modern-btn modern-btn-secondary">
+              <span class="refresh-icon-container"></span>
+              <span data-i18n="adminRefresh">Оновити</span>
+            </button>
+          </div>
+
+          <div style="max-height: 280px; overflow-y: auto; border-radius: 8px;">
+            <table class="lb-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th width="8%">#</th>
+                  <th width="32%" data-i18n="lbName">Гравець</th>
+                  <th width="18%" data-i18n="score">Рахунок</th>
+                  <th width="14%" data-i18n="adminStarsCount">Зірки</th>
+                  <th width="16%" data-i18n="adminDifficulty">Складність</th>
+                  <th width="12%" data-i18n="adminActions" style="text-align: right;">Дії</th>
+                </tr>
+              </thead>
+              <tbody id="admin-level-players-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Exit Button -->
+      <div style="display: flex; justify-content: center; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--surface-border);">
+        <button type="button" id="admin-bottom-close-btn" class="action-btn" data-i18n="adminReturnToGame" style="padding: 10px 28px; font-size: 0.95rem;">
+          Повернутися до вибору пісень
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: PLAYER PROFILE & STATS
+       ========================================== -->
+  <div id="profile-modal" class="modal-overlay hidden">
+    <div class="profile-modal-card">
+      <button type="button" id="profile-close-btn" class="modal-close-btn" title="Закрити"></button>
+      
+      <div class="profile-header-section">
+        <div class="profile-avatar-pill">
+          <span class="profile-avatar-icon"></span>
+        </div>
+        <h2 id="profile-display-name" class="profile-title">Гравець</h2>
+        <div id="profile-rank-badge" class="profile-rank-pill">
+          <span class="profile-rank-icon"></span>
+          <span id="profile-rank-text">Ранг: #--</span>
+        </div>
+      </div>
+
+      <div class="profile-stats-grid">
+        <!-- Card 1: Playtime -->
+        <div class="profile-stat-box">
+          <div class="stat-box-icon stat-icon-blue" id="stat-icon-clock"></div>
+          <div class="stat-box-info">
+            <span class="stat-box-label" data-i18n="profilePlaytime">Час у грі</span>
+            <span class="stat-box-value" id="profile-stat-playtime">0 год 0 хв</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Completed Levels -->
+        <div class="profile-stat-box">
+          <div class="stat-box-icon stat-icon-purple" id="stat-icon-levels"></div>
+          <div class="stat-box-info">
+            <span class="stat-box-label" data-i18n="profileCompletedLevels">Пройдено рівнів</span>
+            <span class="stat-box-value" id="profile-stat-levels">0</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Total Gold Stars -->
+        <div class="profile-stat-box">
+          <div class="stat-box-icon stat-icon-gold" id="stat-icon-gold-star"></div>
+          <div class="stat-box-info">
+            <span class="stat-box-label" data-i18n="profileGoldStars">Золоті зірки</span>
+            <span class="stat-box-value" id="profile-stat-gold-stars">0</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Total Diamonds -->
+        <div class="profile-stat-box">
+          <div class="stat-box-icon stat-icon-cyan" id="stat-icon-diamond"></div>
+          <div class="stat-box-info">
+            <span class="stat-box-label" data-i18n="profileDiamonds">Діаманти</span>
+            <span class="stat-box-value" id="profile-stat-diamonds">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-actions" style="display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" id="profile-btn-customize" class="modern-btn modern-btn-primary" style="width: 100%;">
+          <span class="icon-sparkles-container"></span>
+          <span data-i18n="profileCustomize">Кастомізація</span>
+        </button>
+        <button type="button" id="profile-btn-settings" class="nav-btn" style="width: 100%;">
+          <span class="profile-settings-icon"></span>
+          <span data-i18n="settingsTitle">Налаштування</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: SETTINGS & ACCOUNT MANAGEMENT
+       ========================================== -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="settings-modal-card">
+      <button type="button" id="settings-close-btn" class="modal-close-btn" title="Закрити"></button>
+      
+      <div class="settings-header">
+        <h2 data-i18n="settingsTitle" style="margin: 0; color: var(--highlight); font-size: 1.5rem;">Налаштування</h2>
+      </div>
+
+      <div class="settings-content-scroll">
+        <!-- Section 1: General Preferences -->
+        <div class="settings-section">
+          <h3 class="settings-section-title" data-i18n="settingsGeneral">Параметри гри</h3>
+          
+          <div class="settings-row">
+            <span data-i18n="settingsTheme">Тема оформлення:</span>
+            <button type="button" id="settings-theme-toggle" class="nav-btn">
+              <span id="settings-theme-icon"></span>
+              <span id="settings-theme-text">Темна</span>
+            </button>
+          </div>
+
+          <div class="settings-row">
+            <span data-i18n="settingsSound">Звукові ефекти:</span>
+            <button type="button" id="settings-sound-toggle" class="nav-btn">
+              <span id="settings-sound-icon"></span>
+              <span id="settings-sound-text">Увімкнено</span>
+            </button>
+          </div>
+
+          <div class="settings-row">
+            <span data-i18n="settingsLang">Мова інтерфейсу:</span>
+            <div class="settings-lang-pills">
+              <button type="button" class="lang-pill" data-set-lang="UA">UA</button>
+              <button type="button" class="lang-pill" data-set-lang="EN">EN</button>
+              <button type="button" class="lang-pill" data-set-lang="RU">RU</button>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span data-i18n="fullscreen">Повний екран:</span>
+            <button type="button" id="settings-fullscreen-toggle" class="nav-btn">
+              <span id="settings-fullscreen-icon"></span>
+              <span id="settings-fullscreen-text" data-i18n="fullscreen">Повний екран</span>
+            </button>
+          </div>
+
+          <div class="settings-row" style="margin-top: 10px;">
+            <button type="button" id="settings-reset-confirmations" class="nav-btn" data-i18n="resetConfirmSettings" style="width: 100%; font-size: 0.85rem; opacity: 0.85;">
+              Скинути налаштування підтверджень
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 2: Account Management (Visible for logged in users) -->
+        <div id="settings-account-section" class="settings-section">
+          <h3 class="settings-section-title" data-i18n="settingsAccount">Керування акаунтом</h3>
+          
+          <!-- Change Username -->
+          <form id="form-change-username" class="settings-form">
+            <label data-i18n="settingsChangeUsername" class="settings-form-label">Змінити ім'я гравця</label>
+            <div class="input-with-button">
+              <input type="text" id="settings-new-username" class="name-input-field" data-i18n-placeholder="settingsNewUsernamePlaceholder" placeholder="Нове ім'я (від 3 символів)" required minlength="3">
+              <button type="submit" id="btn-save-username" class="action-btn" data-i18n="settingsChangeUsernameBtn">Зберегти</button>
+            </div>
+            <div id="settings-username-feedback" class="form-feedback-msg"></div>
+          </form>
+
+          <!-- Change Password -->
+          <form id="form-change-password" class="settings-form" style="margin-top: 14px;">
+            <label data-i18n="settingsChangePass" class="settings-form-label">Зміна пароля</label>
+            <input type="password" id="settings-curr-pass" class="name-input-field" data-i18n-placeholder="settingsCurrentPassPlaceholder" placeholder="Поточний пароль" required style="margin-bottom: 6px; width: 100%; box-sizing: border-box;">
+            <div class="input-with-button">
+              <input type="password" id="settings-new-pass" class="name-input-field" data-i18n-placeholder="settingsNewPassPlaceholder" placeholder="Новий пароль (від 4 символів)" required minlength="4">
+              <button type="submit" id="btn-save-password" class="action-btn" data-i18n="settingsChangePassBtn">Оновити</button>
+            </div>
+            <div id="settings-password-feedback" class="form-feedback-msg"></div>
+          </form>
+
+          <!-- Danger Zone -->
+          <div class="settings-danger-zone">
+            <div class="danger-header">
+              <span class="danger-icon-container"></span>
+              <span data-i18n="settingsDangerZone">Небезпечна зона</span>
+            </div>
+            <p data-i18n="settingsDangerZoneDesc" style="font-size: 0.8rem; color: var(--text-secondary); margin: 6px 0 10px 0;">
+              Видалення акаунта повністю знищує ваші збережені результати, зірки та позицію в таблиці лідерів.
+            </p>
+            <button type="button" id="btn-delete-account" class="action-btn-danger" data-i18n="settingsDeleteAccount">
+              Видалити акаунт назавжди
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Profile Modal (Interactive Player Card from Leaderboard) -->
+  <div id="user-profile-modal" class="modal-overlay hidden">
+    <div class="user-profile-card">
+      <button type="button" class="modal-close-btn" id="user-profile-close-btn" aria-label="Close">
+        <span class="profile-close-icon"></span>
+      </button>
+      
+      <!-- Profile Header with Glow Avatar & Customization Controls -->
+      <div class="user-profile-header">
+        <div class="user-profile-avatar-wrap">
+          <div class="user-profile-avatar" id="up-avatar">P</div>
+          <button type="button" id="up-avatar-edit-btn" class="avatar-action-btn edit-avatar-btn hidden" title="Змінити аватар" data-i18n-title="profileChangeAvatar">
+            <span class="icon-camera-up"></span>
+          </button>
+          <button type="button" id="up-avatar-reset-btn" class="avatar-action-btn reset-avatar-btn hidden" title="Скинути аватар" data-i18n-title="profileResetAvatar">
+            <span class="icon-trash-up-avatar"></span>
+          </button>
+          <input type="file" id="up-avatar-file-input" accept="image/*" class="hidden" />
+          <div class="user-profile-rank-badge" id="up-rank-badge">#1</div>
+        </div>
+        <div class="user-profile-identity">
+          <div class="user-profile-name-row">
+            <h3 class="user-profile-name" id="up-name">Player</h3>
+            <span class="user-title-badge" id="up-title-badge">Новачок біту</span>
+          </div>
+          <div class="user-profile-status-wrap" id="up-status-wrap">
+            <div class="user-profile-bio" id="up-bio-display"></div>
+            <div class="user-bio-edit-box hidden" id="up-bio-edit-box">
+              <input type="text" id="up-bio-input" class="modern-input up-bio-input" maxlength="60" placeholder="Ваш девіз або статус (до 60 симв.)..." data-i18n-placeholder="profileBioPlaceholder" />
+              <span id="up-bio-counter" class="bio-counter">0/60</span>
+              <button type="button" id="up-bio-save-btn" class="modern-btn modern-btn-primary up-bio-save-btn" title="Зберегти">
+                <span class="icon-save-up"></span>
+              </button>
+            </div>
+          </div>
+          <div class="user-profile-meta" id="up-meta">
+            <span class="user-tier-badge" id="up-tier-badge">Легенда ритму</span>
+            <span class="user-id-snippet" id="up-id-snippet">ID: abc12345</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Favorite Track Section -->
+      <div class="profile-favorite-track-box" id="up-favorite-track-box">
+        <div class="favorite-track-header">
+          <span class="fav-icon-music"></span>
+          <span class="fav-label" data-i18n="profileFavoriteTrack">Улюблений трек:</span>
+          <span class="fav-title" id="up-favorite-track-title">—</span>
+        </div>
+        <select id="up-favorite-track-select" class="modern-select hidden" style="margin-top: 6px; font-size: 0.85rem; width: 100%;">
+          <option value="" data-i18n="profileSelectFavTrack">Оберіть улюблений трек...</option>
+        </select>
+      </div>
+
+      <!-- Profile Stats Grid -->
+      <div class="user-profile-stats-grid">
+        <div class="profile-stat-box">
+          <div class="stat-box-icon up-icon-trophy"></div>
+          <div class="stat-box-val" id="up-stat-score">0</div>
+          <div class="stat-box-lbl" data-i18n="profileStatScore">Загальний рахунок</div>
+        </div>
+        <div class="profile-stat-box">
+          <div class="stat-box-icon up-icon-music"></div>
+          <div class="stat-box-val" id="up-stat-levels">0</div>
+          <div class="stat-box-lbl" data-i18n="profileStatLevels">Пройдено рівнів</div>
+        </div>
+        <div class="profile-stat-box">
+          <div class="stat-box-icon up-icon-star"></div>
+          <div class="stat-box-val" id="up-stat-stars">0</div>
+          <div class="stat-box-lbl" data-i18n="profileStatStars">Зірки</div>
+        </div>
+        <div class="profile-stat-box">
+          <div class="stat-box-icon up-icon-diamond"></div>
+          <div class="stat-box-val" id="up-stat-diamonds">0</div>
+          <div class="stat-box-lbl" data-i18n="profileStatDiamonds">Діаманти</div>
+        </div>
+        <div class="profile-stat-box stat-box-wide">
+          <div class="stat-box-icon up-icon-clock"></div>
+          <div class="stat-box-val" id="up-stat-playtime">0 хв</div>
+          <div class="stat-box-lbl" data-i18n="profilePlaytime">Час у грі</div>
+        </div>
+      </div>
+
+      <!-- Customization Section (Frames & Titles Selector) -->
+      <div id="up-customization-section" class="up-customization-section hidden">
+        <div class="customization-header">
+          <span class="cust-title" data-i18n="profileCustomize">Кастомізація</span>
+          <div class="customization-tabs">
+            <button type="button" class="cust-tab-btn active" id="cust-tab-frames-btn" data-cust-tab="frames" data-i18n="custTabFrames">Рамки</button>
+            <button type="button" class="cust-tab-btn" id="cust-tab-titles-btn" data-cust-tab="titles" data-i18n="custTabTitles">Титули</button>
+          </div>
+        </div>
+        <div id="cust-panel-frames" class="cust-panel">
+          <!-- Rendered dynamically -->
+        </div>
+        <div id="cust-panel-titles" class="cust-panel hidden">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Friend Action Button -->
+      <div style="margin-bottom: 14px;">
+        <button type="button" id="up-btn-friend-action" class="modern-btn modern-btn-primary" style="width: 100%; display: none;">
+          <span class="btn-icon-friend-action"></span>
+          <span id="up-friend-btn-text" data-i18n="profileAddFriend">Додати в друзі</span>
+        </button>
+      </div>
+
+      <!-- Admin Quick Actions (Visible if current user is admin) -->
+      <div id="user-profile-admin-actions" class="user-profile-admin-bar hidden">
+        <button type="button" id="up-btn-admin-edit" class="modern-btn modern-btn-warning">
+          <span class="btn-icon-edit-up"></span>
+          <span data-i18n="profileBtnAdminEdit">Редагувати в адмінці</span>
+        </button>
+        <button type="button" id="up-btn-admin-delete" class="modern-btn modern-btn-danger">
+          <span class="btn-icon-trash-up"></span>
+          <span data-i18n="profileBtnAdminDelete">Видалити гравця</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: FRIENDS SYSTEM
+       ========================================== -->
+  <div id="friends-modal" class="modal-overlay hidden">
+    <div class="friends-modal-card">
+      <div class="friends-header-row">
+        <div class="friends-title">
+          <span class="friends-modal-icon"></span>
+          <span data-i18n="friendsTitle">Друзі</span>
+          <span class="friends-badge-count" id="friends-modal-badge">0</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="friends-close-btn" aria-label="Close"></button>
+      </div>
+
+      <!-- Friends Tabs (My Friends vs Requests) -->
+      <div class="friends-tabs-bar">
+        <button type="button" class="friends-tab-btn active" id="tab-btn-friends">
+          <span data-i18n="friendsTabFriends">Мої друзі</span>
+          <span class="tab-badge" id="tab-count-friends">0</span>
+        </button>
+        <button type="button" class="friends-tab-btn" id="tab-btn-requests">
+          <span data-i18n="friendsTabRequests">Запити</span>
+          <span class="tab-badge alert" id="tab-count-requests" style="display: none;">0</span>
+        </button>
+      </div>
+
+      <!-- Add Friend Input Row -->
+      <div class="friends-add-bar">
+        <input type="text" id="friends-add-input" class="modern-input" data-i18n-placeholder="friendsAddPlaceholder" placeholder="Введіть ім'я гравця або ID..." style="margin: 0 !important;">
+        <button type="button" id="friends-add-btn" class="modern-btn modern-btn-primary" style="height: 36px;">
+          <span class="btn-icon-add-friend"></span>
+          <span data-i18n="friendSendRequestBtn">Надіслати запит</span>
+        </button>
+      </div>
+
+      <!-- Friends List Container -->
+      <div id="friends-list-container" class="friends-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: CUSTOM CONFIRMATION DIALOG
+       ========================================== -->
+  <div id="custom-confirm-modal" class="modal-overlay hidden">
+    <div class="custom-confirm-box" role="dialog" aria-modal="true">
+      <button type="button" class="modal-close-btn custom-confirm-close" title="Закрити"></button>
+      <div class="custom-confirm-header">
+        <div class="custom-confirm-icon-wrap" id="custom-confirm-icon">⚠️</div>
+        <h3 class="custom-confirm-title" id="custom-confirm-title" data-i18n="confirmTitle">Підтвердження</h3>
+      </div>
+      <div class="custom-confirm-body" id="custom-confirm-body"></div>
+      <div class="custom-confirm-options hidden" id="custom-confirm-options">
+        <label class="custom-confirm-checkbox-label">
+          <input type="checkbox" id="custom-confirm-checkbox">
+          <span id="custom-confirm-checkbox-text" data-i18n="dontAskAgain">Більше не запитувати</span>
+        </label>
+      </div>
+      <div class="custom-confirm-actions">
+        <button type="button" class="modern-btn modern-btn-secondary" id="custom-confirm-cancel" data-i18n="cancel">Скасувати</button>
+        <button type="button" class="modern-btn modern-btn-danger" id="custom-confirm-ok" data-i18n="confirmBtn">Підтвердити</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main ES Module Script -->
+  <script type="module" src="src/main.js?v=59.0"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "neon-piano",
+  "version": "2.0.0",
+  "description": "Киберпанк ритм-игра 'Неон Пиано' на JS/HTML/CSS с Firebase, Web Audio API и клиентским шифрованием",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 3000",
+    "dev": "python3 -m http.server 3000"
+  },
+  "keywords": [
+    "neon-piano",
+    "rhythm-game",
+    "firebase",
+    "web-audio-api",
+    "web-crypto-api"
+  ],
+  "author": "",
+  "license": "MIT"
+}
