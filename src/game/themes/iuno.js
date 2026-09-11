@@ -219,14 +219,18 @@ export const IUNO_THEME = {
 
   // ============================================================
   // drawParticle — lunar sparkles: golden diamonds & azure wind wisps
+  // Optimized: no shadowBlur on mobile to save GPU fill-rate budget.
   // ============================================================
   drawParticle(ctx, pt, life) {
     if (!pt.active || life <= 0) return;
     ctx.save();
     ctx.globalAlpha = Math.max(0, life);
     ctx.fillStyle = pt.color;
-    ctx.shadowColor = pt.color;
-    ctx.shadowBlur = 5;
+    // shadowBlur only on desktop — very expensive on mobile GPU
+    if (!pt._mobile) {
+      ctx.shadowColor = pt.color;
+      ctx.shadowBlur = 4;
+    }
 
     if ((pt.x | 0) % 3 < 2) {
       // 4-point diamond sparkle
@@ -245,15 +249,20 @@ export const IUNO_THEME = {
       ctx.fillRect(-0.8, -size * 1.2, 1.6, size * 2.4);
       ctx.restore();
     } else {
-      // Azure wind wisp (elongated oval)
-      ctx.save();
-      ctx.translate(pt.x, pt.y);
-      ctx.rotate(pt.angle || 0);
-      ctx.scale(1, 0.35);
-      ctx.beginPath();
-      ctx.arc(0, 0, 3 * life, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      // Azure wind wisp — simple rect on mobile instead of scale+arc
+      if (pt._mobile) {
+        const s = 2 * life;
+        ctx.fillRect(pt.x - s * 2, pt.y - s * 0.4, s * 4, s * 0.8);
+      } else {
+        ctx.save();
+        ctx.translate(pt.x, pt.y);
+        ctx.rotate(pt.angle || 0);
+        ctx.scale(1, 0.35);
+        ctx.beginPath();
+        ctx.arc(0, 0, 3 * life, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
 
     ctx.shadowBlur = 0;
@@ -262,50 +271,63 @@ export const IUNO_THEME = {
 
   // ============================================================
   // updateAndDrawAtmosphere — Aero wind currents + lunar eclipse halo
-  // Zero-allocation: persistent _atm state initialised once.
+  // Mobile-adaptive: all expensive ops (shadowBlur, ellipse, radial gradient)
+  // are skipped or simplified on mobile to stay within 60fps budget.
+  // Zero-allocation: persistent _atm pool initialised once.
   // ============================================================
   _atm: null,
+  _frameCount: 0,
 
   updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State) {
     const W = State.gameWidth;
     const H = State.gameHeight;
     const t = songTime * 0.001;
+    const isMobile = State.isMobile;
+    this._frameCount = (this._frameCount + 1) | 0;
 
-    // Initialise persistent atmosphere pool exactly once
+    // Count for mobile: fewer elements, larger step sizes
+    const streamCount  = isMobile ? 5  : 8;
+    const leafCount    = isMobile ? 8  : 18;
+    const moteCount    = isMobile ? 15 : 40;
+    const streamStep   = isMobile ? 14 : 6;   // px between wave points
+    const ribbonCount  = isMobile ? 0  : 5;   // skip ribbons on mobile
+
+    // Initialise persistent atmosphere pool exactly once (or on resize)
     if (!this._atm || this._atm._W !== W || this._atm._H !== H) {
       this._atm = {
         _W: W, _H: H,
-        streams: Array.from({ length: 8 }, (_, i) => ({
-          y: H * (0.08 + i * 0.11),
+        streams: Array.from({ length: streamCount }, (_, i) => ({
+          y: H * (0.06 + i * (0.85 / streamCount)),
           speed: 0.28 + (i % 3) * 0.14,
-          amp: 10 + (i % 4) * 7,
+          amp: 9 + (i % 4) * 6,
           phase: i * 1.1,
-          alpha: 0.04 + (i % 4) * 0.02
+          alpha: 0.04 + (i % 4) * 0.018
         })),
-        leaves: Array.from({ length: 18 }, (_, i) => ({
+        leaves: Array.from({ length: leafCount }, () => ({
           x: Math.random() * W,
           y: Math.random() * H,
           vx: (Math.random() - 0.5) * 0.4,
-          vy: -0.15 - Math.random() * 0.25,
+          vy: -0.12 - Math.random() * 0.22,
           rot: Math.random() * Math.PI * 2,
-          spin: (Math.random() - 0.5) * 0.025,
+          spin: (Math.random() - 0.5) * 0.022,
           size: 3 + Math.random() * 4,
-          alpha: 0.3 + Math.random() * 0.4,
+          alpha: 0.3 + Math.random() * 0.38,
           phase: Math.random() * Math.PI * 2
         })),
-        ribbons: Array.from({ length: 5 }, (_, i) => ({
+        ribbons: ribbonCount > 0 ? Array.from({ length: ribbonCount }, (_, i) => ({
           x: W * (0.1 + i * 0.2),
           baseY: H * (0.2 + i * 0.15),
           phase: i * 1.3,
           speed: 0.18 + i * 0.06,
           alpha: 0.06 + i * 0.01
-        })),
-        motes: Array.from({ length: 40 }, () => ({
+        })) : [],
+        motes: Array.from({ length: moteCount }, () => ({
           x: Math.random() * W,
           y: Math.random() * H,
-          r: 0.8 + Math.random() * 1.5,
+          r: 0.8 + Math.random() * 1.4,
           phase: Math.random() * Math.PI * 2,
-          alpha: 0.2 + Math.random() * 0.5
+          alpha: 0.2 + Math.random() * 0.45,
+          isGold: Math.random() > 0.5
         }))
       };
     }
@@ -313,93 +335,122 @@ export const IUNO_THEME = {
 
     ctx.save();
 
-    // 1. Background deep-midnight gradient
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-    bgGrad.addColorStop(0, '#030810');
-    bgGrad.addColorStop(0.35, '#0b132b');
-    bgGrad.addColorStop(0.7, '#081020');
-    bgGrad.addColorStop(1, '#050d1a');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, W, H);
+    // ── 1. Background: solid fill on mobile (gradient costs fill-rate) ──
+    if (isMobile) {
+      ctx.fillStyle = '#0a1020';
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+      bgGrad.addColorStop(0, '#030810');
+      bgGrad.addColorStop(0.35, '#0b132b');
+      bgGrad.addColorStop(0.7, '#081020');
+      bgGrad.addColorStop(1, '#050d1a');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+    }
 
-    // 2. Lunar eclipse top halo
-    const lunaAlpha = 0.10 + 0.04 * Math.sin(t * 0.7);
-    const lunaGrad = ctx.createRadialGradient(W * 0.5, H * 0.10, 0, W * 0.5, H * 0.10, W * 0.38);
-    lunaGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha})`);
-    lunaGrad.addColorStop(0.4, `rgba(251, 191, 36, ${lunaAlpha * 0.35})`);
-    lunaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = lunaGrad;
-    ctx.fillRect(0, 0, W, H * 0.5);
+    // ── 2. Lunar eclipse halo — skip every other frame on mobile ──
+    if (!isMobile || (this._frameCount & 1) === 0) {
+      const lunaAlpha = 0.10 + 0.04 * Math.sin(t * 0.7);
+      if (isMobile) {
+        // On mobile: simple linear gradient instead of radial (much cheaper)
+        const linGrad = ctx.createLinearGradient(0, 0, 0, H * 0.45);
+        linGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha * 0.7})`);
+        linGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = linGrad;
+        ctx.fillRect(0, 0, W, H * 0.45);
+      } else {
+        const lunaGrad = ctx.createRadialGradient(W * 0.5, H * 0.10, 0, W * 0.5, H * 0.10, W * 0.38);
+        lunaGrad.addColorStop(0, `rgba(56, 189, 248, ${lunaAlpha})`);
+        lunaGrad.addColorStop(0.4, `rgba(251, 191, 36, ${lunaAlpha * 0.35})`);
+        lunaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = lunaGrad;
+        ctx.fillRect(0, 0, W, H * 0.5);
+      }
+    }
 
-    // 3. Aero wind stream ribbons
+    // ── 3. Aero wind stream ribbons — NO shadowBlur on mobile ──
     ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 4;
+    ctx.shadowBlur = 0; // always 0 here; shadowBlur kills mobile perf
     for (const s of atm.streams) {
       ctx.globalAlpha = s.alpha * (1 + 0.3 * Math.sin(t * 0.9 + s.phase));
       ctx.strokeStyle = '#38bdf8';
-      ctx.shadowColor = '#38bdf8';
       ctx.beginPath();
       let first = true;
-      for (let px = -20; px <= W + 20; px += 6) {
+      for (let px = 0; px <= W; px += streamStep) {
         const waveY = s.y + Math.sin((px / W * 4 + t * s.speed + s.phase) * Math.PI) * s.amp;
         if (first) { ctx.moveTo(px, waveY); first = false; }
         else ctx.lineTo(px, waveY);
       }
       ctx.stroke();
     }
-    ctx.shadowBlur = 0;
 
-    // 4. Silk ribbon strands
-    ctx.lineWidth = 1.0;
-    for (const rb of atm.ribbons) {
-      const dy = Math.sin(t * rb.speed + rb.phase) * H * 0.06;
-      ctx.globalAlpha = rb.alpha;
-      ctx.strokeStyle = '#e0f2fe';
-      ctx.beginPath();
-      ctx.moveTo(rb.x - W * 0.12, rb.baseY + dy - 15);
-      ctx.quadraticCurveTo(
-        rb.x, rb.baseY + dy + Math.sin(t * 0.6 + rb.phase) * 30,
-        rb.x + W * 0.12, rb.baseY + dy + 15
-      );
-      ctx.stroke();
+    // ── 4. Silk ribbon strands — desktop only ──
+    if (!isMobile) {
+      ctx.lineWidth = 1.0;
+      for (const rb of atm.ribbons) {
+        const dy = Math.sin(t * rb.speed + rb.phase) * H * 0.06;
+        ctx.globalAlpha = rb.alpha;
+        ctx.strokeStyle = '#e0f2fe';
+        ctx.beginPath();
+        ctx.moveTo(rb.x - W * 0.12, rb.baseY + dy - 15);
+        ctx.quadraticCurveTo(
+          rb.x, rb.baseY + dy + Math.sin(t * 0.6 + rb.phase) * 30,
+          rb.x + W * 0.12, rb.baseY + dy + 15
+        );
+        ctx.stroke();
+      }
     }
 
-    // 5. Floating laurel leaf motes
-    ctx.shadowBlur = 3;
+    // ── 5. Floating laurel leaf motes ──
+    // Mobile: simple filled rect instead of ellipse + vein
     for (const lf of atm.leaves) {
-      lf.x += lf.vx + 0.18 * Math.sin(t * 0.5 + lf.phase);
+      lf.x += lf.vx + 0.15 * Math.sin(t * 0.5 + lf.phase);
       lf.y += lf.vy;
       lf.rot += lf.spin;
       if (lf.y < -20) { lf.y = H + 10; lf.x = Math.random() * W; }
       if (lf.x < -10) lf.x = W + 10;
       if (lf.x > W + 10) lf.x = -10;
 
-      ctx.globalAlpha = lf.alpha * Math.abs(Math.sin(t * 0.4 + lf.phase));
-      ctx.save();
-      ctx.translate(lf.x, lf.y);
-      ctx.rotate(lf.rot);
-      ctx.strokeStyle = '#fbbf24';
-      ctx.shadowColor = '#fbbf24';
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, lf.size * 0.5, lf.size, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, -lf.size);
-      ctx.lineTo(0, lf.size);
-      ctx.stroke();
-      ctx.restore();
-    }
-    ctx.shadowBlur = 0;
+      const leafAlpha = lf.alpha * Math.abs(Math.sin(t * 0.4 + lf.phase));
+      if (leafAlpha < 0.04) continue; // skip invisible leaves early
 
-    // 6. Star mote glimmer
-    for (const m of atm.motes) {
-      const a = m.alpha * (0.5 + 0.5 * Math.sin(t * 1.2 + m.phase));
-      ctx.globalAlpha = a;
-      ctx.fillStyle = Math.sin(m.phase) > 0 ? '#7dd3fc' : '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = leafAlpha;
+      if (isMobile) {
+        // Simple rotated rect — no ctx.save/restore per leaf, no ellipse
+        ctx.fillStyle = '#fbbf24';
+        const s = lf.size * 0.6;
+        const cos = Math.cos(lf.rot);
+        const sin = Math.sin(lf.rot);
+        ctx.fillRect(lf.x - s * 0.5, lf.y - s, s, s * 2);
+      } else {
+        ctx.save();
+        ctx.translate(lf.x, lf.y);
+        ctx.rotate(lf.rot);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, lf.size * 0.5, lf.size, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -lf.size);
+        ctx.lineTo(0, lf.size);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // ── 6. Star mote glimmer — skip odd frames on mobile ──
+    if (!isMobile || (this._frameCount & 1) === 0) {
+      for (const m of atm.motes) {
+        const a = m.alpha * (0.5 + 0.5 * Math.sin(t * 1.2 + m.phase));
+        if (a < 0.05) continue;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = m.isGold ? '#fbbf24' : '#7dd3fc';
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     ctx.globalAlpha = 1;

@@ -3054,7 +3054,13 @@ function update(songTime) {
                     if (yTail > yHead) yTail = yHead;
                 }
 
-                const actualYHeadTop = yHead - headH;
+                // Округлюємо ВСІ координати до цілих пікселів — ОДИН раз тут, щоб уникнути
+                // субпіксельного мерехтіння як при утриманні, так і при русі ноти вниз (GPU rasterization).
+                // Без цього навіть 0.4px різниця між кадрами видима як flicker на мобільних AMOLED/LCD.
+                yTail = Math.round(yTail);
+                yHead = Math.round(yHead);
+
+                const actualYHeadTop = Math.round(yHead - headH);
                 const tailH = Math.max(0, actualYHeadTop - yTail);
 
                 // Viewport culling для довгих нот
@@ -3080,33 +3086,35 @@ function update(songTime) {
 
                     if (clipH > 0) {
                         ctx.save();
-                        ctx.globalAlpha = overallAlpha;
-                        // Обрізаємо полотно: нота буде видима тільки ВИЩЕ hitY (рецептора)
+                        // Обрізаємо полотно: нота видима тільки ВИЩЕ hitY
                         ctx.beginPath();
                         ctx.rect(Math.round(x - 20), clipTop, Math.round(w + 40), clipH);
                         ctx.clip();
 
                         // Малюємо попелясто-сірий хвіст
                         if (tailH > 1 && relTailSprite) {
+                            ctx.globalAlpha = overallAlpha;
                             ctx.drawImage(relTailSprite, 0, 0, relTailSprite.width, relTailSprite.height,
                                 Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
                         }
                         // Малюємо голову
                         if (relHeadSprite && actualYHeadTop > -headH + 4) {
+                            ctx.globalAlpha = overallAlpha;
                             ctx.drawImage(relHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
                         }
 
-                        // Плавний fade-out шару на рівні струн (gradient overlay прямо на main ctx)
-                        const fadeZoneTop = hitY - 28;
-                        const fadeZoneH = 30;
+                        // Плавний fade-out на рівні струн — тільки source-over з globalAlpha.
+                        // НЕ використовуємо source-atop бо це викликає кольорові смуги на Android GPU.
+                        const fadeZoneTop = hitY - 32;
+                        const fadeZoneH = 34;
                         if (fadeZoneTop < clipBottom) {
+                            ctx.globalAlpha = overallAlpha;
                             const dissolveGrad = ctx.createLinearGradient(0, fadeZoneTop, 0, fadeZoneTop + fadeZoneH);
                             dissolveGrad.addColorStop(0, 'rgba(0,0,0,0)');
-                            dissolveGrad.addColorStop(1, 'rgba(0,0,0,0.85)');
-                            ctx.globalCompositeOperation = 'source-atop';
+                            dissolveGrad.addColorStop(1, 'rgba(0,0,0,0.92)');
+                            // source-over: просто малюємо темний прямокутник поверх — без compositing режимів
                             ctx.fillStyle = dissolveGrad;
-                            ctx.fillRect(Math.round(x - 20), fadeZoneTop, Math.round(w + 40), fadeZoneH);
-                            ctx.globalCompositeOperation = 'source-over';
+                            ctx.fillRect(Math.round(x - 20), Math.round(fadeZoneTop), Math.round(w + 40), fadeZoneH);
                         }
 
                         ctx.restore();
