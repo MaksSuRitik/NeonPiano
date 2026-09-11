@@ -389,5 +389,21 @@ export const icons = {
     <svg class="icon ${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 2C6.477 2 2 6.477 2 12c0 5.523 4.477 10 10 10s10-4.477 10-10c0-5.523-4.477-10-10-10zm4.586 14.424a.625.625 0 0 1-.861.208c-2.358-1.441-5.326-1.766-8.822-.967a.625.625 0 0 1-.277-1.219c3.826-.874 7.108-.506 9.752 1.117.297.182.39.574.208.861zm1.222-2.718a.782.782 0 0 1-1.077.257c-2.7-1.66-6.816-2.14-10.008-1.171a.782.782 0 1 1-.452-1.498c3.649-1.108 8.196-.577 11.28 1.335a.782.782 0 0 1 .257 1.077zm.106-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.938.938 0 1 1-.546-1.794c3.526-1.07 9.409-.866 13.197 1.383a.938.938 0 1 1-.948 1.621z"/>
     </svg>
+  `,
+
+  shop: (size = 18, className = "") => `
+    <svg class="icon ${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <path d="M16 10a4 4 0 0 1-8 0"></path>
+    </svg>
+  `,
+
+  coin: (size = 18, className = "") => `
+    <svg class="icon ${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"></path>
+      <path d="M12 6v2m0 8v2"></path>
+    </svg>
   `
 };

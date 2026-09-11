@@ -70,7 +70,7 @@
         <div class="lang-wrapper">
           <button id="langToggle" class="nav-btn" title="Мова" data-i18n-title="settingsLang">
             <span class="icon-globe-container"></span>
-            <span id="current-lang-text">UA</span>
+            <span id="current-lang-text">RU</span>
           </button>
           <div class="lang-dropdown">
             <button data-lang="UA">Українська (UA)</button>
@@ -97,10 +97,17 @@
           <span id="catalog-passed-count">Пройдено: 0</span>
         </div>
 
-        <button type="button" id="btn-open-leaderboard" class="btn-leaderboard" style="width: auto; margin: 0 !important; padding: 8px 18px !important;">
-          <span class="btn-lb-icon"></span>
-          <span data-i18n="leaderboard">Таблиця лідерів</span>
-        </button>
+        <div class="catalog-toolbar-actions">
+          <button type="button" id="btn-open-shop" class="btn-shop-toolbar" title="Магазин тем" data-i18n-title="shopTitle" aria-label="Shop">
+            <span class="icon-shop-container"></span>
+            <span data-i18n="shopTitle">Магазин тем</span>
+            <span class="shop-coins-pill"><span class="coin-icon">🪙</span> <span id="header-coin-count">0</span></span>
+          </button>
+          <button type="button" id="btn-open-leaderboard" class="btn-leaderboard" style="width: auto; margin: 0 !important; padding: 8px 18px !important;">
+            <span class="btn-lb-icon"></span>
+            <span data-i18n="leaderboard">Таблиця лідерів</span>
+          </button>
+        </div>
       </div>
 
       <!-- Filter Chips -->
@@ -137,7 +144,8 @@
           <option value="default" data-i18n="sortDefault">За замовчуванням</option>
           <option value="score" data-i18n="sortScore">За рекордом</option>
           <option value="title" data-i18n="sortTitle">За назвою (А-Я)</option>
-          <option value="duration" data-i18n="sortDuration">За тривалістю</option>
+          <option value="durationAsc" data-i18n="sortDurationAsc">Сначала короткие</option>
+          <option value="durationDesc" data-i18n="sortDurationDesc">Сначала долгие</option>
         </select>
       </div>
 
@@ -337,7 +345,7 @@
       <h2 id="auth-title" data-i18n="authLoginTitle" style="color: var(--highlight); margin-bottom: 15px;">Вхід у гру</h2>
 
       <form id="auth-form-element">
-        <input type="text" id="auth-input-user" class="name-input-field" data-i18n-placeholder="authUsernamePlaceholder" placeholder="Логін (ім'я гравця)" required autocomplete="username">
+        <input type="text" id="auth-input-user" class="name-input-field" data-i18n-placeholder="authUsernamePlaceholder" placeholder="Логін (3-12 символів)" required minlength="3" maxlength="12" autocomplete="username">
         <input type="password" id="auth-input-pass" class="name-input-field" data-i18n-placeholder="authPasswordPlaceholder" placeholder="Пароль" required autocomplete="current-password">
         <div data-i18n="authCryptoNote" style="font-size: 0.8rem; color: var(--highlight); margin-bottom: 15px; opacity: 0.85;">
           Клієнтське шифрування (SHA-256)
@@ -496,7 +504,8 @@
                 2. Оберіть гравця:
               </label>
               <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                <input type="text" id="admin-player-search" class="modern-input" data-i18n-placeholder="adminSearchPlayerPlaceholder" placeholder="Швидкий пошук гравця за ім'ям..." style="margin: 0 !important;">
+                <input type="text" id="admin-player-search" class="modern-input" data-i18n-placeholder="adminSearchPlayerPlaceholder" placeholder="Швидкий пошук гравця за ім'ям..." style="margin: 0 !important; flex: 1;">
+                <button type="button" id="admin-btn-select-self" class="modern-btn modern-btn-secondary" style="font-size: 0.78rem; padding: 6px 10px; white-space: nowrap;" title="Обрати свій акаунт для налаштування" data-i18n-title="adminSelectMyAccountTooltip" data-i18n="adminSelectMyAccount">★ Мій акаунт (Адмін)</button>
               </div>
               <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
                 <select id="admin-select-player" class="modern-select" style="flex: 1; margin: 0 !important;">
@@ -508,6 +517,45 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Player Coins Balance Management Card -->
+        <div id="admin-coins-editor-card" class="admin-card" style="margin-bottom: 16px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.07), rgba(15, 23, 42, 0.6)); border: 1px solid rgba(245, 158, 11, 0.3);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.25rem;">🪙</span>
+              <div>
+                <h4 data-i18n="adminCoinsManagement" class="admin-card-title" style="margin: 0; color: #fde047; font-size: 0.96rem;">Керування монетами гравця</h4>
+                <div id="admin-coins-player-name" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 1px;">(Оберіть гравця вище)</div>
+              </div>
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: rgba(0,0,0,0.35); border: 1px solid rgba(245, 158, 11, 0.4);">
+              <span style="font-size: 0.8rem; color: #cbd5e1;" data-i18n="adminCurrentCoins">Баланс монет</span>:
+              <strong id="admin-coins-current-val" style="color: #fde047; font-size: 0.95rem;">0</strong>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 200px;">
+              <label for="admin-input-player-coins" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; white-space: nowrap;" data-i18n="adminSetCoins">
+                Встановити баланс:
+              </label>
+              <input type="number" id="admin-input-player-coins" class="modern-input" min="0" max="999999" placeholder="0" style="margin: 0 !important; max-width: 140px;">
+            </div>
+
+            <!-- Quick increment buttons -->
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="modern-btn modern-btn-secondary admin-coin-quick-add" data-add="50" style="padding: 6px 10px; font-size: 0.8rem;">+50</button>
+              <button type="button" class="modern-btn modern-btn-secondary admin-coin-quick-add" data-add="100" style="padding: 6px 10px; font-size: 0.8rem;">+100</button>
+              <button type="button" class="modern-btn modern-btn-secondary admin-coin-quick-add" data-add="500" style="padding: 6px 10px; font-size: 0.8rem;">+500</button>
+              <button type="button" class="modern-btn modern-btn-secondary admin-coin-quick-add" data-add="1000" style="padding: 6px 10px; font-size: 0.8rem;">+1000</button>
+            </div>
+
+            <button type="button" id="admin-btn-save-coins" class="modern-btn modern-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; font-weight: 700; padding: 7px 16px; margin-left: auto;">
+              <span class="btn-icon-save-coins">💾</span>
+              <span data-i18n="adminSaveCoins">Зберегти монети</span>
+            </button>
           </div>
         </div>
 
@@ -715,10 +763,9 @@
        ========================================== -->
   <div id="settings-modal" class="modal-overlay hidden">
     <div class="settings-modal-card">
-      <button type="button" id="settings-close-btn" class="modal-close-btn" title="Закрити"></button>
-      
       <div class="settings-header">
         <h2 data-i18n="settingsTitle" style="margin: 0; color: var(--highlight); font-size: 1.5rem;">Налаштування</h2>
+        <button type="button" id="settings-close-btn" class="modal-close-btn" title="Закрити"></button>
       </div>
 
       <div class="settings-content-scroll">
@@ -774,7 +821,7 @@
           <form id="form-change-username" class="settings-form">
             <label data-i18n="settingsChangeUsername" class="settings-form-label">Змінити ім'я гравця</label>
             <div class="input-with-button">
-              <input type="text" id="settings-new-username" class="name-input-field" data-i18n-placeholder="settingsNewUsernamePlaceholder" placeholder="Нове ім'я (від 3 символів)" required minlength="3">
+              <input type="text" id="settings-new-username" class="name-input-field" data-i18n-placeholder="settingsNewUsernamePlaceholder" placeholder="Нове ім'я (3-12 символів)" required minlength="3" maxlength="12">
               <button type="submit" id="btn-save-username" class="action-btn" data-i18n="settingsChangeUsernameBtn">Зберегти</button>
             </div>
             <div id="settings-username-feedback" class="form-feedback-msg"></div>
@@ -932,6 +979,65 @@
   </div>
 
   <!-- ==========================================
+       MODAL: FIELD THEMES SHOP
+       ========================================== -->
+  <div id="shop-modal" class="modal-overlay hidden">
+    <div class="shop-modal-card">
+      <div class="shop-header-row">
+        <div class="shop-title">
+          <span class="shop-modal-icon"></span>
+          <div>
+            <span data-i18n="shopTitle" class="shop-title-text">Магазин тем</span>
+            <div class="shop-subtitle" data-i18n="shopSubtitle">Кастомізація ігрового поля</div>
+          </div>
+        </div>
+        <div class="shop-header-right">
+          <div class="shop-balance-pill" title="Ваш баланс монет" data-i18n-title="shopCoinsInfo">
+            <span class="coin-icon">🪙</span>
+            <span id="shop-balance-amount" class="shop-balance-amount">0</span>
+          </div>
+          <button type="button" class="modal-close-btn" id="shop-close-btn" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <div class="shop-info-banner">
+        <span class="shop-info-icon">💡</span>
+        <span data-i18n="shopCoinsInfo">Отримуйте монетки за проходження рівнів: до 3 монет за зірки + 3 бонусні монети за діамант (без промахів). Нараховуються 1 раз за кожен рівень!</span>
+      </div>
+
+      <!-- Shop Controls Bar: Search & Price Sort -->
+      <div class="shop-toolbar-row">
+        <div class="shop-search-box">
+          <span class="shop-search-icon">🔍</span>
+          <input type="text" id="shop-search-input" class="shop-search-input" placeholder="Пошук тем..." data-i18n-placeholder="shopSearchPlaceholder" autocomplete="off">
+          <button type="button" id="shop-search-clear" class="shop-search-clear hidden" title="Очистити">✕</button>
+        </div>
+        <div class="shop-sort-box">
+          <label for="shop-sort-select" class="shop-sort-label" data-i18n="shopSortBy">Сортування:</label>
+          <select id="shop-sort-select" class="shop-sort-select">
+            <option value="default" data-i18n="shopSortDefault">За замовчуванням</option>
+            <option value="priceAsc" data-i18n="shopSortPriceAsc">Спочатку дешевші</option>
+            <option value="priceDesc" data-i18n="shopSortPriceDesc">Спочатку дорожчі</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Shop Themes Grid -->
+      <div id="shop-themes-grid" class="shop-themes-grid">
+        <!-- Rendered dynamically -->
+      </div>
+      <div id="shop-empty-msg" class="shop-empty-msg hidden" data-i18n="shopNoThemesFound">Тем не знайдено</div>
+
+      <!-- Bottom Close Action Button -->
+      <div style="display: flex; justify-content: center; margin-top: 10px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+        <button type="button" id="shop-bottom-close-btn" class="modern-btn modern-btn-secondary" style="padding: 8px 28px; border-radius: 999px;">
+          <span data-i18n="shopCloseBtn">Закрити магазин</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
        MODAL: FRIENDS SYSTEM
        ========================================== -->
   <div id="friends-modal" class="modal-overlay hidden">
@@ -998,6 +1104,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=59.0"></script>
+  <script type="module" src="src/main.js?v=60.0"></script>
 </body>
 </html>

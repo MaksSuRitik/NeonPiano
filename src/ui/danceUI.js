@@ -23,7 +23,7 @@ class DanceUI {
   constructor() {
     this.game = null;
     this.cloudTracks = [];
-    this.currentLanguage = localStorage.getItem("siteLang") || "UA";
+    this.currentLanguage = localStorage.getItem("siteLang") || "RU";
     this.currentTheme = localStorage.getItem("siteTheme") || "dark";
   }
 
@@ -397,9 +397,13 @@ class DanceUI {
 
       try {
         authSubmit.disabled = true;
-        authSubmit.innerText = "Шифрування (SHA-256)...";
-
         if (isRegister) {
+          if (username.length < 3 || username.length > 12) {
+            this.showToast("Ім'я користувача повинно містити від 3 до 12 символів.", "error");
+            authSubmit.disabled = false;
+            authSubmit.innerText = "Створити акаунт";
+            return;
+          }
           const user = await registerUser(username, password);
           this.showToast(
             user.isAdmin 

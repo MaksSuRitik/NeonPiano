@@ -8,11 +8,11 @@ import ru from "./ru.js?v=39.0";
 const dictionaries = { UA: ua, EN: en, RU: ru };
 const STORAGE_KEY = "siteLang";
 
-let currentLang = localStorage.getItem(STORAGE_KEY) || "UA";
+let currentLang = localStorage.getItem(STORAGE_KEY) || "RU";
 if (!dictionaries[currentLang]) {
   // Normalize legacy keys like 'MEOW'
-  currentLang = "UA";
-  localStorage.setItem(STORAGE_KEY, "UA");
+  currentLang = "RU";
+  localStorage.setItem(STORAGE_KEY, "RU");
 }
 
 let listeners = [];
@@ -55,6 +55,8 @@ export const i18n = {
       sortScore: "За рекордом",
       sortTitle: "За назвою (А-Я)",
       sortDuration: "За тривалістю",
+      sortDurationAsc: currentLang === "RU" ? "Сначала короткие" : (currentLang === "EN" ? "Shortest first" : "Спочатку короткі"),
+      sortDurationDesc: currentLang === "RU" ? "Сначала долгие" : (currentLang === "EN" ? "Longest first" : "Спочатку довгі"),
       tracksCountLabel: "Треків: {count}",
       tracksCompletedCount: "Пройдено: {completed} з {total}",
       lbLimitLabel: "Ліміт:",

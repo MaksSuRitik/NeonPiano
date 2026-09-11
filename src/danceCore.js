@@ -11,8 +11,9 @@ import {
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
 import { addTrackByUrl, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=39.0";
-import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=39.0";
+import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=60.0";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -53,26 +54,27 @@ const CONFIG = {
 };
 
 const PALETTES = {
-    // Палітри для різних рівнів комбо. Сучасні неонові кольори без похмурої сірості
+    // Палітри для різних рівнів комбо. М'які, комфортні для очей пастельно-неонові відтінки (Eye-Care)
     STEEL: { 
-        light: '#38bdf8', main: '#0284c7', dark: '#0369a1', glow: '#38bdf8', border: '#7dd3fc',
-        long1: '#818cf8', long2: '#38bdf8'
+        light: '#38bdf8', main: '#0284c7', dark: '#0369a1', glow: 'rgba(56, 189, 248, 0.45)', border: '#38bdf8',
+        long1: '#6366f1', long2: '#0284c7'
     },
     ELECTRIC: { 
-        tap1: '#22d3ee', tap2: '#0891b2', glow: '#22d3ee', border: '#a5f3fc',
-        long1: '#06b6d4', long2: '#38bdf8'
+        tap1: '#06b6d4', tap2: '#0e7490', glow: 'rgba(6, 182, 212, 0.45)', border: '#22d3ee',
+        long1: '#0891b2', long2: '#0284c7'
     },
     GOLD: { 
-        black: '#fbbf24', choco: '#d97706', amber: '#f59e0b', light: '#fef08a', glow: '#fbbf24', border: '#fde047',
-        long1: '#b45309', long2: '#f59e0b'
+        black: '#d97706', choco: '#b45309', amber: '#f59e0b', light: '#fbbf24', glow: 'rgba(217, 119, 6, 0.45)', border: '#f59e0b',
+        long1: '#92400e', long2: '#d97706'
     },
     COSMIC: { 
-        core: '#d946ef', accent: '#a855f7', glitch: '#00f2fe', glow: '#d946ef', border: '#f0abfc',
-        long1: '#7e22ce', long2: '#ec4899'
+        core: '#a855f7', accent: '#7e22ce', glitch: '#818cf8', glow: 'rgba(168, 85, 247, 0.45)', border: '#c084fc',
+        long1: '#6b21a8', long2: '#9333ea'
     },
     LEGENDARY: { 
-        body: '#34d399', accent: '#10b981', glow: '#34d399', aura: 'rgba(52, 211, 153, 0.4)', tap1: '#34d399', tap2: '#059669', 
-        long1: '#047857', long2: '#34d399'
+        body: '#10b981', accent: '#047857', glow: 'rgba(16, 185, 129, 0.45)', aura: 'rgba(16, 185, 129, 0.2)', tap1: '#10b981', tap2: '#047857', 
+        border: '#34d399',
+        long1: '#065f46', long2: '#059669'
     }
 };
 
@@ -143,6 +145,15 @@ function clearLocalUserData() {
     // 2. Скидання косметики до чистих дефолтних значень
     Cosmetics.resetLocalCosmetics();
 
+    // 2.1. Скидання тем ігрового поля
+    FieldThemes.resetLocalThemes();
+    if (typeof applyActiveThemeVisuals === 'function') {
+        applyActiveThemeVisuals();
+    }
+    if (typeof updateShopCoins === 'function') {
+        updateShopCoins();
+    }
+
     // 3. Скидання часу в грі
     localStorage.removeItem('neon_total_playtime');
 
@@ -186,6 +197,9 @@ async function loadCloudSongs() {
     if (typeof renderMenu === 'function') {
         renderMenu();
     }
+    if (typeof updateShopCoins === 'function') {
+        updateShopCoins();
+    }
 }
 
 // Кеш декодованих аудіобуферів та згенерованих нотних карт (забезпечує миттєвий старт без повторного декодування)
@@ -203,7 +217,7 @@ const State = {
     isPaused: false,
     isMuted: localStorage.getItem('isMuted') === 'true',
     isBotEnabled: localStorage.getItem('neon_autobot_enabled') === 'true', // Автоматичний бот для тестування та проходження
-    currentLang: localStorage.getItem('siteLang') || 'UA',
+    currentLang: localStorage.getItem('siteLang') || 'RU',
     isMobile: window.innerWidth < 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024),
     playtimeAccumulator: 0,
     lastPlaytimeTick: 0,
@@ -283,7 +297,8 @@ const particlePool = new Array(MAX_PARTICLES).fill(null).map(() => ({
     life: 0,
     color: '#fff',
     angle: 0,
-    spin: 0
+    spin: 0,
+    theme: 'classic'
 }));
 let particlePoolIndex = 0;
 
@@ -300,6 +315,8 @@ let starsElements = [];
 let laneElements = [null, null, null, null];
 let laneKeyElements = [null, null, null, null];
 let gameRect = null; 
+let updateShopCoins = () => {};
+let renderShop = () => {}; 
 
 // ==========================================
 // Ядро обробки аудіо. Цей модуль я розробив для аналізу аудіоданих та автоматичної генерації карти нот на основі ритму та енергії треку.
@@ -555,7 +572,7 @@ function bootGame() {
     const themeContainer = document.getElementById('theme-icon-container');
     if (themeContainer) themeContainer.innerHTML = savedTheme === 'dark' ? icons.moon(18) : icons.sun(18);
 
-    const savedLang = localStorage.getItem('siteLang') || 'UA';
+    const savedLang = localStorage.getItem('siteLang') || 'RU';
     State.currentLang = savedLang;
     i18n.setLanguage(savedLang);
     document.body.setAttribute('data-lang', State.currentLang);
@@ -854,6 +871,15 @@ function bootGame() {
                 updateHeaderUserBadge();
             }
 
+            // 1.1. Синхронізація тем ігрового поля з хмари
+            FieldThemes.applyCloudThemes(cloudData);
+            if (typeof applyActiveThemeVisuals === 'function') {
+                applyActiveThemeVisuals();
+            }
+            if (typeof updateShopCoins === 'function') {
+                updateShopCoins();
+            }
+
             // 2. Синхронізація часу у грі (зберігаємо найбільший)
             const cloudPlaytime = Number(cloudData.playtimeSeconds || 0);
             const localPlaytime = parseInt(localStorage.getItem('neon_total_playtime') || '0', 10);
@@ -1043,6 +1069,9 @@ function bootGame() {
                     unlockedTitles: mergedUnlockedTitles,
                     userStatus: mergedUserStatus,
                     favoriteTrack: mergedFavoriteTrack,
+                    unlockedFieldThemes: FieldThemes.getUnlockedThemes(),
+                    activeFieldTheme: FieldThemes.getActiveThemeId(),
+                    spentCoins: parseInt(localStorage.getItem('neon_spent_coins') || '0', 10),
                     updatedAt: serverTimestamp()
                 }, { merge: true });
             }
@@ -1160,6 +1189,10 @@ function bootGame() {
 
         const playtimeSec = parseInt(localStorage.getItem('neon_total_playtime') || '0', 10);
         const cosm = Cosmetics.getLocalCosmetics();
+        const currentUser = getCurrentUser();
+
+        // Захист від засмічення бази: якщо це неавторизований гість без зіграних рівнів чи очок — не пишемо в таблицю лідерів
+        if (!currentUser && totalScore === 0 && levelsCompleted === 0) return;
 
         try {
             const leaderboardPayload = {
@@ -1188,7 +1221,10 @@ function bootGame() {
                 userStatus: cosm.userStatus || '',
                 favoriteTrack: cosm.favoriteTrack || '',
                 unlockedFrames: cosm.unlockedFrames || ['frame_none'],
-                unlockedTitles: cosm.unlockedTitles || ['title_novice']
+                unlockedTitles: cosm.unlockedTitles || ['title_novice'],
+                unlockedFieldThemes: FieldThemes.getUnlockedThemes(),
+                activeFieldTheme: FieldThemes.getActiveThemeId(),
+                spentCoins: parseInt(localStorage.getItem('neon_spent_coins') || '0', 10)
             }, { merge: true });
         } catch (e) {
             console.error("Global Sync Error:", e);
@@ -1315,13 +1351,56 @@ function bootGame() {
             const glossInset = Math.max(4, Math.round(w * 0.08));
             const glossH = Math.max(3, Math.round(h * 0.022));
 
+            const activeFieldTheme = FieldThemes.getActiveTheme();
+            let themeSteel = PALETTES.STEEL;
+            let themeElectric = PALETTES.ELECTRIC;
+            let themeGold = PALETTES.GOLD;
+            let themeCosmic = PALETTES.COSMIC;
+            let themeLegendary = PALETTES.LEGENDARY;
+
+            if (activeFieldTheme.id === 'phrolova') {
+                themeSteel = { light: '#fda4af', main: '#e11d48', dark: '#9f1239', glow: 'rgba(225, 29, 72, 0.45)', border: '#f43f5e', long1: '#be123c', long2: '#881337' };
+                themeElectric = { tap1: '#fecdd3', tap2: '#f43f5e', glow: 'rgba(244, 63, 94, 0.45)', border: '#fda4af', long1: '#e11d48', long2: '#9f1239' };
+                themeGold = { black: '#ffe4e6', choco: '#e11d48', glow: 'rgba(251, 113, 133, 0.45)', border: '#ffe4e6', long1: '#fb7185', long2: '#be123c' };
+                themeCosmic = { core: '#fff1f2', accent: '#be123c', glow: 'rgba(225, 29, 72, 0.55)', border: '#fecdd3', long1: '#f43f5e', long2: '#4c0519' };
+                themeLegendary = { tap1: '#ffffff', tap2: '#e11d48', glow: 'rgba(255, 255, 255, 0.65)', border: '#ffffff', long1: '#f43f5e', long2: '#881337' };
+            } else if (activeFieldTheme.id === 'dark_angel') {
+                themeSteel = { light: '#d8b4fe', main: '#9333ea', dark: '#581c87', glow: 'rgba(168, 85, 247, 0.45)', border: '#c084fc', long1: '#7e22ce', long2: '#581c87' };
+                themeElectric = { tap1: '#e9d5ff', tap2: '#a855f7', glow: 'rgba(168, 85, 247, 0.45)', border: '#d8b4fe', long1: '#9333ea', long2: '#6b21a8' };
+                themeGold = { black: '#f3e8ff', choco: '#7c3aed', glow: 'rgba(124, 58, 237, 0.45)', border: '#f3e8ff', long1: '#a855f7', long2: '#581c87' };
+                themeCosmic = { core: '#fae8ff', accent: '#6b21a8', glow: 'rgba(192, 132, 252, 0.55)', border: '#fae8ff', long1: '#c084fc', long2: '#3b0764' };
+                themeLegendary = { tap1: '#ffffff', tap2: '#9333ea', glow: 'rgba(255, 255, 255, 0.65)', border: '#ffffff', long1: '#c084fc', long2: '#581c87' };
+            } else if (activeFieldTheme.id === 'cosmic') {
+                themeSteel = { light: '#a5b4fc', main: '#4f46e5', dark: '#312e81', glow: 'rgba(99, 102, 241, 0.45)', border: '#818cf8', long1: '#4338ca', long2: '#312e81' };
+                themeElectric = { tap1: '#c7d2fe', tap2: '#6366f1', glow: 'rgba(99, 102, 241, 0.45)', border: '#a5b4fc', long1: '#4f46e5', long2: '#3730a3' };
+                themeGold = { black: '#e0e7ff', choco: '#4338ca', glow: 'rgba(129, 140, 248, 0.45)', border: '#e0e7ff', long1: '#6366f1', long2: '#312e81' };
+                themeCosmic = { core: '#eef2ff', accent: '#3730a3', glow: 'rgba(165, 180, 252, 0.55)', border: '#eef2ff', long1: '#818cf8', long2: '#1e1b4b' };
+                themeLegendary = { tap1: '#ffffff', tap2: '#4f46e5', glow: 'rgba(255, 255, 255, 0.65)', border: '#ffffff', long1: '#818cf8', long2: '#312e81' };
+            }
+
             const styles = [
-                { name: 'steel', p: PALETTES.STEEL, tier: 0, c1: PALETTES.STEEL.light, c2: PALETTES.STEEL.main, l1: PALETTES.STEEL.long1, l2: PALETTES.STEEL.long2 },
-                { name: 'electric', p: PALETTES.ELECTRIC, tier: 100, c1: PALETTES.ELECTRIC.tap1, c2: PALETTES.ELECTRIC.tap2, l1: PALETTES.ELECTRIC.long1, l2: PALETTES.ELECTRIC.long2 },
-                { name: 'gold', p: PALETTES.GOLD, tier: 200, c1: PALETTES.GOLD.black, c2: PALETTES.GOLD.choco, l1: PALETTES.GOLD.long1, l2: PALETTES.GOLD.long2 },
-                { name: 'cosmic', p: PALETTES.COSMIC, tier: 400, c1: PALETTES.COSMIC.core, c2: PALETTES.COSMIC.accent, l1: PALETTES.COSMIC.long1, l2: PALETTES.COSMIC.long2 },
-                { name: 'legendary', p: PALETTES.LEGENDARY, tier: 800, c1: PALETTES.LEGENDARY.tap1, c2: PALETTES.LEGENDARY.tap2, l1: PALETTES.LEGENDARY.long1, l2: PALETTES.LEGENDARY.long2 }
+                { name: 'steel', p: themeSteel, tier: 0, c1: themeSteel.light || themeSteel.tap1, c2: themeSteel.main || themeSteel.tap2, l1: themeSteel.long1, l2: themeSteel.long2 },
+                { name: 'electric', p: themeElectric, tier: 100, c1: themeElectric.tap1, c2: themeElectric.tap2, l1: themeElectric.long1, l2: themeElectric.long2 },
+                { name: 'gold', p: themeGold, tier: 200, c1: themeGold.black, c2: themeGold.choco, l1: themeGold.long1, l2: themeGold.long2 },
+                { name: 'cosmic', p: themeCosmic, tier: 400, c1: themeCosmic.core, c2: themeCosmic.accent, l1: themeCosmic.long1, l2: themeCosmic.long2 },
+                { name: 'legendary', p: themeLegendary, tier: 800, c1: themeLegendary.tap1, c2: themeLegendary.tap2, l1: themeLegendary.long1, l2: themeLegendary.long2 }
             ];
+
+            // Динамічне кешування спрайтів для унікальних палітр комбо-рівнів поточної теми
+            const themeTiers = activeFieldTheme.comboTiers || [];
+            themeTiers.forEach(t => {
+                if (!styles.some(s => s.name === t.name)) {
+                    styles.push({
+                        name: t.name,
+                        p: { border: t.border, glow: t.glow },
+                        tier: t.min,
+                        c1: t.particleColors[1] || t.particleColors[0],
+                        c2: t.particleColors[0],
+                        l1: t.particleColors[0],
+                        l2: t.particleColors[2] || t.particleColors[0]
+                    });
+                }
+            });
 
             styles.forEach(s => {
                 // 1. Спрайт Tap ноти
@@ -1334,8 +1413,8 @@ function bootGame() {
                 tapGrad.addColorStop(0, s.c1 || '#38bdf8');
                 tapGrad.addColorStop(1, s.c2 || '#0284c7');
 
-                tctx.shadowColor = s.p.glow || '#38bdf8';
-                tctx.shadowBlur = (s.tier >= 800) ? 14 : ((s.tier >= 200) ? 8 : 5);
+                tctx.shadowColor = s.p.glow || 'rgba(56, 189, 248, 0.45)';
+                tctx.shadowBlur = (s.tier >= 800) ? 6 : ((s.tier >= 200) ? 4 : 2);
                 tctx.fillStyle = tapGrad;
                 tctx.beginPath();
                 if (tctx.roundRect) tctx.roundRect(margin, margin, w, h, noteRadius);
@@ -1343,17 +1422,17 @@ function bootGame() {
                 tctx.fill();
 
                 tctx.shadowBlur = 0;
-                tctx.strokeStyle = s.p.border || '#ffffff';
-                tctx.lineWidth = (s.tier >= 800) ? 2.8 : ((s.tier >= 200) ? 2.2 : 1.6);
+                tctx.strokeStyle = s.p.border || '#38bdf8';
+                tctx.lineWidth = (s.tier >= 800) ? 1.8 : ((s.tier >= 200) ? 1.5 : 1.2);
                 tctx.stroke();
 
-                tctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+                tctx.fillStyle = "rgba(255, 255, 255, 0.20)";
                 tctx.beginPath();
                 if (tctx.roundRect) tctx.roundRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH, 2);
                 else tctx.fillRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH);
                 tctx.fill();
 
-                tctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+                tctx.fillStyle = "rgba(0, 0, 0, 0.20)";
                 tctx.fillRect(margin, margin + h - 5, w, 5);
 
                 if (s.tier >= 400) {
@@ -1361,9 +1440,9 @@ function bootGame() {
                     const starY = margin + h / 2;
                     const rOuter = (s.tier >= 800) ? Math.max(6, Math.round(w * 0.075)) : Math.max(5, Math.round(w * 0.058));
                     const rInner = rOuter * 0.28;
-                    tctx.fillStyle = '#ffffff';
-                    tctx.shadowColor = '#ffffff';
-                    tctx.shadowBlur = 8;
+                    tctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    tctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+                    tctx.shadowBlur = 4;
                     tctx.beginPath();
                     tctx.moveTo(starX + rOuter, starY);
                     tctx.lineTo(starX + rInner * 0.7071, starY + rInner * 0.7071);
@@ -1387,11 +1466,11 @@ function bootGame() {
                 const hctx = headC.getContext('2d');
 
                 const headGrad = hctx.createLinearGradient(margin, margin, margin, margin + h);
-                headGrad.addColorStop(0, s.l1 || '#818cf8');
-                headGrad.addColorStop(1, s.l2 || '#38bdf8');
+                headGrad.addColorStop(0, s.l1 || '#6366f1');
+                headGrad.addColorStop(1, s.l2 || '#0284c7');
 
-                hctx.shadowColor = s.p.glow || '#38bdf8';
-                hctx.shadowBlur = (s.tier >= 800) ? 12 : 6;
+                hctx.shadowColor = s.p.glow || 'rgba(56, 189, 248, 0.45)';
+                hctx.shadowBlur = (s.tier >= 800) ? 6 : 3;
                 hctx.fillStyle = headGrad;
                 hctx.beginPath();
                 if (hctx.roundRect) hctx.roundRect(margin, margin, w, h, noteRadius);
@@ -1399,11 +1478,11 @@ function bootGame() {
                 hctx.fill();
 
                 hctx.shadowBlur = 0;
-                hctx.strokeStyle = s.p.border || '#ffffff';
-                hctx.lineWidth = 2;
+                hctx.strokeStyle = s.p.border || '#38bdf8';
+                hctx.lineWidth = 1.5;
                 hctx.stroke();
 
-                hctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+                hctx.fillStyle = "rgba(255, 255, 255, 0.20)";
                 hctx.beginPath();
                 if (hctx.roundRect) hctx.roundRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH, 2);
                 else hctx.fillRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH);
@@ -1421,12 +1500,12 @@ function bootGame() {
 
                 const tailGrad = tlctx.createLinearGradient(0, 0, 0, tailH);
                 tailGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                tailGrad.addColorStop(0.2, s.l2 || '#38bdf8');
-                tailGrad.addColorStop(1, s.l1 || '#818cf8');
+                tailGrad.addColorStop(0.2, s.l2 || '#0284c7');
+                tailGrad.addColorStop(1, s.l1 || '#6366f1');
                 tlctx.fillStyle = tailGrad;
                 tlctx.fillRect(0, 0, tailW, tailH);
 
-                tlctx.fillStyle = (s.tier >= 800) ? 'rgba(255, 255, 255, 0.95)' : ((s.tier >= 200) ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.4)');
+                tlctx.fillStyle = (s.tier >= 800) ? 'rgba(255, 255, 255, 0.55)' : ((s.tier >= 200) ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.20)');
                 tlctx.fillRect(Math.floor(tailW / 2 - 1.5), 0, 3, tailH);
 
                 this.longTail[s.name] = tailC;
@@ -1541,11 +1620,14 @@ function bootGame() {
             actC.width = recW;
             actC.height = recH;
             const actx = actC.getContext('2d');
-            actx.shadowColor = "#38bdf8";
-            actx.shadowBlur = 12;
-            actx.fillStyle = "rgba(56, 189, 248, 0.25)";
-            actx.strokeStyle = "rgba(56, 189, 248, 0.95)";
-            actx.lineWidth = 2;
+            const recGlow = activeFieldTheme.colors?.stringGlow || "rgba(56, 189, 248, 0.45)";
+            const recAura = activeFieldTheme.colors?.bgAura || "rgba(56, 189, 248, 0.15)";
+            const recBorder = activeFieldTheme.colors?.receptorBorder || "rgba(56, 189, 248, 0.70)";
+            actx.shadowColor = recGlow;
+            actx.shadowBlur = 6;
+            actx.fillStyle = recAura;
+            actx.strokeStyle = recBorder;
+            actx.lineWidth = 1.5;
             actx.beginPath();
             if (actx.roundRect) actx.roundRect(recMargin, recMargin, padW, padH, 6);
             else actx.fillRect(recMargin, recMargin, padW, padH);
@@ -1836,6 +1918,9 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
     };
 
     localStorage.setItem(`neon_rhythm_${songTitle}`, JSON.stringify(payload));
+    if (typeof updateShopCoins === 'function') {
+        updateShopCoins();
+    }
 
     // Хмарна прив'язка до акаунта гравця
     const currentUser = getCurrentUser();
@@ -2470,12 +2555,21 @@ function update(songTime) {
                 }
             }
 
-            // Реєстрація промаху для незіграної ноти: ТІЛЬКИ коли вона повністю пройшла нижню 1/3 екрана і вийшла за межі дисплея
-            const limitY = State.gameHeight + 35;
+            // 1. Миттєва реєстрація промаху, як тільки нота пройшла лінію рецептора (без запізнення)
+            const basePadY = Math.round(CONFIG.noteHeight * 0.30);
+            const missThresholdY = hitY + basePadY * 1.5;
             if (!tile.hit && !tile.completed && !tile.failed && !tile.missed) {
-                if ((tile.type === 'tap' && (yStart - CONFIG.noteHeight) > limitY) || 
-                    (tile.type === 'long' && yEnd > limitY && !tile.holding && !tile.released)) {
+                if ((tile.type === 'tap' && yStart > missThresholdY) || 
+                    (tile.type === 'long' && yStart > missThresholdY && !tile.holding && !tile.released)) {
                     missNote(tile, true);
+                }
+            }
+
+            // 2. Звільнення об'єкта ноти, коли вона остаточно виходить за межі екрана
+            const limitY = State.gameHeight + 35;
+            if (tile.missed || tile.failed) {
+                if ((tile.type === 'tap' && (yStart - CONFIG.noteHeight) > limitY) || 
+                    (tile.type === 'long' && yEnd > limitY)) {
                     NotePool.release(tile);
                     State.activeTiles.splice(i, 1);
                     continue;
@@ -2502,20 +2596,50 @@ function update(songTime) {
         updateScoreUI(true);
     }
 
+    function applyActiveThemeVisuals() {
+        if (!ctx) return;
+        const laneW = (State.gameWidth || 400) / 4;
+        const padding = 6;
+        const w = laneW - (padding * 2);
+        const isLight = document.body.getAttribute('data-theme') === 'light';
+        SpriteCache.init(w, CONFIG.noteHeight, laneW, isLight);
+        State.bgStars = null;
+        State.themeAtmosphereParticles = null;
+        State.themeCosmicStars = null;
+        State.themeConstellation = null;
+        State.currentAtmosphereTheme = null;
+    }
+    window.applyActiveThemeVisuals = applyActiveThemeVisuals;
+
+    function updateAndDrawThemeAtmosphere(ctx, theme, songTime, warpMult, speedBoost) {
+        if (theme && typeof theme.updateAndDrawAtmosphere === 'function') {
+            theme.updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State);
+        }
+    }
+
     // Цикл рендерингу. Це найбільш критична до продуктивності частина коду. Я максимально оптимізував її, мінімізувавши зміни стану контексту Canvas та використовуючи кешовані об'єкти.
     function draw(songTime) {
         if (!ctx) return;
         const now = Date.now();
         const isLight = document.body.getAttribute('data-theme') === 'light';
+        const activeTheme = FieldThemes.getActiveTheme();
 
         const laneW = State.gameWidth / 4;
         const hitY = State.gameHeight * CONFIG.hitPosition;
         const padding = 6;
         const w = laneW - (padding * 2);
 
-        // Стилістичні палітри залежно від поточного комбо
+        // Стилістичні палітри залежно від поточного комбо та активної модульної теми
+        const comboTier = (activeTheme && typeof activeTheme.getTier === 'function') 
+            ? activeTheme.getTier(State.combo) 
+            : null;
+
         let p = { glow: '', border: '', name: 'steel' };
-        if (State.combo < 100) {
+        if (comboTier) {
+            p.glow = comboTier.glow; 
+            p.border = comboTier.border; 
+            p.name = comboTier.name;
+        } else if (State.combo < 100) {
             p.glow = PALETTES.STEEL.glow; p.border = PALETTES.STEEL.border; p.name = 'steel';
         } else if (State.combo < 200) {
             p.glow = PALETTES.ELECTRIC.glow; p.border = PALETTES.ELECTRIC.border; p.name = 'electric';
@@ -2524,7 +2648,7 @@ function update(songTime) {
         } else if (State.combo < 800) {
             p.glow = PALETTES.COSMIC.glow; p.border = PALETTES.COSMIC.border; p.name = 'cosmic';
         } else {
-            p.glow = '#ffffff'; p.border = '#ffffff'; p.name = 'legendary';
+            p.glow = PALETTES.LEGENDARY.glow; p.border = PALETTES.LEGENDARY.border; p.name = 'legendary';
         }
 
         // Аналіз частотного спектра аудіо (бас, середина, верхи) для динамічних ефектів
@@ -2542,7 +2666,19 @@ function update(songTime) {
             ctx.fillStyle = "rgba(255,255,255,0.95)"; 
             ctx.fillRect(0, 0, State.gameWidth, State.gameHeight); 
         } else {
-            // Аудіо-реактивна динамічна неонова аура (працює однаково красиво на ПК і смартфонах)
+            // Аудіо-реактивна динамічна неонова аура або фон активної теми поля
+            if (activeTheme.id !== 'classic' && activeTheme.colors?.bgCenter) {
+                const bgGrad = ctx.createRadialGradient(
+                    State.gameWidth / 2, hitY * 0.45, 20,
+                    State.gameWidth / 2, hitY * 0.45, Math.max(State.gameHeight * 0.85, 500)
+                );
+                bgGrad.addColorStop(0, activeTheme.colors.bgCenter);
+                bgGrad.addColorStop(0.55, activeTheme.colors.bgMid);
+                bgGrad.addColorStop(1, activeTheme.colors.bgOuter);
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, State.gameWidth, State.gameHeight);
+            }
+
             if (State.glowSprite) {
                 const auraW = State.gameWidth * (1.35 + State.bgPulse * 0.45);
                 const auraH = State.gameHeight * (0.65 + mid * 0.35);
@@ -2550,53 +2686,30 @@ function update(songTime) {
                 ctx.globalCompositeOperation = 'screen';
                 
                 // Верхня аура атмосфери треку
-                ctx.globalAlpha = 0.16 + State.bgPulse * 0.28 + mid * 0.12;
+                ctx.globalAlpha = 0.05 + State.bgPulse * 0.07 + mid * 0.03;
                 ctx.drawImage(State.glowSprite, State.gameWidth / 2 - auraW / 2, hitY * 0.45 - auraH / 2, auraW, auraH);
                 
                 // Пульсація біля лінії рецептора при активному біті або комбо
                 if (State.combo >= 100) {
-                    ctx.globalAlpha = 0.10 + State.bgPulse * 0.18;
+                    ctx.globalAlpha = 0.03 + State.bgPulse * 0.05;
                     ctx.drawImage(State.glowSprite, State.gameWidth / 2 - auraW * 0.45, hitY - auraH * 0.35, auraW * 0.9, auraH * 0.7);
                 }
                 ctx.restore();
             }
 
-            // Космічний зоряний пил швидкості (Cyber Warp Stardust) - прискорюється разом з рівнем до 1.5х
-            if (!State.bgStars || State.bgStars.length === 0) {
-                State.bgStars = [];
-                for (let s = 0; s < 32; s++) {
-                    State.bgStars.push({
-                        x: Math.random() * (State.gameWidth || 400),
-                        y: Math.random() * (State.gameHeight || 700),
-                        speed: 1.4 + Math.random() * 2.4,
-                        size: 1.2 + Math.random() * 2.2,
-                        baseAlpha: 0.22 + Math.random() * 0.42,
-                        colorType: Math.random() > 0.5 ? 1 : 0
-                    });
-                }
-            }
-
             const warpMult = (State.dynamicSpeedMultiplier || 1.0);
             const speedBoost = 1.0 + State.bgPulse * 0.8;
-            for (let s = 0; s < State.bgStars.length; s++) {
-                const star = State.bgStars[s];
-                star.y += star.speed * warpMult * speedBoost;
-                if (star.y > State.gameHeight + 10) {
-                    star.y = -10;
-                    star.x = Math.random() * State.gameWidth;
-                }
-                const a = Math.min(0.9, star.baseAlpha * (0.8 + State.bgPulse * 0.6));
-                ctx.fillStyle = (star.colorType === 1) 
-                    ? `rgba(56, 189, 248, ${a})` 
-                    : `rgba(168, 85, 247, ${a})`;
-                const streakLen = star.size * (1.2 + warpMult * 1.2);
-                ctx.fillRect(star.x - star.size / 2, star.y, star.size, streakLen);
+
+            if (activeTheme && typeof activeTheme.updateAndDrawAtmosphere === 'function') {
+                activeTheme.updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State);
             }
 
             // Тонкі неонові лінії перспективи шосе (Horizon Highway Grid)
             const gridTime = (songTime * 0.0008 * warpMult) % 1.0;
             ctx.save();
-            ctx.strokeStyle = p.border || 'rgba(56, 189, 248, 0.2)';
+            ctx.strokeStyle = (activeTheme.id !== 'classic' && activeTheme.colors?.receptorBorder) 
+                ? activeTheme.colors.receptorBorder 
+                : (p.border || 'rgba(56, 189, 248, 0.2)');
             ctx.lineWidth = 1;
             for (let g = 0; g < 5; g++) {
                 const gyRatio = ((g / 5) + gridTime * (1 / 5)) % 1.0;
@@ -2641,9 +2754,13 @@ function update(songTime) {
             const padX = l * laneW + 5;
             const padY = hitY - 13;
             const isLaneActive = (State.laneLastInputTime && (now - State.laneLastInputTime[l] < 120)) || (State.holdingTiles && State.holdingTiles[l]);
-            const recSprite = isLaneActive ? SpriteCache.receptorActive : SpriteCache.receptorIdle;
-            if (recSprite) {
-                ctx.drawImage(recSprite, padX - 8, padY - 8);
+            if (activeTheme && typeof activeTheme.drawReceptor === 'function') {
+                activeTheme.drawReceptor(ctx, padX, padY, laneW - 10, 26, isLaneActive, isLight);
+            } else {
+                const recSprite = isLaneActive ? SpriteCache.receptorActive : SpriteCache.receptorIdle;
+                if (recSprite) {
+                    ctx.drawImage(recSprite, padX - 8, padY - 8);
+                }
             }
         }
 
@@ -2651,27 +2768,30 @@ function update(songTime) {
         // 3.1. 4 Адаптивні горизонтальні струни удару
         // ==========================================
         let stringColors = [];
-        let stringGlow = p.glow || '#38bdf8';
-        if (State.combo >= 800) {
-            // LEGENDARY: Призматичний білий з переливом
-            stringColors = ['#ffffff', '#fdf4ff', '#e0e7ff', '#ffffff'];
-            stringGlow = '#ffffff';
+        let stringGlow = p.glow || 'rgba(56, 189, 248, 0.4)';
+        if (activeTheme.id !== 'classic' && activeTheme.colors?.strings) {
+            stringColors = activeTheme.colors.strings;
+            stringGlow = activeTheme.colors.stringGlow || p.glow;
+        } else if (State.combo >= 800) {
+            // LEGENDARY: Призматичний м'ятний
+            stringColors = ['#d1fae5', '#a7f3d0', '#6ee7b7', '#10b981'];
+            stringGlow = 'rgba(16, 185, 129, 0.4)';
         } else if (State.combo >= 400) {
-            // COSMIC: Смарагдово-бірюзовий
-            stringColors = ['#6ee7b7', '#34d399', '#2dd4bf', '#059669'];
-            stringGlow = '#10b981';
+            // COSMIC: Лавандово-фіолетовий
+            stringColors = ['#f3e8ff', '#e9d5ff', '#d8b4fe', '#a855f7'];
+            stringGlow = 'rgba(168, 85, 247, 0.4)';
         } else if (State.combo >= 200) {
-            // GOLD: Золотий
-            stringColors = ['#fef08a', '#fde047', '#facc15', '#ca8a04'];
-            stringGlow = '#eab308';
+            // GOLD: Теплий золотий
+            stringColors = ['#fef3c7', '#fde68a', '#fcd34d', '#f59e0b'];
+            stringGlow = 'rgba(245, 158, 11, 0.4)';
         } else if (State.combo >= 100) {
-            // ELECTRIC: Неоновий фіолетовий
-            stringColors = ['#e9d5ff', '#d8b4fe', '#c084fc', '#9333ea'];
-            stringGlow = '#a855f7';
+            // ELECTRIC: Спокійна бірюза
+            stringColors = ['#cffafe', '#a5f3fc', '#67e8f9', '#06b6d4'];
+            stringGlow = 'rgba(6, 182, 212, 0.4)';
         } else {
-            // STEEL: Неоновий блакитний
-            stringColors = ['#bae6fd', '#7dd3fc', '#38bdf8', '#0284c7'];
-            stringGlow = '#0284c7';
+            // STEEL: Спокійний блакитний
+            stringColors = ['#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8'];
+            stringGlow = 'rgba(56, 189, 248, 0.4)';
         }
 
         const stringConfigs = [
@@ -2690,12 +2810,12 @@ function update(songTime) {
             const cfg = stringConfigs[s];
             const strY = hitY + cfg.dy;
             ctx.strokeStyle = stringColors[s];
-            ctx.lineWidth = cfg.baseWidth + ((State.combo >= 200) ? 0.6 : 0);
+            ctx.lineWidth = cfg.baseWidth + ((State.combo >= 200) ? 0.4 : 0);
             ctx.lineJoin = "round";
             ctx.lineCap = "round";
             if (!State.isMobile) {
                 ctx.shadowColor = stringGlow;
-                ctx.shadowBlur = (State.combo >= 200) ? 8 : 4;
+                ctx.shadowBlur = (State.combo >= 200) ? 4 : 2;
             } else {
                 ctx.shadowBlur = 0;
             }
@@ -2775,81 +2895,21 @@ function update(songTime) {
 
                 if (tile.hit) {
                     if (tile.hitAnimStart) {
-                        const animDuration = 240; // Швидкий, соковитий та чіткий імпульс влучання (без залишкового фантома ноти)
-                        const elapsed = now - tile.hitAnimStart;
-                        if (elapsed < animDuration) {
-                            const p = elapsed / animDuration;
-                            const easeOut = 1 - Math.pow(1 - p, 3); // плавна кубічна крива розширення
-                            const alpha = Math.max(0, 1.0 - Math.pow(p, 1.5));
-                            
-                            const cx = x + w / 2;
-                            const cy = yTop + CONFIG.noteHeight / 2;
-                            const isPerfect = (tile.hitRating === 'perfect');
+                        try {
+                            const animDuration = 240; // Швидкий, соковитий та чіткий імпульс влучання
+                            const elapsed = now - tile.hitAnimStart;
+                            if (elapsed < animDuration) {
+                                const p = elapsed / animDuration;
+                                const cx = x + w / 2;
+                                const cy = yTop + CONFIG.noteHeight / 2;
+                                const isPerfect = (tile.hitRating === 'perfect');
 
-                            ctx.save();
-
-                            // 1. Сяюче розширюване ударне кільце (Impact Shockwave Ring)
-                            const ringRadius = (w * 0.18) + easeOut * (w * 0.44);
-                            const ringAlpha = Math.max(0, (1.0 - p) * 0.90);
-                            const ringWidth = Math.max(1, 3.2 * (1.0 - p));
-                            ctx.save();
-                            ctx.globalCompositeOperation = 'screen';
-                            ctx.lineWidth = ringWidth;
-                            ctx.strokeStyle = isPerfect ? `rgba(255, 255, 255, ${ringAlpha})` : `rgba(56, 189, 248, ${ringAlpha})`;
-                            ctx.beginPath();
-                            ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
-                            ctx.stroke();
-
-                            // Зовнішнє неонове світіння кільця
-                            ctx.lineWidth = ringWidth * 1.8;
-                            ctx.strokeStyle = isPerfect ? `rgba(244, 63, 94, ${ringAlpha * 0.6})` : `rgba(6, 182, 212, ${ringAlpha * 0.6})`;
-                            ctx.beginPath();
-                            ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
-                            ctx.stroke();
-                            ctx.restore();
-
-                            // 2. Яскравий внутрішній неоновий енергетичний імпульс (Bloom Burst) у перші 100 мс замість малювання старої ноти
-                            if (p < 0.42) {
-                                const flashP = p / 0.42;
-                                const flashAlpha = Math.max(0, (1.0 - flashP) * 0.95);
-                                const burstW = (w - 8) * (1.0 + flashP * 0.25);
-                                const burstH = (CONFIG.noteHeight - 8) * (1.0 + flashP * 0.25);
-                                ctx.save();
-                                ctx.globalCompositeOperation = 'screen';
-                                ctx.fillStyle = isPerfect 
-                                    ? `rgba(255, 255, 255, ${flashAlpha})` 
-                                    : `rgba(125, 211, 252, ${flashAlpha})`;
-                                ctx.beginPath();
-                                if (ctx.roundRect) ctx.roundRect(cx - burstW / 2, cy - burstH / 2, burstW, burstH, 8);
-                                else ctx.fillRect(cx - burstW / 2, cy - burstH / 2, burstW, burstH);
-                                ctx.fill();
-                                ctx.restore();
-                            }
-
-                            // 3. Іскри влучного удару (Star Sparklets)
-                            if (p < 0.75) {
-                                const sparkP = p / 0.75;
-                                const sparkDist = (w * 0.22) + Math.pow(sparkP, 0.7) * (w * 0.38);
-                                const sparkAlpha = (1.0 - sparkP) * 0.85;
-                                const sparkSize = Math.max(1, 3.5 * (1.0 - sparkP));
-                                ctx.save();
-                                ctx.globalCompositeOperation = 'screen';
-                                ctx.fillStyle = isPerfect ? `rgba(254, 240, 138, ${sparkAlpha})` : `rgba(165, 243, 252, ${sparkAlpha})`;
-                                const offsets = [
-                                    [sparkDist * 0.7, sparkDist * 0.7],
-                                    [-sparkDist * 0.7, sparkDist * 0.7],
-                                    [sparkDist * 0.7, -sparkDist * 0.7],
-                                    [-sparkDist * 0.7, -sparkDist * 0.7]
-                                ];
-                                for (let s = 0; s < offsets.length; s++) {
-                                    ctx.beginPath();
-                                    ctx.arc(cx + offsets[s][0], cy + offsets[s][1], sparkSize, 0, Math.PI * 2);
-                                    ctx.fill();
+                                if (activeTheme && typeof activeTheme.drawHitAnimation === 'function') {
+                                    activeTheme.drawHitAnimation(ctx, cx, cy, w, CONFIG.noteHeight, p, isPerfect, isLight, now);
                                 }
-                                ctx.restore();
                             }
-
-                            ctx.restore();
+                        } catch (e) {
+                            console.warn("Hit animation draw error:", e);
                         }
                     }
                     // Захист: влучена tap-нота ніколи не малюється як звичайна нота в польоті!
@@ -2861,12 +2921,26 @@ function update(songTime) {
                     ctx.drawImage(tapSprite, x - 16, yTop - 16);
                 }
 
-                // Динамічний світловий відблиск (Sheen)
+                // Унікальний декор та форми нот активної модульної теми
+                if (activeTheme && typeof activeTheme.drawNoteDetails === 'function') {
+                    activeTheme.drawNoteDetails(ctx, x, yTop, w, CONFIG.noteHeight, isLight, comboTier);
+                }
+
+                // Динамічний світловий відблиск (Sheen) — строго обмежений межами ноти через clip()
                 if (State.combo >= 800 && SpriteCache.sheen) {
                     const sheenCycle = ((now * 0.0018 + tile.lane * 0.3) % 1.6);
                     if (sheenCycle < 1.0) {
+                        ctx.save();
+                        ctx.beginPath();
+                        if (ctx.roundRect) {
+                            ctx.roundRect(x, yTop, w, CONFIG.noteHeight, 8);
+                        } else {
+                            ctx.rect(x, yTop, w, CONFIG.noteHeight);
+                        }
+                        ctx.clip();
                         const sheenX = x + sheenCycle * (w + 32) - 16;
                         ctx.drawImage(SpriteCache.sheen, sheenX, yTop);
+                        ctx.restore();
                     }
                 }
 
@@ -3004,6 +3078,9 @@ function update(songTime) {
                 // Відмальовування "голови" довгої ноти через кешований спрайт
                 if (curHeadSprite && actualYHeadTop > -headH + 4) {
                     ctx.drawImage(curHeadSprite, x - 16, actualYHeadTop - 16);
+                    if (activeTheme && typeof activeTheme.drawNoteDetails === 'function' && !tile.failed) {
+                        activeTheme.drawNoteDetails(ctx, x, actualYHeadTop, w, headH, isLight, comboTier);
+                    }
                 }
                 ctx.globalAlpha = 1.0;
 
@@ -3017,7 +3094,7 @@ function update(songTime) {
                     if (!State.isMobile) {
                         ctx.globalCompositeOperation = 'screen';
                     }
-                    ctx.globalAlpha = State.isMobile ? 0.5 : 0.85;
+                    ctx.globalAlpha = State.isMobile ? 0.22 : 0.35;
                     ctx.drawImage(State.glowSprite, headCenterX - glowW / 2, headCenterY - glowH / 2, glowW, glowH);
                     ctx.restore();
                 }
@@ -3068,8 +3145,13 @@ function update(songTime) {
 
             ctx.globalAlpha = Math.max(0, pt.life);
             ctx.fillStyle = pt.color;
-            ctx.beginPath();
             
+            if (activeTheme && typeof activeTheme.drawParticle === 'function') {
+                activeTheme.drawParticle(ctx, pt, pt.life);
+                continue;
+            }
+
+            ctx.beginPath();
             if (State.combo >= 800 || State.combo >= 400) {
                  const size = State.combo >= 800 ? 6 : 8; 
                  const thickness = 2; 
@@ -3246,11 +3328,24 @@ function update(songTime) {
     function spawnSparks(lane, y, color, type = 'good') {
         const laneW = State.gameWidth / 4;
         const x = lane * laneW + laneW / 2;
+        const activeTheme = FieldThemes.getActiveTheme();
         let finalColor = '#cfd8dc';
-        if (State.combo >= 800) finalColor = Math.random() > 0.4 ? '#2cf5b2ff' : '#101006ff';
-        else if (State.combo >= 400) finalColor = Math.random() > 0.5 ? '#d500f9' : '#0a6974ff';
-        else if (State.combo >= 200) finalColor = '#e6953f';
-        else if (State.combo >= 100) finalColor = '#00bcd4';
+        const curTier = (activeTheme && typeof activeTheme.getTier === 'function') 
+            ? activeTheme.getTier(State.combo) 
+            : null;
+
+        if (curTier && Array.isArray(curTier.particleColors) && curTier.particleColors.length > 0) {
+            const pal = curTier.particleColors;
+            finalColor = pal[Math.floor(Math.random() * pal.length)];
+        } else if (State.combo >= 800) {
+            finalColor = Math.random() > 0.4 ? '#2cf5b2ff' : '#101006ff';
+        } else if (State.combo >= 400) {
+            finalColor = Math.random() > 0.5 ? '#d500f9' : '#0a6974ff';
+        } else if (State.combo >= 200) {
+            finalColor = '#e6953f';
+        } else if (State.combo >= 100) {
+            finalColor = '#00bcd4';
+        }
         
         const count = type === 'perfect' ? 16 : 8;
         let spawned = 0;
@@ -3267,6 +3362,8 @@ function update(songTime) {
                 pt.vy = (Math.random() - 1) * 12 - 4;
                 pt.life = 1.0;
                 pt.color = finalColor;
+                pt.theme = activeTheme.id;
+                pt.size = Math.random() * 4 + 4;
                 // Ініціалізація параметрів обертання для частинок, щоб вони красиво розліталися під час польоту.
                 pt.angle = Math.random() * Math.PI * 2;
                 pt.spin = (Math.random() - 0.5) * 0.2;
@@ -3448,9 +3545,15 @@ function handleInputDown(lane, touchY, touchX) {
             }
         }
 
-        // Натискання на доріжку, коли ноти безпосередньо під пальцем/курсором немає:
-        // М'який підсвіт рецептора без штрафу та без скидання комбо
-        State.laneBeamAlpha[lane] = 0.35;
+        // Натискання на доріжку, коли ноти немає:
+        // Для клавіатури на ПК (touchY === undefined): фіксуємо промах (неправильна клавіша або натискання повз ноту)
+        if (touchY === undefined) {
+            missNote(null, false);
+            State.laneBeamAlpha[lane] = 0.25;
+        } else {
+            // Для мобільних пристроїв (тач): м'який підсвіт рецептора без штрафу
+            State.laneBeamAlpha[lane] = 0.35;
+        }
     }
 
     function handleInputUp(lane) {
@@ -3934,6 +4037,22 @@ function updateRipples(dt) {
         const isSecret = Boolean(currentSong?.isSecret);
         const total = isSecret ? 5 : 3;
 
+        // Облік усіх незіграних нот як промахів при завершенні треку
+        let leftoverMisses = 0;
+        if (Array.isArray(State.activeTiles)) {
+            State.activeTiles.forEach(t => {
+                if (!t.hit && !t.completed && !t.missed && !t.failed) {
+                    leftoverMisses++;
+                }
+            });
+        }
+        if (Array.isArray(State.mapTiles) && State.nextSpawnIndex < State.mapTiles.length) {
+            leftoverMisses += (State.mapTiles.length - State.nextSpawnIndex);
+        }
+        if (leftoverMisses > 0) {
+            State.totalMisses = (State.totalMisses || 0) + leftoverMisses;
+        }
+
         // Розрахунок точності (% вдалих попадань)
         const totalProcessed = (State.totalHits || 0) + (State.totalMisses || 0);
         let accuracy = 0;
@@ -4378,7 +4497,14 @@ function updateRipples(dt) {
             displayedSongs.sort((a, b) => (b.saved.score || 0) - (a.saved.score || 0));
         } else if (currentSongSort === 'title') {
             displayedSongs.sort((a, b) => (a.song.title || '').localeCompare(b.song.title || ''));
-        } else if (currentSongSort === 'duration') {
+        } else if (currentSongSort === 'durationAsc') {
+            const parseDuration = (d) => {
+                if (typeof d === 'number') return d;
+                const parts = String(d || '0:0').split(':');
+                return parts.length === 2 ? parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10) : parseFloat(d) || 0;
+            };
+            displayedSongs.sort((a, b) => parseDuration(a.song.duration) - parseDuration(b.song.duration));
+        } else if (currentSongSort === 'durationDesc' || currentSongSort === 'duration') {
             const parseDuration = (d) => {
                 if (typeof d === 'number') return d;
                 const parts = String(d || '0:0').split(':');
@@ -4478,7 +4604,8 @@ function updateRipples(dt) {
                      </div>
                    </div>`;
 
-            const spotifyGradients = [
+            const isLightMode = document.body.getAttribute('data-theme') === 'light';
+            const darkGradients = [
                 { bg: 'linear-gradient(145deg, #0ea5e9 0%, #0369a1 45%, #082f49 100%)', mixColor: '#38bdf8' },
                 { bg: 'linear-gradient(145deg, #eab308 0%, #ca8a04 45%, #422006 100%)', mixColor: '#facc15' },
                 { bg: 'linear-gradient(145deg, #f97316 0%, #c2410c 45%, #431407 100%)', mixColor: '#fb923c' },
@@ -4488,7 +4615,18 @@ function updateRipples(dt) {
                 { bg: 'linear-gradient(145deg, #14b8a6 0%, #0f766e 45%, #134e4a 100%)', mixColor: '#2dd4bf' },
                 { bg: 'linear-gradient(145deg, #a855f7 0%, #7e22ce 45%, #3b0764 100%)', mixColor: '#c084fc' }
             ];
-            const gradTheme = spotifyGradients[i % spotifyGradients.length];
+            const lightGradients = [
+                { bg: 'linear-gradient(145deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%)', mixColor: '#0284c7' },
+                { bg: 'linear-gradient(145deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)', mixColor: '#d97706' },
+                { bg: 'linear-gradient(145deg, #ffedd5 0%, #fed7aa 50%, #fdba74 100%)', mixColor: '#ea580c' },
+                { bg: 'linear-gradient(145deg, #fce7f3 0%, #fbcfe8 50%, #f472b6 100%)', mixColor: '#db2777' },
+                { bg: 'linear-gradient(145deg, #ecfccb 0%, #d9f99d 50%, #bef264 100%)', mixColor: '#65a30d' },
+                { bg: 'linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)', mixColor: '#4f46e5' },
+                { bg: 'linear-gradient(145deg, #ccfbf1 0%, #99f6e4 50%, #5eead4 100%)', mixColor: '#0d9488' },
+                { bg: 'linear-gradient(145deg, #f3e8ff 0%, #e9d5ff 50%, #d8b4fe 100%)', mixColor: '#9333ea' }
+            ];
+            const activeGradList = isLightMode ? lightGradients : darkGradients;
+            const gradTheme = activeGradList[i % activeGradList.length];
 
             el.innerHTML = `
                 <div class="spotify-cover-wrap" style="background: ${s.coverUrl ? `url('${s.coverUrl}') center/cover no-repeat` : gradTheme.bg};">
@@ -5250,6 +5388,15 @@ function updateRipples(dt) {
         const dangerIcon = document.querySelector('.danger-icon-container');
         if (dangerIcon) dangerIcon.innerHTML = icons.alertTriangle(18);
 
+        const shopIconContainer = document.querySelector('.icon-shop-container');
+        if (shopIconContainer) shopIconContainer.innerHTML = icons.shop(18);
+
+        const shopModalIcon = document.querySelector('.shop-modal-icon');
+        if (shopModalIcon) shopModalIcon.innerHTML = icons.shop(24);
+
+        const shopCloseBtn = document.getElementById('shop-close-btn');
+        if (shopCloseBtn && !shopCloseBtn.hasChildNodes()) shopCloseBtn.innerHTML = icons.close(16);
+
         document.querySelectorAll('.modal-close-btn').forEach(b => {
             b.innerHTML = icons.close(16);
         });
@@ -5265,6 +5412,9 @@ function updateRipples(dt) {
                 const padding = 6;
                 const w = laneW - (padding * 2);
                 SpriteCache.init(w, CONFIG.noteHeight, laneW, next === 'light');
+            }
+            if (typeof renderMenu === 'function') {
+                renderMenu();
             }
             updateSettingsThemeUI();
         }
@@ -5316,6 +5466,7 @@ function updateRipples(dt) {
                 renderAdminTrackList();
             }
             if (typeof renderMenu === 'function') renderMenu();
+            if (typeof renderShop === 'function') renderShop();
         }
 
         function updateSettingsLangUI() {
@@ -5897,6 +6048,15 @@ function updateRipples(dt) {
         const adminEditPlayerSubtitle = document.getElementById('admin-edit-player-subtitle');
         const adminEditStatusBadge = document.getElementById('admin-edit-status-badge');
 
+        // Елементи керування монетами гравця
+        const adminCoinsEditorCard = document.getElementById('admin-coins-editor-card');
+        const adminCoinsPlayerName = document.getElementById('admin-coins-player-name');
+        const adminCoinsCurrentVal = document.getElementById('admin-coins-current-val');
+        const adminInputPlayerCoins = document.getElementById('admin-input-player-coins');
+        const adminBtnSaveCoins = document.getElementById('admin-btn-save-coins');
+        const adminBtnSelectSelf = document.getElementById('admin-btn-select-self');
+        const adminCoinQuickAddBtns = document.querySelectorAll('.admin-coin-quick-add');
+
         // Ініціалізація іконок для вкладок та кнопок
         const tabIconTracks = document.querySelector('.admin-tab-icon-tracks');
         if (tabIconTracks) tabIconTracks.innerHTML = icons.music(16);
@@ -5946,7 +6106,8 @@ function updateRipples(dt) {
                 usersSnap.forEach(d => {
                     const u = d.data();
                     const name = u.username || u.name || ("Player_" + d.id.slice(0, 5));
-                    playersMap.set(d.id, { id: d.id, name: name });
+                    const isAdmin = Boolean(u.isAdmin || u.role === 'admin');
+                    playersMap.set(d.id, { id: d.id, name: name, isAdmin: isAdmin });
                 });
             } catch (e) { console.warn("Fetch users for admin:", e); }
 
@@ -5956,7 +6117,7 @@ function updateRipples(dt) {
                 lbSnap.forEach(d => {
                     const l = d.data();
                     if (!playersMap.has(d.id)) {
-                        playersMap.set(d.id, { id: d.id, name: l.name || ("Player_" + d.id.slice(0, 5)) });
+                        playersMap.set(d.id, { id: d.id, name: l.name || ("Player_" + d.id.slice(0, 5)), isAdmin: false });
                     }
                 });
             } catch (e) { console.warn("Fetch lb for admin:", e); }
@@ -5966,7 +6127,7 @@ function updateRipples(dt) {
                 const progSnap = await getDocs(collection(db, "user_progress"));
                 progSnap.forEach(d => {
                     if (!playersMap.has(d.id)) {
-                        playersMap.set(d.id, { id: d.id, name: "Player_" + d.id.slice(0, 5) });
+                        playersMap.set(d.id, { id: d.id, name: "Player_" + d.id.slice(0, 5), isAdmin: false });
                     }
                 });
             } catch (e) { console.warn("Fetch prog for admin:", e); }
@@ -5975,8 +6136,11 @@ function updateRipples(dt) {
             const currentU = getCurrentUser();
             const localPlayerId = currentU?.id || localStorage.getItem('playerId');
             const localPlayerName = currentU?.username || localStorage.getItem('playerName');
+            const isLocalAdmin = Boolean(currentU?.isAdmin || currentU?.role === 'admin');
             if (localPlayerId && !playersMap.has(localPlayerId)) {
-                playersMap.set(localPlayerId, { id: localPlayerId, name: localPlayerName || "Гравець" });
+                playersMap.set(localPlayerId, { id: localPlayerId, name: localPlayerName || "Гравець", isAdmin: isLocalAdmin });
+            } else if (localPlayerId && playersMap.has(localPlayerId) && isLocalAdmin) {
+                playersMap.get(localPlayerId).isAdmin = true;
             }
 
             adminCachedPlayers = Array.from(playersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -6168,9 +6332,65 @@ function updateRipples(dt) {
                     }
                 }
 
+                // Оновлюємо інформацію про монети обраного гравця
+                let playerBonus = 0;
+                let playerSpent = 0;
+                let playerEarned = 0;
+
+                const curU = getCurrentUser();
+                const localPlayerId = curU?.id || localStorage.getItem('playerId');
+                const isCurrentSelf = (userId === localPlayerId);
+
+                if (isCurrentSelf) {
+                    const cData = FieldThemes.getCoinsData(songsDB);
+                    playerEarned = cData.earned;
+                    playerBonus = cData.bonus;
+                    playerSpent = cData.spent;
+                } else if (snap.exists()) {
+                    const pData = snap.data();
+                    playerBonus = Number(pData.bonusCoins) || 0;
+                    playerSpent = Number(pData.spentCoins) || 0;
+                    if (pData.tracks) {
+                        for (const tr of Object.values(pData.tracks)) {
+                            if (tr && tr.stars > 0) {
+                                const starCoins = Math.min(3, Math.max(0, tr.stars || 0));
+                                let hasDiamond = false;
+                                if (Array.isArray(tr.starTypes)) {
+                                    hasDiamond = tr.starTypes.some(t => t === 2);
+                                }
+                                playerEarned += (starCoins + (hasDiamond ? 3 : 0));
+                            }
+                        }
+                    }
+                }
+
+                const currentCoinsBalance = Math.max(0, playerEarned + playerBonus - playerSpent);
+                if (adminCoinsPlayerName) adminCoinsPlayerName.textContent = `${playerName} (ID: ${userId})`;
+                if (adminCoinsCurrentVal) adminCoinsCurrentVal.textContent = currentCoinsBalance;
+                if (adminInputPlayerCoins) adminInputPlayerCoins.value = currentCoinsBalance;
+
                 renderAdminStarTypesSelector();
+                updateAdminDeleteBtnState();
             } catch (err) {
                 console.error("Помилка завантаження результату гравця:", err);
+            }
+        }
+
+        // Оновлення стану кнопки видалення в адмінці (захист адміна)
+        function updateAdminDeleteBtnState() {
+            if (!adminBtnDeletePlayer) return;
+            const userId = adminSelectPlayer?.value;
+            const playerObj = adminCachedPlayers.find(p => p.id === userId);
+            if (playerObj?.isAdmin) {
+                adminBtnDeletePlayer.disabled = true;
+                adminBtnDeletePlayer.title = getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.';
+                adminBtnDeletePlayer.style.opacity = '0.4';
+                adminBtnDeletePlayer.style.cursor = 'not-allowed';
+            } else {
+                adminBtnDeletePlayer.disabled = false;
+                adminBtnDeletePlayer.title = getText('adminDeletePlayerTooltip') || 'Видалити гравця та всі його дані';
+                adminBtnDeletePlayer.style.opacity = '1';
+                adminBtnDeletePlayer.style.cursor = 'pointer';
             }
         }
 
@@ -6187,6 +6407,7 @@ function updateRipples(dt) {
                 playClick();
                 await loadSelectedPlayerScore();
                 highlightSelectedPlayerInLevelTable();
+                updateAdminDeleteBtnState();
             };
         }
 
@@ -6195,6 +6416,112 @@ function updateRipples(dt) {
                 playClick();
                 await loadSelectedPlayerScore();
                 await renderAdminLevelLeaderboard(adminSelectLevel?.value);
+            };
+        }
+
+        // Швидкий вибір власного акаунта (Адмін)
+        if (adminBtnSelectSelf) {
+            adminBtnSelectSelf.onclick = async () => {
+                playClick();
+                const curU = getCurrentUser();
+                const myId = curU?.id || localStorage.getItem('playerId');
+                if (myId && adminSelectPlayer) {
+                    if (!Array.from(adminSelectPlayer.options).some(o => o.value === myId)) {
+                        const opt = document.createElement('option');
+                        opt.value = myId;
+                        opt.textContent = `${curU?.username || 'Адмін'} (id: ${myId.slice(0, 6)}...)`;
+                        adminSelectPlayer.appendChild(opt);
+                    }
+                    adminSelectPlayer.value = myId;
+                    await loadSelectedPlayerScore();
+                    highlightSelectedPlayerInLevelTable();
+                    updateAdminDeleteBtnState();
+                }
+            };
+        }
+
+        // Швидкі кнопки додавання монет (+50, +100, +500, +1000)
+        if (adminCoinQuickAddBtns) {
+            adminCoinQuickAddBtns.forEach(btn => {
+                btn.onclick = () => {
+                    playClick();
+                    const addVal = parseInt(btn.getAttribute('data-add'), 10) || 0;
+                    const curVal = parseInt(adminInputPlayerCoins?.value, 10) || 0;
+                    if (adminInputPlayerCoins) {
+                        adminInputPlayerCoins.value = Math.max(0, curVal + addVal);
+                    }
+                };
+            });
+        }
+
+        // Збереження / накрутка балансу монет гравця через адмінку
+        if (adminBtnSaveCoins) {
+            adminBtnSaveCoins.onclick = async () => {
+                const userId = adminSelectPlayer?.value;
+                if (!userId) {
+                    alert(getText('adminChoosePlayerFirst') || 'Оберіть гравця.');
+                    return;
+                }
+
+                playClick();
+                adminBtnSaveCoins.disabled = true;
+                adminBtnSaveCoins.innerText = 'Збереження...';
+
+                try {
+                    const targetBalance = Math.max(0, parseInt(adminInputPlayerCoins?.value, 10) || 0);
+
+                    const progressRef = doc(db, "user_progress", userId);
+                    const snap = await getDoc(progressRef);
+                    const pData = snap.exists() ? snap.data() : {};
+                    const curSpent = Number(pData.spentCoins) || 0;
+
+                    let earnedCoins = 0;
+                    if (pData.tracks) {
+                        for (const tr of Object.values(pData.tracks)) {
+                            if (tr && tr.stars > 0) {
+                                const starCoins = Math.min(3, Math.max(0, tr.stars || 0));
+                                let hasDiamond = false;
+                                if (Array.isArray(tr.starTypes)) {
+                                    hasDiamond = tr.starTypes.some(t => t === 2);
+                                }
+                                earnedCoins += (starCoins + (hasDiamond ? 3 : 0));
+                            }
+                        }
+                    }
+
+                    const curU = getCurrentUser();
+                    const localPlayerId = curU?.id || localStorage.getItem('playerId');
+                    const isSelf = (userId === localPlayerId);
+                    if (isSelf) {
+                        earnedCoins = FieldThemes.calculateEarnedCoins(songsDB);
+                    }
+
+                    // bonus = targetBalance + spent - earned
+                    const newBonus = Math.max(0, targetBalance + curSpent - earnedCoins);
+
+                    // Оновлюємо user_progress у Firestore
+                    await setDoc(progressRef, {
+                        userId: userId,
+                        bonusCoins: newBonus,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+
+                    // Якщо це поточний користувач — оновлюємо локальне сховище та інтерфейс магазину
+                    if (isSelf) {
+                        FieldThemes.setBonusCoins(newBonus);
+                        if (typeof updateShopCoins === 'function') updateShopCoins();
+                        if (typeof renderShop === 'function') renderShop();
+                    }
+
+                    showNotification(getText('adminCoinsSavedSuccess') || 'Баланс монет успішно оновлено!');
+                    await loadSelectedPlayerScore();
+                } catch (err) {
+                    console.error("Помилка збереження монет:", err);
+                    alert("Помилка: " + (err.message || err));
+                } finally {
+                    adminBtnSaveCoins.disabled = false;
+                    adminBtnSaveCoins.innerHTML = `<span>💾</span> <span data-i18n="adminSaveCoins">${getText('adminSaveCoins') || 'Зберегти монети'}</span>`;
+                }
             };
         }
 
@@ -6407,6 +6734,12 @@ function updateRipples(dt) {
             const playerObj = adminCachedPlayers.find(p => p.id === userId);
             const resolvedName = playerName || (playerObj ? playerObj.name : userId);
 
+            // Захист акаунта адміністратора від видалення
+            if (playerObj?.isAdmin) {
+                alert(getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.');
+                return;
+            }
+
             const curU = getCurrentUser();
             const localPlayerId = curU?.id || localStorage.getItem('playerId');
             const isSelf = (userId === localPlayerId);
@@ -6526,6 +6859,7 @@ function updateRipples(dt) {
                         results.push({
                             userId: userId,
                             name: playerName,
+                            isAdmin: Boolean(playerObj?.isAdmin),
                             score: Number(tr.score) || 0,
                             stars: Number(tr.stars) || 0,
                             starTypes: tr.starTypes || [],
@@ -6575,6 +6909,10 @@ function updateRipples(dt) {
                         }
                     }
 
+                    const actionCellHtml = res.isAdmin
+                        ? `<span style="opacity: 0.7; display:inline-flex; align-items:center; justify-content:center; gap:3px; padding: 4px; font-size: 0.72rem; color: #38bdf8;" title="${getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.'}">🛡️ <span class="hidden-xs">${getText('adminProtectedBadge') || 'Захищено'}</span></span>`
+                        : `<button type="button" class="admin-row-delete-btn" title="${getText('adminDeletePlayerTooltip') || 'Видалити гравця та всі його дані'}">${icons.trash(13)}</button>`;
+
                     tr.innerHTML = `
                         <td><b>#${idx + 1}</b></td>
                         <td>
@@ -6585,9 +6923,7 @@ function updateRipples(dt) {
                         <td>${starsVisual || '<span style="opacity:0.4;">—</span>'}</td>
                         <td>${badgeHtml}</td>
                         <td style="text-align: right;">
-                            <button type="button" class="admin-row-delete-btn" title="${getText('adminDeletePlayerTooltip') || 'Видалити гравця та всі його дані'}">
-                                ${icons.trash(13)}
-                            </button>
+                            ${actionCellHtml}
                         </td>
                     `;
 
@@ -7489,7 +7825,7 @@ function updateRipples(dt) {
             // Кнопки швидких дій для адміністратора
             const adminActions = document.getElementById('user-profile-admin-actions');
             const curUser = getCurrentUser();
-            const isAdmin = curUser?.role === 'admin';
+            const isAdmin = Boolean(curUser?.role === 'admin' || curUser?.isAdmin);
 
             if (adminActions) {
                 if (isAdmin) {
@@ -7524,16 +7860,32 @@ function updateRipples(dt) {
                     }
 
                     if (upBtnAdminDelete) {
-                        upBtnAdminDelete.onclick = async () => {
-                            playClick();
-                            if (!playerId) return;
-                            await deletePlayerCompletely(playerId, name);
-                            userProfileModal.classList.add('hidden');
-                            const lb = document.getElementById('lb-modal');
-                            if (lb) {
-                                loadLeaderboardData('global', lb, currentLeaderboardLimit);
-                            }
-                        };
+                        const targetIsAdmin = Boolean(playerData?.isAdmin || playerData?.role === 'admin');
+                        if (targetIsAdmin) {
+                            upBtnAdminDelete.disabled = true;
+                            upBtnAdminDelete.title = getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.';
+                            upBtnAdminDelete.style.opacity = '0.4';
+                            upBtnAdminDelete.style.cursor = 'not-allowed';
+                            upBtnAdminDelete.onclick = (e) => {
+                                e.stopPropagation();
+                                alert(getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.');
+                            };
+                        } else {
+                            upBtnAdminDelete.disabled = false;
+                            upBtnAdminDelete.title = '';
+                            upBtnAdminDelete.style.opacity = '1';
+                            upBtnAdminDelete.style.cursor = 'pointer';
+                            upBtnAdminDelete.onclick = async () => {
+                                playClick();
+                                if (!playerId) return;
+                                await deletePlayerCompletely(playerId, name);
+                                userProfileModal.classList.add('hidden');
+                                const lb = document.getElementById('lb-modal');
+                                if (lb) {
+                                    loadLeaderboardData('global', lb, currentLeaderboardLimit);
+                                }
+                            };
+                        }
                     }
                 } else {
                     adminActions.classList.add('hidden');
@@ -7569,6 +7921,21 @@ function updateRipples(dt) {
                 accountSection.style.display = (currentUser && currentUser.id) ? 'block' : 'none';
             }
 
+            const isCurAdmin = Boolean(currentUser?.isAdmin || currentUser?.role === 'admin');
+            if (btnDeleteAccount) {
+                if (isCurAdmin) {
+                    btnDeleteAccount.disabled = true;
+                    btnDeleteAccount.title = getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.';
+                    btnDeleteAccount.style.opacity = '0.4';
+                    btnDeleteAccount.style.cursor = 'not-allowed';
+                } else {
+                    btnDeleteAccount.disabled = false;
+                    btnDeleteAccount.title = '';
+                    btnDeleteAccount.style.opacity = '1';
+                    btnDeleteAccount.style.cursor = 'pointer';
+                }
+            }
+
             // Очищення полів зворотного зв'язку
             const ufb = document.getElementById('settings-username-feedback');
             if (ufb) { ufb.textContent = ''; ufb.className = 'form-feedback-msg'; }
@@ -7597,8 +7964,11 @@ function updateRipples(dt) {
                 const newName = input?.value.trim();
                 const fb = document.getElementById('settings-username-feedback');
                 const btn = document.getElementById('btn-save-username');
-                if (!newName || newName.length < 3) {
-                    if (fb) { fb.className = 'form-feedback-msg error'; fb.textContent = getText('authUsernamePlaceholder'); }
+                if (!newName || newName.length < 3 || newName.length > 12) {
+                    if (fb) { 
+                        fb.className = 'form-feedback-msg error'; 
+                        fb.textContent = getText('authUsernameLengthError') || "Ім'я користувача повинно містити від 3 до 12 символів."; 
+                    }
                     return;
                 }
 
@@ -7670,6 +8040,11 @@ function updateRipples(dt) {
                 playClick();
                 const currentUser = getCurrentUser();
                 if (!currentUser || !currentUser.id) return;
+
+                if (currentUser.isAdmin || currentUser.role === 'admin') {
+                    alert(getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.');
+                    return;
+                }
 
                 const doDelete = await showCustomConfirm({
                     title: getText('confirmTitle') || 'Підтвердження',
@@ -7755,6 +8130,16 @@ function updateRipples(dt) {
                 const username = authUserInput?.value.trim();
                 const password = authPassInput?.value.trim();
                 if (!username || !password) return;
+
+                if (isAuthRegisterMode && (username.length < 3 || username.length > 12)) {
+                    if (authErrEl) {
+                        authErrEl.textContent = getText('authUsernameLengthError') || "Ім'я користувача повинно містити від 3 до 12 символів.";
+                        authErrEl.classList.remove('hidden');
+                    } else {
+                        alert(getText('authUsernameLengthError') || "Ім'я користувача повинно містити від 3 до 12 символів.");
+                    }
+                    return;
+                }
 
                 clearAuthError();
                 authSubmit.disabled = true;
@@ -8212,6 +8597,215 @@ function updateRipples(dt) {
         // Початкове завантаження друзів та оновлення бейджа
         loadUserFriends().then(() => updateFriendsBadge()).catch(e => console.warn(e));
 
+        // ==========================================
+        // Магазин тем для ігрового поля (Field Themes Shop)
+        // ==========================================
+        const shopModal = document.getElementById('shop-modal');
+        const btnOpenShop = document.getElementById('btn-open-shop');
+        const shopCloseBtnEl = document.getElementById('shop-close-btn');
+        const shopSearchInputEl = document.getElementById('shop-search-input');
+        const shopSearchClearBtn = document.getElementById('shop-search-clear');
+        const shopSortSelectEl = document.getElementById('shop-sort-select');
+        const shopEmptyMsgEl = document.getElementById('shop-empty-msg');
+
+        let shopSearchQuery = '';
+        let shopSortMode = 'default';
+
+        if (shopSearchInputEl) {
+            shopSearchInputEl.addEventListener('input', () => {
+                shopSearchQuery = shopSearchInputEl.value.trim().toLowerCase();
+                if (shopSearchClearBtn) {
+                    shopSearchClearBtn.classList.toggle('hidden', !shopSearchInputEl.value);
+                }
+                renderShop();
+            });
+        }
+
+        if (shopSearchClearBtn) {
+            shopSearchClearBtn.addEventListener('click', () => {
+                if (shopSearchInputEl) {
+                    shopSearchInputEl.value = '';
+                    shopSearchQuery = '';
+                    shopSearchClearBtn.classList.add('hidden');
+                    shopSearchInputEl.focus();
+                    renderShop();
+                }
+            });
+        }
+
+        if (shopSortSelectEl) {
+            shopSortSelectEl.addEventListener('change', () => {
+                shopSortMode = shopSortSelectEl.value || 'default';
+                renderShop();
+            });
+        }
+
+        updateShopCoins = function() {
+            const { balance } = FieldThemes.getCoinsData(songsDB);
+            const headerCoinEl = document.getElementById('header-coin-count');
+            if (headerCoinEl) headerCoinEl.textContent = balance;
+            const shopBalanceEl = document.getElementById('shop-balance-amount');
+            if (shopBalanceEl) shopBalanceEl.textContent = balance;
+        };
+
+        renderShop = function() {
+            const grid = document.getElementById('shop-themes-grid');
+            if (!grid) return;
+            updateShopCoins();
+
+            const activeId = FieldThemes.getActiveThemeId();
+            const unlockedIds = FieldThemes.getUnlockedThemes();
+
+            let themes = [...FieldThemes.FIELD_THEMES];
+
+            // 1. Фільтрація за пошуковим запитом (назва, опис або бейдж теми)
+            if (shopSearchQuery) {
+                themes = themes.filter(theme => {
+                    const name = (getText(theme.nameKey) || theme.id).toLowerCase();
+                    const desc = (getText(theme.descKey) || '').toLowerCase();
+                    const badge = (getText(theme.badgeKey) || '').toLowerCase();
+                    return name.includes(shopSearchQuery) || desc.includes(shopSearchQuery) || badge.includes(shopSearchQuery);
+                });
+            }
+
+            // 2. Сортування за ціною (від меншого або від більшого)
+            if (shopSortMode === 'priceAsc') {
+                themes.sort((a, b) => a.price - b.price);
+            } else if (shopSortMode === 'priceDesc') {
+                themes.sort((a, b) => b.price - a.price);
+            }
+
+            // 3. Показ повідомлення, якщо тем за пошуком не знайдено
+            if (shopEmptyMsgEl) {
+                shopEmptyMsgEl.classList.toggle('hidden', themes.length > 0);
+            }
+
+            grid.innerHTML = themes.map(theme => {
+                const isActive = (theme.id === activeId);
+                const isUnlocked = unlockedIds.includes(theme.id);
+                const name = getText(theme.nameKey) || theme.id;
+                const desc = getText(theme.descKey) || '';
+                const badge = getText(theme.badgeKey) || '';
+
+                let previewContent = '';
+                if (theme.image) {
+                    previewContent = `<img src="${theme.image}" alt="${name}" class="theme-card-img" />`;
+                } else {
+                    previewContent = `
+                        <div style="width: 100%; height: 100%; background: ${theme.previewBg}; display: flex; align-items: center; justify-content: center; position: relative;">
+                            <div style="position: absolute; width: 64px; height: 64px; border-radius: 50%; background: ${theme.accentColor}; opacity: 0.25; filter: blur(14px);"></div>
+                            <div style="z-index: 1; display: flex; gap: 8px;">
+                                <div style="width: 14px; height: 38px; border-radius: 4px; background: ${theme.colors.strings[2]}; box-shadow: 0 0 10px ${theme.accentColor};"></div>
+                                <div style="width: 14px; height: 50px; border-radius: 4px; background: ${theme.colors.strings[3]}; box-shadow: 0 0 12px ${theme.accentColor};"></div>
+                                <div style="width: 14px; height: 32px; border-radius: 4px; background: ${theme.colors.strings[1]}; box-shadow: 0 0 8px ${theme.accentColor};"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let actionBtnHtml = '';
+                if (isActive) {
+                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-equipped" disabled>${getText('shopEquipped') || 'Вибрано'}</button>`;
+                } else if (isUnlocked) {
+                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-equip" data-equip-theme="${theme.id}">${getText('shopEquip') || 'Вибрати'}</button>`;
+                } else {
+                    const buyText = (getText('shopBuy') || 'Купити за {price} 🪙').replace('{price}', theme.price);
+                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-buy" data-buy-theme="${theme.id}" data-price="${theme.price}">${buyText}</button>`;
+                }
+
+                const priceDisplay = isUnlocked 
+                    ? `<span style="font-size: 0.85rem; color: #4ade80; font-weight: 600;">${getText('shopOwned') || 'Куплено'}</span>`
+                    : `<span class="theme-card-price">${icons.coin(16)} ${theme.price}</span>`;
+
+                return `
+                    <div class="shop-theme-card ${isActive ? 'active-theme' : ''}" data-card-theme-id="${theme.id}">
+                        <div class="theme-card-preview">
+                            ${previewContent}
+                            ${badge ? `<div class="theme-card-badge">${badge}</div>` : ''}
+                        </div>
+                        <div class="theme-card-body">
+                            <div class="theme-card-title">
+                                <span>${name}</span>
+                            </div>
+                            <div class="theme-card-desc">${desc}</div>
+                            <div class="theme-card-footer">
+                                ${priceDisplay}
+                                ${actionBtnHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('[data-buy-theme]').forEach(btn => {
+                btn.onclick = async () => {
+                    playClick();
+                    const themeId = btn.getAttribute('data-buy-theme');
+                    try {
+                        const res = FieldThemes.purchaseTheme(themeId, songsDB);
+                        if (res.success) {
+                            showNotification(getText('shopBoughtSuccess') || 'Тему успішно придбано та активовано!');
+                            applyActiveThemeVisuals();
+                            renderShop();
+                            syncGlobalProgress();
+                        }
+                    } catch (err) {
+                        showNotification(err.message === "Недостатньо монет" ? (getText('shopNotEnoughCoins') || 'Недостатньо монет!') : err.message);
+                    }
+                };
+            });
+
+            grid.querySelectorAll('[data-equip-theme]').forEach(btn => {
+                btn.onclick = () => {
+                    playClick();
+                    const themeId = btn.getAttribute('data-equip-theme');
+                    const ok = FieldThemes.setActiveThemeId(themeId);
+                    if (ok) {
+                        applyActiveThemeVisuals();
+                        renderShop();
+                        syncGlobalProgress();
+                    }
+                };
+            });
+        };
+
+        function openShopModal() {
+            if (!shopModal) return;
+            playClick();
+            i18n.updateDOM();
+            if (shopSearchInputEl) {
+                shopSearchInputEl.value = '';
+                shopSearchQuery = '';
+            }
+            if (shopSearchClearBtn) shopSearchClearBtn.classList.add('hidden');
+            if (shopSortSelectEl) {
+                shopSortSelectEl.value = shopSortMode;
+            }
+            renderShop();
+            shopModal.classList.remove('hidden');
+        }
+
+        function closeShopModal() {
+            if (shopModal) shopModal.classList.add('hidden');
+        }
+
+        const shopBottomCloseBtnEl = document.getElementById('shop-bottom-close-btn');
+        if (shopBottomCloseBtnEl) shopBottomCloseBtnEl.onclick = () => { playClick(); closeShopModal(); };
+
+        if (btnOpenShop) btnOpenShop.onclick = openShopModal;
+        if (shopCloseBtnEl) shopCloseBtnEl.onclick = () => { playClick(); closeShopModal(); };
+        if (shopModal) {
+            shopModal.addEventListener('mousedown', (e) => {
+                if (e.target === shopModal) closeShopModal();
+            });
+            shopModal.addEventListener('touchstart', (e) => {
+                if (e.target === shopModal) closeShopModal();
+            }, { passive: true });
+        }
+
+        // Початкове оновлення балансу монет
+        updateShopCoins();
+
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (adminModal && !adminModal.classList.contains('hidden')) closeAdminPanel();
@@ -8220,6 +8814,7 @@ function updateRipples(dt) {
                 if (settingsModal && !settingsModal.classList.contains('hidden')) settingsModal.classList.add('hidden');
                 if (userProfileModal && !userProfileModal.classList.contains('hidden')) userProfileModal.classList.add('hidden');
                 if (friendsModal && !friendsModal.classList.contains('hidden')) closeFriendsModal();
+                if (shopModal && !shopModal.classList.contains('hidden')) closeShopModal();
                 const lbModal = document.getElementById('lb-modal');
                 if (lbModal) {
                     lbModal.style.opacity = '0';
@@ -8328,7 +8923,7 @@ function updateRipples(dt) {
     loadCloudSongs();
     setTimeout(resizeCanvas, 100);
 
-    window.__gameDebug = { State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, handleInputDown, handleInputUp };
+    window.__gameDebug = { State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, handleInputDown, handleInputUp, draw, FieldThemes };
 }
 
 if (document.readyState === 'loading') {

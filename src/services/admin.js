@@ -6,6 +6,7 @@ import {
   storage,
   collection,
   doc,
+  getDoc,
   getDocs,
   addDoc,
   deleteDoc,
@@ -449,6 +450,19 @@ export async function deleteTrack(trackId, storagePath = null, audioUrl = null) 
 export async function deletePlayerAdmin(userId, username = null) {
   requireAdmin();
   if (!userId) throw new Error("ID гравця не вказано.");
+
+  // Перевірка: захист акаунта адміністратора від видалення
+  try {
+    const userDocSnap = await getDoc(doc(db, "users", userId));
+    if (userDocSnap.exists() && (userDocSnap.data()?.isAdmin || userDocSnap.data()?.role === 'admin')) {
+      throw new Error(i18n.t("adminCannotBeDeleted", "Акаунт адміністратора захищено від видалення."));
+    }
+  } catch (err) {
+    if (err.message && err.message.includes(i18n.t("adminCannotBeDeleted", "Акаунт адміністратора захищено від видалення."))) {
+      throw err;
+    }
+    console.warn("Check admin status in deletePlayerAdmin error:", err);
+  }
 
   // 1. Delete from users
   try {

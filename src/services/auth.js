@@ -88,8 +88,8 @@ export async function registerUser(username, password) {
   const cleanUsername = username?.trim();
   const cleanPassword = password?.trim();
 
-  if (!cleanUsername || cleanUsername.length < 3) {
-    throw new Error("Имя пользователя должно содержать не менее 3 символов.");
+  if (!cleanUsername || cleanUsername.length < 3 || cleanUsername.length > 12) {
+    throw new Error(i18n.t("authUsernameLengthError", "Ім'я користувача повинно містити від 3 до 12 символів."));
   }
   if (!cleanPassword || cleanPassword.length < 4) {
     throw new Error("Пароль должен содержать не менее 4 символов.");
@@ -113,17 +113,23 @@ export async function registerUser(username, password) {
   try {
     const lbCollection = collection(db, "global_leaderboard");
     const lbDocs = await getDocs(lbCollection);
-    const takenInLb = lbDocs.docs.some(d => {
+    for (const d of lbDocs.docs) {
       const data = d.data();
       const docName = (data.name || '').trim().toLowerCase();
       const docUserLower = (data.usernameLower || '').trim().toLowerCase();
-      return docName === usernameLower || docUserLower === usernameLower;
-    });
-    if (takenInLb) {
-      const errorMsg = i18n.t("authUsernameTaken", "Цей нікнейм уже зайнятий! Будь ласка, оберіть інший нікнейм.");
-      const err = new Error(errorMsg);
-      err.code = "USERNAME_TAKEN";
-      throw err;
+      if (docName === usernameLower || docUserLower === usernameLower) {
+        const targetUserId = data.userId || d.id;
+        const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
+        if (targetUserDoc.exists()) {
+          const errorMsg = i18n.t("authUsernameTaken", "Цей нікнейм уже зайнятий! Будь ласка, оберіть інший нікнейм.");
+          const err = new Error(errorMsg);
+          err.code = "USERNAME_TAKEN";
+          throw err;
+        } else {
+          // Stale guest record, remove it
+          try { await deleteDoc(doc(db, "global_leaderboard", d.id)); } catch (e) {}
+        }
+      }
     }
   } catch (err) {
     if (err.code === "USERNAME_TAKEN") throw err;
@@ -220,8 +226,8 @@ export async function loginUser(username, password) {
  */
 export async function updateUserUsername(userId, newUsername) {
   const cleanUsername = newUsername?.trim();
-  if (!cleanUsername || cleanUsername.length < 3) {
-    throw new Error("Ім'я користувача повинно містити щонайменше 3 символи.");
+  if (!cleanUsername || cleanUsername.length < 3 || cleanUsername.length > 12) {
+    throw new Error(i18n.t("authUsernameLengthError", "Ім'я користувача повинно містити від 3 до 12 символів."));
   }
 
   const usernameLower = cleanUsername.toLowerCase();
@@ -244,18 +250,24 @@ export async function updateUserUsername(userId, newUsername) {
   try {
     const lbCollection = collection(db, "global_leaderboard");
     const lbDocs = await getDocs(lbCollection);
-    const conflictingLb = lbDocs.docs.find(d => {
-      if (d.id === userId) return false;
+    for (const d of lbDocs.docs) {
+      if (d.id === userId) continue;
       const data = d.data();
       const docName = (data.name || '').trim().toLowerCase();
       const docUserLower = (data.usernameLower || '').trim().toLowerCase();
-      return docName === usernameLower || docUserLower === usernameLower;
-    });
-    if (conflictingLb) {
-      const errorMsg = i18n.t("authUsernameTaken", "Цей нікнейм уже зайнятий! Будь ласка, оберіть інший нікнейм.");
-      const err = new Error(errorMsg);
-      err.code = "USERNAME_TAKEN";
-      throw err;
+      if (docName === usernameLower || docUserLower === usernameLower) {
+        const targetUserId = data.userId || d.id;
+        const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
+        if (targetUserDoc.exists() && targetUserId !== userId) {
+          const errorMsg = i18n.t("authUsernameTaken", "Цей нікнейм уже зайнятий! Будь ласка, оберіть інший нікнейм.");
+          const err = new Error(errorMsg);
+          err.code = "USERNAME_TAKEN";
+          throw err;
+        } else {
+          // Stale guest record or previous session, delete it so user can reclaim their name
+          try { await deleteDoc(doc(db, "global_leaderboard", d.id)); } catch (e) {}
+        }
+      }
     }
   } catch (err) {
     if (err.code === "USERNAME_TAKEN") throw err;
@@ -270,11 +282,6 @@ export async function updateUserUsername(userId, newUsername) {
   }
   const oldUserData = userSnap.data();
 
-  // Re-hash password with the new username salt so security remains intact
-  // Note: if user keeps same password, we re-hash with new username lower
-  // Let's recompute hash if we have current password, or keep passwordHash if salt is based on username
-  // Wait, let's check how crypto.js hashes password!
-  // Let's check crypto.js!
   await updateDoc(userRef, {
     username: cleanUsername,
     usernameLower: usernameLower,
@@ -284,7 +291,7 @@ export async function updateUserUsername(userId, newUsername) {
   // Update global leaderboard record
   try {
     const lbRef = doc(db, "global_leaderboard", userId);
-    await setDoc(lbRef, { name: cleanUsername }, { merge: true });
+    await setDoc(lbRef, { name: cleanUsername, usernameLower: usernameLower }, { merge: true });
   } catch (e) {
     console.warn("Leaderboard name update warning:", e);
   }
@@ -351,6 +358,24 @@ export async function updateUserPassword(userId, currentPassword, newPassword) {
  */
 export async function deleteCurrentUserAccount(userId) {
   if (!userId) return;
+
+  // Перевірка: акаунт адміністратора не можна видалити
+  const currentUser = getCurrentUser();
+  if (currentUser && (currentUser.id === userId) && (currentUser.isAdmin || currentUser.role === 'admin')) {
+    throw new Error(i18n.t("adminCannotBeDeleted", "Акаунт адміністратора захищено від видалення."));
+  }
+
+  try {
+    const userDocSnap = await getDoc(doc(db, "users", userId));
+    if (userDocSnap.exists() && (userDocSnap.data()?.isAdmin || userDocSnap.data()?.role === 'admin')) {
+      throw new Error(i18n.t("adminCannotBeDeleted", "Акаунт адміністратора захищено від видалення."));
+    }
+  } catch (err) {
+    if (err.message && err.message.includes(i18n.t("adminCannotBeDeleted", "Акаунт адміністратора захищено від видалення."))) {
+      throw err;
+    }
+    console.warn("Check admin status error:", err);
+  }
 
   // 1. Delete user from users collection
   try {
