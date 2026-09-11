@@ -1569,22 +1569,78 @@ body:has(#game-container:not(.hidden)) .game-combo-pill {
     width: 280px;
     height: 280px;
   }
+  /* Повне відключення важких фільтрів розмиття скла на мобільних для 60-120 FPS */
+  *,
+  *::before,
+  *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .modal-overlay {
+    background: rgba(5, 7, 15, 0.88) !important;
+  }
+
+  .user-profile-card,
+  .shop-modal-card,
+  .settings-modal-card,
+  .friends-modal-card,
+  .customize-modal-card,
+  .custom-confirm-card,
+  .admin-modal-card,
+  .admin-modal-content,
+  .leaderboard-modal,
+  .catalog-toolbar-panel,
+  .catalog-bottom-nav,
+  .bottom-toolbar,
   .app-header,
   .song-card,
-  .leaderboard-modal,
-  .admin-modal-content,
-  .song-search-box {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(15, 23, 42, 0.94) !important;
+  .song-search-box,
+  .shop-item-card,
+  .profile-favorite-track-box {
+    background: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
   }
+
+  body[data-theme=light] .user-profile-card,
+  body[data-theme=light] .shop-modal-card,
+  body[data-theme=light] .settings-modal-card,
+  body[data-theme=light] .friends-modal-card,
+  body[data-theme=light] .customize-modal-card,
+  body[data-theme=light] .custom-confirm-card,
+  body[data-theme=light] .admin-modal-card,
+  body[data-theme=light] .catalog-toolbar-panel,
+  body[data-theme=light] .catalog-bottom-nav,
+  body[data-theme=light] .bottom-toolbar,
+  body[data-theme=light] .app-header,
+  body[data-theme=light] .song-card,
+  body[data-theme=light] .song-search-box,
+  body[data-theme=light] .shop-item-card,
+  body[data-theme=light] .profile-favorite-track-box {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12) !important;
+  }
+
+  /* Апаратне прискорення та плавний сенсорний скрол без затримок */
   #song-list,
   .lb-scroll-area,
-  #admin-track-list {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
+  #admin-track-list,
+  .user-profile-card,
+  .shop-modal-card,
+  .shop-catalog-scroll,
+  .settings-modal-card,
+  .friends-modal-card,
+  .customize-modal-card,
+  .modal-scroll-body {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
   }
-  button, .action-btn, .nav-btn, .song-card, input {
+
+  button, .action-btn, .nav-btn, .song-card, input, select, textarea {
     touch-action: manipulation;
   }
   .song-card {
@@ -7716,7 +7772,15 @@ body[data-theme=light] .user-profile-card {
   gap: 18px;
   margin-bottom: 22px;
   padding-bottom: 18px;
+  padding-right: 48px;
+  position: relative;
   border-bottom: 1px solid var(--surface-border);
+}
+
+.user-profile-card .modal-close-btn {
+  top: 16px;
+  right: 16px;
+  z-index: 300 !important;
 }
 
 .user-profile-avatar-wrap {
@@ -9231,6 +9295,13 @@ body[data-theme=light] .filter-chip.active {
     gap: 12px !important;
     margin-bottom: 14px !important;
     padding-bottom: 12px !important;
+    padding-right: 46px !important;
+    position: relative !important;
+  }
+  .user-profile-card .modal-close-btn {
+    top: 14px !important;
+    right: 14px !important;
+    z-index: 300 !important;
   }
   .user-profile-avatar {
     width: 52px !important;

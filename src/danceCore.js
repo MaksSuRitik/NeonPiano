@@ -1502,6 +1502,15 @@ function bootGame() {
                     tctx.shadowBlur = 0;
                 }
 
+                // Оптимізація: запікаємо декор та гліфи активної теми безпосередньо в кеш-спрайт
+                if (activeFieldTheme && typeof activeFieldTheme.drawNoteDetails === 'function') {
+                    try {
+                        activeFieldTheme.drawNoteDetails(tctx, margin, margin, w, h, isLight, s.name);
+                    } catch (e) {
+                        console.warn('Theme drawNoteDetails bake error (tap):', e);
+                    }
+                }
+
                 this.tap[s.name] = tapC;
 
                 // 2. Спрайт голови довгої ноти
@@ -1532,6 +1541,15 @@ function bootGame() {
                 if (hctx.roundRect) hctx.roundRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH, 2);
                 else hctx.fillRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH);
                 hctx.fill();
+
+                // Оптимізація: запікаємо декор та гліфи активної теми безпосередньо в кеш-спрайт голови довгої ноти
+                if (activeFieldTheme && typeof activeFieldTheme.drawNoteDetails === 'function') {
+                    try {
+                        activeFieldTheme.drawNoteDetails(hctx, margin, margin, w, h, isLight, s.name);
+                    } catch (e) {
+                        console.warn('Theme drawNoteDetails bake error (head):', e);
+                    }
+                }
 
                 this.longHead[s.name] = headC;
 
@@ -2576,13 +2594,12 @@ function update(songTime) {
                 const isKeyPressed = State.keyState[tile.lane];
                 if (isKeyPressed) tile.lastValidHoldTime = now;
 
-                // Захисний буфер утримання: 220мс толерантності для сенсорних екранів.
-                // Капаситивні тач-сенсори на смартфонах при грі кількома пальцями можуть пропускати
-                // 1-3 цикли опитування сенсора (20-80мс). Буфер гарантує, що довга нота НЕ зірветься завчасно.
-                const isHoldingActive = isKeyPressed || (now - (tile.lastValidHoldTime || 0) < 220);
+                // Захисний буфер утримання: 350мс толерантності для сенсорних екранів на смартфонах.
+                // Захищає від переривань мультитачу при одночасному натисканні іншими пальцями.
+                const isHoldingActive = isKeyPressed || (now - (tile.lastValidHoldTime || 0) < 350);
 
                 if (isHoldingActive) {
-                    // Обробка стану, коли гравець успішно утримує кнопку. Я нараховую очки за кожен тік утримання.
+                    // Обробка стану, коли гравець успішно утримує кнопку. Нараховуємо очки за кожен тік утримання.
                     if (songTime < tile.endTime) {
                         tile.holdTicks++;
                         if (tile.holdTicks % 10 === 0) {
@@ -2600,9 +2617,9 @@ function update(songTime) {
                         completeLongNote(tile);
                     }
                 } else {
-                    // Обробка ситуації, коли гравець дійсно відпустив кнопку понад 220мс:
-                    // Допуск на фініші: якщо відпущено менш ніж за 160мс до фактичного кінця — зараховуємо успіх
-                    if (tile.endTime - songTime < 160) {
+                    // Обробка ситуації, коли гравець дійсно відпустив кнопку понад 350мс:
+                    // Допуск на фініші: якщо відпущено менш ніж за 220мс до фактичного кінця — зараховуємо успіх
+                    if (tile.endTime - songTime < 220) {
                         completeLongNote(tile);
                     } else {
                         // Якщо відпущено занадто рано, фіксуємо зрив ноти та запускаємо плавне зникнення
@@ -2621,18 +2638,18 @@ function update(songTime) {
                 }
             }
 
-            // 1. Миттєва реєстрація промаху, як тільки нота пройшла лінію рецептора (без запізнення)
-            const basePadY = Math.round(CONFIG.noteHeight * 0.30);
-            const missThresholdY = hitY + basePadY * 1.5;
+            // 1. Реєстрація промаху ТІЛЬКИ коли нота повністю вийшла за межі поля зору (в самий низ екрана)
+            const bottomScreenLimit = State.gameHeight;
             if (!tile.hit && !tile.completed && !tile.failed && !tile.missed) {
-                if ((tile.type === 'tap' && yStart > missThresholdY) || 
-                    (tile.type === 'long' && yStart > missThresholdY && !tile.holding && !tile.released)) {
+                const noteTop = yStart - CONFIG.noteHeight;
+                if ((tile.type === 'tap' && noteTop >= bottomScreenLimit) || 
+                    (tile.type === 'long' && noteTop >= bottomScreenLimit && !tile.holding && !tile.released)) {
                     missNote(tile, true);
                 }
             }
 
             // 2. Звільнення об'єкта ноти, коли вона остаточно виходить за межі екрана
-            const limitY = State.gameHeight + 35;
+            const limitY = State.gameHeight + 40;
             if (tile.missed || tile.failed) {
                 if ((tile.type === 'tap' && (yStart - CONFIG.noteHeight) > limitY) || 
                     (tile.type === 'long' && yEnd > limitY)) {
@@ -2990,17 +3007,13 @@ function update(songTime) {
                 }
 
                 // Звичайна нота в польоті до моменту натискання:
+                // Усі деталі теми (візерунки, півмісяць, руни, філігрань) вже запечені в tapSprite
                 if (tapSprite) {
                     ctx.drawImage(tapSprite, x - 16, yTop - 16);
                 }
 
-                // Унікальний декор та форми нот активної модульної теми
-                if (activeTheme && typeof activeTheme.drawNoteDetails === 'function') {
-                    activeTheme.drawNoteDetails(ctx, x, yTop, w, CONFIG.noteHeight, isLight, comboTier);
-                }
-
-                // Динамічний світловий відблиск (Sheen) — строго обмежений межами ноти через clip()
-                if (State.combo >= 800 && SpriteCache.sheen) {
+                // Динамічний світловий відблиск (Sheen) — на десктопі, строго обмежений межами ноти через clip()
+                if (!State.isMobile && State.combo >= 800 && SpriteCache.sheen) {
                     const sheenCycle = ((now * 0.0018 + tile.lane * 0.3) % 1.6);
                     if (sheenCycle < 1.0) {
                         ctx.save();
@@ -3150,12 +3163,9 @@ function update(songTime) {
                         Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
                 }
 
-                // Відмальовування "голови" довгої ноти через кешований спрайт
+                // Відмальовування "голови" довгої ноти через кешований спрайт (усі деталі теми вже запечені)
                 if (curHeadSprite && actualYHeadTop > -headH + 4) {
                     ctx.drawImage(curHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
-                    if (activeTheme && typeof activeTheme.drawNoteDetails === 'function' && !tile.failed) {
-                        activeTheme.drawNoteDetails(ctx, x, actualYHeadTop, w, headH, isLight, comboTier);
-                    }
                 }
                 ctx.globalAlpha = 1.0;
 
@@ -3491,18 +3501,17 @@ function handleInputDown(lane, touchY, touchX) {
         const laneRight = (lane + 1) * laneW;
         
         // Вертикальний хітбокс: адаптивний до швидкості.
-        // При вищій швидкості (1.6x warp, тощо) ноти швидше пролітають — hitbox стає ширшим
-        // щоб гравцеві легше потрапити при одночасних натисканнях.
-        const speedFactor = Math.min(State.currentSpeed / CONFIG.speedStart, 1.8);
-        const basePadY = Math.round(CONFIG.noteHeight * (0.30 + speedFactor * 0.08));
-        const padTop = basePadY;
-        const padBottom = basePadY;
-
-        // Горизонтальний margin для touch: 12px (було 4px).
-        // Пальці на межі між лейнами завжди потраплять в правильний лейн.
-        const laneHitPad = touchY !== undefined ? 12 : 0;
-
+        // При вищій швидкості (1.6x тощо) ноти швидше пролітають — hitbox стає ширшим
+        // щоб гравцеві було комфортно потрапляти при одночасних натисканнях на смартфонах.
+        const speedMultiplier = State.selectedSpeed || 1.0;
+        const speedPadBoost = Math.max(1.0, speedMultiplier);
+        const basePadY = Math.round(CONFIG.noteHeight * (0.35 * speedPadBoost));
         const isTouch = (touchY !== undefined);
+        const padTop = isTouch ? Math.max(basePadY, 52) : basePadY;
+        const padBottom = isTouch ? Math.max(basePadY, 65) : basePadY;
+
+        // Горизонтальний margin для touch: 22px для комфортної гри пальцями на смартфонах
+        const laneHitPad = isTouch ? 22 : 0;
 
         // Перевірка 1. Пріоритет: спочатку шукаємо незіграну ноту безпосередньо під пальцем / курсором
         const candidates = State.activeTiles.filter(t => {
@@ -3517,16 +3526,27 @@ function handleInputDown(lane, touchY, touchX) {
                     return false;
                 }
 
-                // Перевірка висоти з урахуванням швидкості та реакції
+                const yTop = visualY - CONFIG.noteHeight;
+                // Нота ще не пішла за межі нижнього краю екрана
+                if (yTop > State.gameHeight + 10) return false;
+
                 if (t.type === 'tap') {
-                    const yTop = visualY - CONFIG.noteHeight;
-                    return (touchY >= yTop - padTop && touchY <= visualY + padBottom);
+                    // Варіант 1: безпосередній дотик до самої ноти з вертикальним запасом
+                    const onNote = (touchY >= yTop - padTop && touchY <= visualY + padBottom);
+                    // Варіант 2: гравець торкається рецепторної лінії або низу екрана, поки нота в межах поля зору
+                    const inReceptorZone = (touchY >= hitY - padTop && touchY <= State.gameHeight + 60 && visualY >= hitY - padTop && yTop <= State.gameHeight);
+                    // Варіант 3: нота вже нижче hitY (летить до низу екрана) — гравець натиснув будь-де в зоні між лінією удару та низом
+                    const catchingLateNote = (visualY >= hitY && yTop <= State.gameHeight && touchY >= hitY - padTop && touchY <= State.gameHeight + 60);
+                    return onNote || inReceptorZone || catchingLateNote;
                 } else if (t.type === 'long') {
                     const progressEnd = 1 - (t.endTime - songTime) / State.currentSpeed;
                     const yTail = Math.min(progressEnd * hitY, hitY);
                     const actualYHeadTop = visualY - CONFIG.noteHeight;
                     const topBound = Math.min(yTail, actualYHeadTop);
-                    return (touchY >= topBound - padTop && touchY <= visualY + padBottom);
+                    const onNote = (touchY >= topBound - padTop && touchY <= visualY + padBottom);
+                    const inReceptorZone = (touchY >= hitY - padTop && touchY <= State.gameHeight + 60 && visualY >= hitY - padTop && actualYHeadTop <= State.gameHeight);
+                    const catchingLateNote = (visualY >= hitY && actualYHeadTop <= State.gameHeight && touchY >= hitY - padTop && touchY <= State.gameHeight + 60);
+                    return onNote || inReceptorZone || catchingLateNote;
                 }
                 return false;
             } else {
@@ -3613,7 +3633,7 @@ function handleInputDown(lane, touchY, touchX) {
                     const yTail = Math.min(progressEnd * hitY, hitY);
                     const actualYHeadTop = yHead - CONFIG.noteHeight;
                     const topBound = Math.min(yTail, actualYHeadTop) - padTop;
-                    const bottomBound = Math.max(yHead, hitY) + padBottom;
+                    const bottomBound = Math.max(yHead, hitY, State.gameHeight) + padBottom;
                     validHoldTouch = (touchY >= topBound && touchY <= bottomBound);
                 }
             }
@@ -5392,7 +5412,11 @@ function updateRipples(dt) {
                     if (l === lane) { otherInLane = true; break; }
                 }
                 if (!otherInLane && lane !== undefined && lane >= 0 && lane < 4) {
-                    handleInputUp(lane);
+                    const heldTile = State.holdingTiles[lane];
+                    // Якщо в цій доріжці активно утримується довга нота, захищаємо її від обриву через жест браузера
+                    if (!heldTile || heldTile.completed || heldTile.released) {
+                        handleInputUp(lane);
+                    }
                 }
             };
 
@@ -7368,6 +7392,7 @@ function updateRipples(dt) {
         openPlayerProfileModal = async function(playerData, rank) {
             if (!userProfileModal) return;
             playClick();
+            i18n.updateDOM();
 
             const currentAuthUser = getCurrentUser();
             const myPlayerId = currentAuthUser?.id || localStorage.getItem('playerId');
@@ -7708,13 +7733,14 @@ function updateRipples(dt) {
                         optionsHtml += `<option value="${escapeHtml(s.title)}" ${isSel ? 'selected' : ''}>${escapeHtml(s.artist || '')} — ${escapeHtml(s.title)}</option>`;
                     });
                     if (q && matchCount === 0) {
-                        optionsHtml += `<option value="" disabled>Нічого не знайдено</option>`;
+                        optionsHtml += `<option value="" disabled>${getText('noTracksFound') || 'Нічого не знайдено'}</option>`;
                     }
                     favSelectEl.innerHTML = optionsHtml;
                 };
 
                 if (favSearchEl) {
                     favSearchEl.value = '';
+                    favSearchEl.placeholder = getText('searchFavTrackPlaceholder') || '🔍 Пошук треку або виконавця...';
                     if (favClearEl) favClearEl.classList.add('hidden');
                     favSearchEl.oninput = () => {
                         const val = favSearchEl.value;

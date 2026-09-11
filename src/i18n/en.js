@@ -337,6 +337,7 @@ export default {
   profileFavoriteTrack: "Favorite Track:",
   profileSelectFavTrack: "Select favorite track...",
   searchFavTrackPlaceholder: "🔍 Search track or artist...",
+  noTracksFound: "No tracks found",
   custTabFrames: "Frames",
   custTabTitles: "Titles",
   custLocked: "Locked",

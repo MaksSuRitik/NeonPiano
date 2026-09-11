@@ -337,6 +337,7 @@ export default {
   profileFavoriteTrack: "Любимый трек:",
   profileSelectFavTrack: "Выберите любимый трек...",
   searchFavTrackPlaceholder: "🔍 Поиск трека или исполнителя...",
+  noTracksFound: "Ничего не найдено",
   custTabFrames: "Рамки",
   custTabTitles: "Титулы",
   custLocked: "Заблокировано",
