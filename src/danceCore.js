@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=39.0";
+import { addTrackByUrl, uploadTrack, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=70.6";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=70.5";
+import * as FieldThemes from "./game/fieldThemes.js?v=70.6";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -5939,6 +5939,9 @@ function updateRipples(dt) {
         const adminBottomCloseBtn = document.getElementById('admin-bottom-close-btn');
         const btnOpenAdmin = document.getElementById('btn-open-admin');
         const adminUrlInput = document.getElementById('admin-url-input');
+        const adminFileInput = document.getElementById('admin-file-input');
+        const adminFileLabel = document.getElementById('admin-file-label');
+        const adminFileInfo = document.getElementById('admin-file-info');
         const adminTitleInput = document.getElementById('admin-title-input');
         const adminArtistInput = document.getElementById('admin-artist-input');
         const adminDurationInput = document.getElementById('admin-duration-input');
@@ -5946,6 +5949,96 @@ function updateRipples(dt) {
         const adminUploadBtn = document.getElementById('admin-upload-btn');
         const adminRefreshBtn = document.getElementById('admin-refresh-tracks');
         const adminForm = document.getElementById('admin-track-form');
+
+        let adminSelectedFile = null;
+
+        function resetAdminFileInput() {
+            adminSelectedFile = null;
+            if (adminFileInput) adminFileInput.value = '';
+            if (adminFileLabel) {
+                adminFileLabel.textContent = getText('adminSelectAudioFile') || 'Обрати аудіофайл з пристрою (.mp3)';
+                const parentLabel = adminFileLabel.closest('label');
+                if (parentLabel) {
+                    parentLabel.style.background = 'rgba(56, 189, 248, 0.12)';
+                    parentLabel.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+                    parentLabel.style.color = '#38bdf8';
+                }
+            }
+            if (adminFileInfo) {
+                adminFileInfo.style.display = 'none';
+                adminFileInfo.innerHTML = '';
+            }
+        }
+
+        if (adminFileInput) {
+            adminFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                adminSelectedFile = file;
+
+                // Парсимо назву файлу (наприклад "Artist - Title.mp3" або "Title.mp3")
+                const rawName = file.name.replace(/\.[^/.]+$/, '');
+                let parsedArtist = '';
+                let parsedTitle = rawName;
+
+                if (rawName.includes(' - ')) {
+                    const parts = rawName.split(' - ');
+                    parsedArtist = parts[0].trim();
+                    parsedTitle = parts.slice(1).join(' - ').trim();
+                } else if (rawName.includes('_-_')) {
+                    const parts = rawName.split('_-_');
+                    parsedArtist = parts[0].trim();
+                    parsedTitle = parts.slice(1).join('_-_').trim();
+                }
+
+                if (adminArtistInput && (!adminArtistInput.value.trim() || adminArtistInput.value.trim() === 'Local')) {
+                    adminArtistInput.value = parsedArtist;
+                }
+                if (adminTitleInput && !adminTitleInput.value.trim()) {
+                    adminTitleInput.value = parsedTitle;
+                }
+
+                if (adminFileLabel) {
+                    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                    adminFileLabel.textContent = `✓ ${file.name} (${sizeMb} MB)`;
+                    const parentLabel = adminFileLabel.closest('label');
+                    if (parentLabel) {
+                        parentLabel.style.background = 'rgba(16, 185, 129, 0.16)';
+                        parentLabel.style.borderColor = 'rgba(16, 185, 129, 0.6)';
+                        parentLabel.style.color = '#34d399';
+                    }
+                }
+
+                if (adminFileInfo) {
+                    adminFileInfo.style.display = 'flex';
+                    adminFileInfo.className = 'duration-feedback-row calculating';
+                    adminFileInfo.innerHTML = `${icons.refresh(13)} <span>${getText('adminDurationCalculating') || 'Розрахунок тривалості...'}</span>`;
+                }
+
+                try {
+                    const dur = await calculateAudioDuration(file);
+                    if (dur > 0) {
+                        if (adminDurationInput) adminDurationInput.value = dur;
+                        const mins = Math.floor(dur / 60);
+                        const secs = Math.floor(dur % 60).toString().padStart(2, '0');
+                        if (adminFileInfo) {
+                            adminFileInfo.className = 'duration-feedback-row detected';
+                            adminFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminFileSelected') || 'Файл обрано:'} <b>${dur}s</b> (${mins}:${secs})</span>`;
+                        }
+                    } else if (adminFileInfo) {
+                        adminFileInfo.className = 'duration-feedback-row detected';
+                        adminFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminFileSelected') || 'Файл обрано'}</span>`;
+                    }
+                } catch (err) {
+                    console.warn('[AdminFile] Duration calc warning:', err);
+                    if (adminFileInfo) {
+                        adminFileInfo.className = 'duration-feedback-row detected';
+                        adminFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminFileSelected') || 'Файл обрано'}</span>`;
+                    }
+                }
+            });
+        }
 
         // Spotify Autofill елементи
         const adminSpotifyInput = document.getElementById('admin-spotify-input');
@@ -6046,6 +6139,7 @@ function updateRipples(dt) {
         function closeAdminPanel() {
             playClick();
             if (adminModal) adminModal.classList.add('hidden');
+            resetAdminFileInput();
         }
 
         if (adminCloseBtn) {
@@ -6191,23 +6285,29 @@ function updateRipples(dt) {
         if (adminForm) {
             adminForm.onsubmit = async (e) => {
                 e.preventDefault();
-                const url = adminUrlInput?.value.trim();
-                const title = adminTitleInput?.value.trim();
-                const artist = adminArtistInput?.value.trim();
+                const file = adminSelectedFile || (adminFileInput?.files && adminFileInput.files[0]) || null;
+                const url = adminUrlInput?.value.trim() || '';
+                const title = adminTitleInput?.value.trim() || '';
+                const artist = adminArtistInput?.value.trim() || '';
                 let duration = parseFloat(adminDurationInput?.value) || 0;
 
-                if (!url) {
-                    alert(getText('adminEnterUrlPrompt') || 'Будь ласка, введіть пряме посилання на аудіофайл.');
+                if (!file && !url) {
+                    alert(getText('adminSelectFile') || 'Будь ласка, оберіть аудіофайл або введіть пряме посилання.');
+                    return;
+                }
+
+                if (!title) {
+                    alert(getText('adminSpecifyTitle') || 'Вкажіть назву треку.');
                     return;
                 }
 
                 // Перевірка на дублікат треку перед відправкою
-                const cleanUrl = (url || '').trim().toLowerCase().replace(/\/$/, '');
-                const cleanTitle = (title || '').trim().toLowerCase();
-                const cleanArtist = (artist || '').trim().toLowerCase();
+                const cleanUrl = url ? url.trim().toLowerCase().replace(/\/$/, '') : '';
+                const cleanTitle = title.trim().toLowerCase();
+                const cleanArtist = artist.trim().toLowerCase();
 
                 const duplicateSong = Array.isArray(songsDB) && songsDB.find(s => {
-                    if (s.audioUrl && s.audioUrl.trim().toLowerCase().replace(/\/$/, '') === cleanUrl) return true;
+                    if (cleanUrl && s.audioUrl && s.audioUrl.trim().toLowerCase().replace(/\/$/, '') === cleanUrl) return true;
                     const sTitle = (s.title || '').trim().toLowerCase();
                     const sArtist = (s.artist || '').trim().toLowerCase();
                     return cleanTitle && cleanArtist && sTitle === cleanTitle && sArtist === cleanArtist;
@@ -6223,16 +6323,40 @@ function updateRipples(dt) {
 
                 try {
                     adminUploadBtn.disabled = true;
-                    adminUploadBtn.innerText = getText('adminAnalyzing') || 'Аналіз та збереження...';
 
-                    if (duration <= 0) {
-                        duration = await calculateAudioDurationFromUrl(url);
+                    if (file) {
+                        adminUploadBtn.innerText = getText('adminAnalyzing') || 'Аналіз та збереження...';
+                        if (duration <= 0) {
+                            try {
+                                duration = await calculateAudioDuration(file);
+                            } catch (e) {
+                                duration = 0;
+                            }
+                        }
+
+                        await uploadTrack({
+                            file,
+                            title,
+                            artist: artist || 'Local',
+                            duration,
+                            onProgress: (pct) => {
+                                if (adminUploadBtn) {
+                                    adminUploadBtn.innerText = `${getText('adminUploadingProgress') || 'Завантаження:'} ${pct}%`;
+                                }
+                            }
+                        });
+                    } else {
+                        adminUploadBtn.innerText = getText('adminAnalyzing') || 'Аналіз та збереження...';
+                        if (duration <= 0) {
+                            duration = await calculateAudioDurationFromUrl(url);
+                        }
+                        await addTrackByUrl({ url, title, artist, duration });
                     }
 
-                    await addTrackByUrl({ url, title, artist, duration });
                     showNotification(getText('adminTrackAdded') || 'Трек успішно додано у фонотеку!');
 
                     adminForm.reset();
+                    resetAdminFileInput();
                     if (adminDurationFeedback) adminDurationFeedback.innerHTML = '';
                     if (adminSpotifyFeedback) {
                         adminSpotifyFeedback.className = 'admin-spotify-feedback';
