@@ -763,8 +763,18 @@ function bootGame() {
         const pauseTitle = document.querySelector('#pause-modal h2'); if (pauseTitle) pauseTitle.innerText = getText('paused');
         const btnResume = document.getElementById('btn-resume'); if (btnResume) btnResume.innerText = getText('resume');
         const btnQuit = document.getElementById('btn-quit'); if (btnQuit) btnQuit.innerText = getText('quit');
-        const btnRestart = document.getElementById('btn-restart'); if (btnRestart) btnRestart.innerText = getText('restart');
-        const btnMenu = document.getElementById('btn-menu-end'); if (btnMenu) btnMenu.innerText = getText('menu');
+        const btnRestart = document.getElementById('btn-restart');
+        if (btnRestart) {
+            const span = btnRestart.querySelector('span');
+            if (span) span.textContent = getText('restart');
+            else btnRestart.innerText = getText('restart');
+        }
+        const btnMenu = document.getElementById('btn-menu-end');
+        if (btnMenu) {
+            const span = btnMenu.querySelector('span');
+            if (span) span.textContent = getText('menu');
+            else btnMenu.innerText = getText('menu');
+        }
         const loadText = document.querySelector('#loader h3'); if (loadText) loadText.innerText = getText('loading');
         
         // Кнопка в меню
@@ -2535,7 +2545,7 @@ function update(songTime) {
             }
 
             // 1. Логіка для нот, які гравець відпустив зарано:
-            // Вони стають попелясто-сірими, опускаються крізь струни та розчиняються в невидимий простір
+            // Вони стають попелясто-сірими, продовжують плавно летіти вниз та розчиняються
             if (tile.released) {
                 if (!tile.fadeStartTime) tile.fadeStartTime = now;
                 if (!tile.releaseSongTime) tile.releaseSongTime = songTime;
@@ -2543,8 +2553,8 @@ function update(songTime) {
                 const progressEnd = 1 - (tile.endTime - songTime) / State.currentSpeed;
                 const yTail = progressEnd * hitY;
 
-                // Звільняємо ноту, коли її хвіст повністю пройшов крізь струни в невидимий простір (або вийшов таймер 1400мс)
-                if (yTail >= hitY + 50 || elapsedFade > 1400) {
+                // Звільняємо ноту, коли її хвіст повністю пройшов за межі екрана (або вийшов таймер 1600мс)
+                if (yTail >= State.gameHeight + 40 || elapsedFade > 1600) {
                     NotePool.release(tile);
                     State.activeTiles.splice(i, 1);
                     continue; 
@@ -2565,25 +2575,26 @@ function update(songTime) {
                 continue;
             }
 
-            // Захоплення початку довгої ноти в робочій зоні рецептора, якщо гравець утримує кнопку
-            if (!tile.hit && !tile.completed && !tile.failed && tile.type === 'long') {
+            // Захоплення початку довгої ноти в робочій зоні рецептора, якщо гравець утримує кнопку/палець
+            if (!tile.hit && !tile.completed && !tile.failed && !tile.released && tile.type === 'long') {
                 if (State.keyState[tile.lane]) {
-                    const basePadY = Math.round(CONFIG.noteHeight * 0.30);
+                    const basePadY = Math.round(CONFIG.noteHeight * 0.35);
                     const hitZoneTop = hitY - basePadY * 1.5;
-                    const hitZoneBottom = hitY + basePadY * 1.5;
-                    if (yStart >= hitZoneTop && yStart <= hitZoneBottom) {
+                    // Підхоплюємо ноту, щойно її голова увійшла в зону або вже на лінії, поки хвіст не завершився
+                    if (yStart >= hitZoneTop && songTime < tile.endTime) {
                         tile.hit = true;
                         tile.holding = true;
-                        tile.hitVisualY = yStart;
-                        tile.hitRating = 'perfect';
+                        tile.hitVisualY = Math.min(yStart, hitY);
+                        tile.hitRating = (Math.abs(yStart - hitY) <= 75) ? 'perfect' : 'good';
                         State.totalHits++;
                         tile.lastValidHoldTime = now;
                         State.holdingTiles[tile.lane] = tile;
                         toggleHoldEffect(tile.lane, true);
                         const mult = getComboMultiplier();
-                        State.score += Math.round(CONFIG.scorePerfect * mult * State.scoreMultiplier);
+                        const addScore = (tile.hitRating === 'perfect') ? CONFIG.scorePerfect : CONFIG.scoreGood;
+                        State.score += Math.round(addScore * mult * State.scoreMultiplier);
                         State.lastComboUpdateTime = now;
-                        showRating(getText('perfect'), "rating-perfect");
+                        showRating(getText(tile.hitRating), `rating-${tile.hitRating}`);
                         State.lastHitTime = now;
                         updateScoreUI();
                     }
@@ -2969,19 +2980,17 @@ function update(songTime) {
 
         for (let i = 0; i < State.activeTiles.length; i++) {
             const tile = State.activeTiles[i];
-            if (tile.type === 'long' && tile.completed) continue;
-
-            const progressStart = 1 - (tile.time - songTime) / State.currentSpeed;
-            const visualY = (tile.hit && tile.hitVisualY > 0 && tile.type === 'tap') ? tile.hitVisualY : progressStart * hitY;
-            const yTop = visualY - CONFIG.noteHeight;
-
-            // Viewport Culling
-            if (yTop > State.gameHeight + 40) continue;
+            if (tile.completed) continue;
 
             const x = tile.lane * laneW + padding;
 
             if (tile.type === 'tap') {
-                if (yTop + CONFIG.noteHeight < -40) continue;
+                const progressStart = 1 - (tile.time - songTime) / State.currentSpeed;
+                const visualY = (tile.hit && tile.hitVisualY > 0) ? tile.hitVisualY : progressStart * hitY;
+                const yTop = visualY - CONFIG.noteHeight;
+
+                // Viewport Culling для tap нот
+                if (yTop > State.gameHeight + 40 || yTop + CONFIG.noteHeight < -40) continue;
 
                 if (tile.hit) {
                     if (tile.hitAnimStart) {
@@ -3066,90 +3075,69 @@ function update(songTime) {
                 if (tile.released) {
                     // Користувач відпустив довгу ноту зарано:
                     // 1. Вона стає попелясто-сірою
-                    // 2. Її залишок продовжує плавно опускатися до струн зі швидкістю треку
-                    // 3. Проходячи крізь струни, вона розчиняється в невидимий простір
+                    // 2. Її залишок продовжує плавно летіти вниз зі швидкістю треку
                     if (!tile.releaseSongTime) tile.releaseSongTime = songTime;
                     const elapsedRelease = songTime - tile.releaseSongTime;
                     
                     // Голова (місце відриву пальця) опускається вниз крізь струни:
                     yHead = hitY + (elapsedRelease / State.currentSpeed) * hitY;
                     
-                    // Хвіст опускається до струн за темпом музики:
+                    // Хвіст опускається за темпом музики:
                     const progressEnd = 1 - (tile.endTime - songTime) / State.currentSpeed;
                     yTail = progressEnd * hitY;
                     if (yTail > yHead) yTail = yHead;
                 } else {
+                    const progressStart = 1 - (tile.time - songTime) / State.currentSpeed;
+                    const rawHeadY = progressStart * hitY;
                     const progressEnd = 1 - (tile.endTime - songTime) / State.currentSpeed;
-                    yTail = Math.min(progressEnd * hitY, hitY);
-                    yHead = (tile.hit && tile.holding) ? hitY : (visualY >= hitY ? hitY : visualY);
+                    const rawTailY = progressEnd * hitY;
+
+                    if (tile.hit && tile.holding) {
+                        yHead = hitY;
+                        yTail = Math.min(rawTailY, hitY);
+                    } else {
+                        yHead = rawHeadY;
+                        yTail = rawTailY;
+                    }
                     if (yTail > yHead) yTail = yHead;
                 }
 
-                // Округлюємо ВСІ координати до цілих пікселів — ОДИН раз тут, щоб уникнути
-                // субпіксельного мерехтіння як при утриманні, так і при русі ноти вниз (GPU rasterization).
-                // Без цього навіть 0.4px різниця між кадрами видима як flicker на мобільних AMOLED/LCD.
+                // Округлюємо ВСІ координати до цілих пікселів для уникнення субпіксельного мерехтіння
                 yTail = Math.round(yTail);
                 yHead = Math.round(yHead);
 
                 const actualYHeadTop = Math.round(yHead - headH);
                 const tailH = Math.max(0, actualYHeadTop - yTail);
 
-                // Viewport culling для довгих нот
+                // Viewport culling для довгих нот: тільки коли хвіст пройшов екран або нота ще далеко вгорі
                 if (yTail > State.gameHeight + 40 || (actualYHeadTop < -headH - 40 && yTail < -40)) continue;
 
                 if (tile.released) {
-                    // Рендеринг відпущеної довгої ноти: попелясто-сіра, що опускається крізь струни в невидимий простір
+                    // Рендеринг відпущеної довгої ноти: попелясто-сіра, що продовжує плавний рух униз крізь струни
                     const elapsedFade = now - (tile.fadeStartTime || now);
-                    const overallAlpha = Math.max(0, 1.0 - elapsedFade / 1400);
+                    const overallAlpha = Math.max(0, 1.0 - elapsedFade / 1600);
                     if (overallAlpha <= 0.01) continue;
 
-                    // Спавнимо легкі ефірні частинки розчинення на лінії струн
-                    if (yHead >= hitY - 10 && yTail <= hitY + 30 && Math.random() < 0.35) {
-                        spawnDissolveParticles(x, hitY, w);
+                    // Спавнимо легкі ефірні частинки розчинення
+                    if (yHead >= hitY - 10 && yTail <= State.gameHeight && Math.random() < 0.25) {
+                        spawnDissolveParticles(x, Math.min(yHead, hitY), w);
                     }
 
-                    // FIX: Замість offscreen canvas з destination-out (що спричиняло чорне поле),
-                    // використовуємо ctx.clip() на основному canvas обмежений зоною ВИЩЕ hitY.
-                    // Це абсолютно безпечно для будь-якого Android GPU та WebView.
-                    const clipTop = Math.max(0, Math.round(yTail - 20));
-                    const clipBottom = Math.min(Math.round(hitY + 2), State.gameHeight); // СТОП на рівні струн
-                    const clipH = clipBottom - clipTop;
+                    ctx.save();
+                    ctx.globalAlpha = overallAlpha;
 
-                    if (clipH > 0) {
-                        ctx.save();
-                        // Обрізаємо полотно: нота видима тільки ВИЩЕ hitY
-                        ctx.beginPath();
-                        ctx.rect(Math.round(x - 20), clipTop, Math.round(w + 40), clipH);
-                        ctx.clip();
-
-                        // Малюємо попелясто-сірий хвіст
-                        if (tailH > 1 && relTailSprite) {
-                            ctx.globalAlpha = overallAlpha;
-                            ctx.drawImage(relTailSprite, 0, 0, relTailSprite.width, relTailSprite.height,
-                                Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
-                        }
-                        // Малюємо голову
-                        if (relHeadSprite && actualYHeadTop > -headH + 4) {
-                            ctx.globalAlpha = overallAlpha;
-                            ctx.drawImage(relHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
-                        }
-
-                        // Плавний fade-out на рівні струн — тільки source-over з globalAlpha.
-                        // НЕ використовуємо source-atop бо це викликає кольорові смуги на Android GPU.
-                        const fadeZoneTop = hitY - 32;
-                        const fadeZoneH = 34;
-                        if (fadeZoneTop < clipBottom) {
-                            ctx.globalAlpha = overallAlpha;
-                            const dissolveGrad = ctx.createLinearGradient(0, fadeZoneTop, 0, fadeZoneTop + fadeZoneH);
-                            dissolveGrad.addColorStop(0, 'rgba(0,0,0,0)');
-                            dissolveGrad.addColorStop(1, 'rgba(0,0,0,0.92)');
-                            // source-over: просто малюємо темний прямокутник поверх — без compositing режимів
-                            ctx.fillStyle = dissolveGrad;
-                            ctx.fillRect(Math.round(x - 20), Math.round(fadeZoneTop), Math.round(w + 40), fadeZoneH);
-                        }
-
-                        ctx.restore();
+                    // Попелясто-сірий хвіст, що летить далі вниз
+                    if (tailH > 1 && relTailSprite) {
+                        ctx.drawImage(relTailSprite, 0, 0, relTailSprite.width, relTailSprite.height,
+                            Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
                     }
+
+                    // Попелясто-сіра голова, що летить далі вниз
+                    if (relHeadSprite && actualYHeadTop > -headH - 20 && actualYHeadTop < State.gameHeight + 40) {
+                        ctx.drawImage(relHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
+                    }
+
+                    ctx.restore();
                     continue;
                 }
 
@@ -3526,11 +3514,11 @@ function handleInputDown(lane, touchY, touchX) {
                     return false;
                 }
 
-                const yTop = visualY - CONFIG.noteHeight;
-                // Нота ще не пішла за межі нижнього краю екрана
-                if (yTop > State.gameHeight + 10) return false;
-
                 if (t.type === 'tap') {
+                    const yTop = visualY - CONFIG.noteHeight;
+                    // Нота ще не пішла за межі нижнього краю екрана
+                    if (yTop > State.gameHeight + 10) return false;
+
                     // Варіант 1: безпосередній дотик до самої ноти з вертикальним запасом
                     const onNote = (touchY >= yTop - padTop && touchY <= visualY + padBottom);
                     // Варіант 2: гравець торкається рецепторної лінії або низу екрана, поки нота в межах поля зору
@@ -3540,12 +3528,16 @@ function handleInputDown(lane, touchY, touchX) {
                     return onNote || inReceptorZone || catchingLateNote;
                 } else if (t.type === 'long') {
                     const progressEnd = 1 - (t.endTime - songTime) / State.currentSpeed;
-                    const yTail = Math.min(progressEnd * hitY, hitY);
+                    const yTail = progressEnd * hitY;
+                    // Якщо хвіст довгої ноти повністю пішов за межі низу екрана — нота вже не в грі
+                    if (yTail > State.gameHeight + 10) return false;
+
                     const actualYHeadTop = visualY - CONFIG.noteHeight;
-                    const topBound = Math.min(yTail, actualYHeadTop);
-                    const onNote = (touchY >= topBound - padTop && touchY <= visualY + padBottom);
-                    const inReceptorZone = (touchY >= hitY - padTop && touchY <= State.gameHeight + 60 && visualY >= hitY - padTop && actualYHeadTop <= State.gameHeight);
-                    const catchingLateNote = (visualY >= hitY && actualYHeadTop <= State.gameHeight && touchY >= hitY - padTop && touchY <= State.gameHeight + 60);
+                    const topBound = Math.min(yTail, actualYHeadTop) - padTop;
+                    const bottomBound = Math.max(visualY, hitY, State.gameHeight) + padBottom;
+                    const onNote = (touchY >= topBound && touchY <= bottomBound);
+                    const inReceptorZone = (touchY >= hitY - padTop && touchY <= State.gameHeight + 60 && visualY >= hitY - padTop && yTail <= State.gameHeight);
+                    const catchingLateNote = (visualY >= hitY && yTail <= State.gameHeight && touchY >= hitY - padTop && touchY <= State.gameHeight + 60);
                     return onNote || inReceptorZone || catchingLateNote;
                 }
                 return false;
@@ -3639,6 +3631,7 @@ function handleInputDown(lane, touchY, touchX) {
             }
             if (validHoldTouch) {
                 State.holdingTiles[lane] = activeHold;
+                activeHold.holding = true;
                 activeHold.lastValidHoldTime = now;
                 toggleHoldEffect(lane, true);
                 
@@ -4160,7 +4153,7 @@ function updateRipples(dt) {
         let leftoverMisses = 0;
         if (Array.isArray(State.activeTiles)) {
             State.activeTiles.forEach(t => {
-                if (!t.hit && !t.completed && !t.missed && !t.failed) {
+                if (!t.hit && !t.completed && !t.missed && !t.failed && !t.released) {
                     leftoverMisses++;
                 }
             });
@@ -4322,13 +4315,16 @@ function updateRipples(dt) {
         if (resStarsTextEl) {
             if (diamondsCount > 0) {
                 resStarsTextEl.className = 'res-stars-summary diamond';
-                resStarsTextEl.textContent = (getText('resDiamondsEarned') || 'Отримано {count} / 5 діамантових зірок! (Full Combo)').replace('{count}', diamondsCount);
+                const tpl = getText('resDiamondsEarned') || '✦ {count} / {total} Діамантів (Повне комбо!)';
+                resStarsTextEl.textContent = tpl.replace('{count}', diamondsCount).replace('{total}', total);
             } else if (goldCount > 0) {
                 resStarsTextEl.className = 'res-stars-summary';
-                resStarsTextEl.textContent = (getText('resStarsEarned') || 'Отримано {count} / 5 зірок').replace('{count}', goldCount);
+                const tpl = getText('resStarsEarned') || '★ {count} / {total} Золотих зірок';
+                resStarsTextEl.textContent = tpl.replace('{count}', goldCount).replace('{total}', total);
             } else {
                 resStarsTextEl.className = 'res-stars-summary';
-                resStarsTextEl.textContent = (getText('resStarsNone') || '0 / 5 зірок');
+                const tpl = getText('resStarsNone') || '0 / {total} зірок';
+                resStarsTextEl.textContent = tpl.replace('{total}', total).replace('{count}', 0);
             }
         }
 

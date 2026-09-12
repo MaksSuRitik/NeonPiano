@@ -325,7 +325,7 @@ export default {
   resGradeD: "ПОПРОБУЙТЕ ЕЩЁ",
   autoPausedToast: "Игра приостановлена из-за потери фокуса",
   resStarsEarned: "★ {count} из {total} Золотых звёзд",
-  resDiamondsEarned: "✦ {count} из {total} Алмазов (Full Combo!)",
+  resDiamondsEarned: "✦ {count} из {total} Алмазов (Полное комбо!)",
   resStarsNone: "0 из {total} звёзд",
 
   // Profile Customization & Cosmetics

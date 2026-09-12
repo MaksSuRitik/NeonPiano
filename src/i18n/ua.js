@@ -325,7 +325,7 @@ export default {
   resGradeD: "СПРОБУЙТЕ ЩЕ",
   autoPausedToast: "Гра на паузі через втрату фокусу",
   resStarsEarned: "★ {count} з {total} Золотих зірок",
-  resDiamondsEarned: "✦ {count} з {total} Діамантів (Full Combo!)",
+  resDiamondsEarned: "✦ {count} з {total} Діамантів (Повне комбо!)",
   resStarsNone: "0 з {total} зірок",
 
   // Profile Customization & Cosmetics
