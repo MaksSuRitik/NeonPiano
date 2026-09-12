@@ -2035,7 +2035,7 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
         // Перевірка in-memory кешу аудіобуферів та згенерованих нот з урахуванням обраної складності
         const diffKey = getDifficultyKey() || 'easy';
-        const cacheKey = `${url}_${State.currentSongIndex}_${diffKey}_v57`;
+        const cacheKey = `${url}_${State.currentSongIndex}_${diffKey}_v58`;
         if (audioBufferCache.has(cacheKey) && tileMapCache.has(cacheKey)) {
             State.audioBuffer = audioBufferCache.get(cacheKey);
             const cachedData = tileMapCache.get(cacheKey);
@@ -2310,7 +2310,7 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
                                          chordAllowed && 
                                          (exactTime - lastAnyNoteTime >= chordPadding) && 
                                          type !== 'long' && 
-                                         activeHoldsCount <= 1;
+                                         activeHoldsCount === 0;
 
                 if (isChordCandidate) {
                     const lanes = musicalLaneAllocator(laneFreeTime, 2, exactTime, pitch, lastPitch, lastLane, hitRole, getStableRandom);
@@ -2363,8 +2363,13 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
                             hitAnimStart: 0, lastValidHoldTime: 0
                         });
 
-                        laneFreeTime[lane] = exactTime + (dur > 0 ? dur + 0.12 : minNoteGap);
-                        if (dur > 0) laneHoldUntil[lane] = exactTime + dur;
+                        laneFreeTime[lane] = exactTime + (dur > 0 ? dur + 0.05 : minNoteGap);
+                        if (dur > 0) {
+                            laneHoldUntil[lane] = exactTime + dur + 0.05;
+                            // Блокуємо партнерську доріжку тієї ж руки (0<->1, 2<->3) на час затискання + 0.05с буфер
+                            const partnerLane = lane ^ 1;
+                            laneFreeTime[partnerLane] = Math.max(laneFreeTime[partnerLane], exactTime + dur + 0.05);
+                        }
 
                         lastPitch = pitch;
                         lastLane = lane;
