@@ -19,6 +19,7 @@ import {
 } from "../config/firebase.js";
 import { getCurrentUser } from "./auth.js";
 import { saveAudioToIndexedDB, deleteAudioFromIndexedDB } from "./localAudioStorage.js";
+import { uploadAudioToSupabase, deleteAudioFromSupabase } from "../config/supabase.js";
 import { i18n } from "../i18n/index.js";
 
 /**
@@ -142,44 +143,19 @@ export async function uploadTrack({ file, title, artist, duration, onProgress = 
     console.warn("IndexedDB caching warning:", idbErr);
   }
 
-  // 2. Try to upload to Firebase Cloud Storage
+  // 2. Upload to Supabase Cloud Storage (Fast, CORS-enabled, 100% free)
   const latinName = transliterate(file.name);
-  const cleanName = latinName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storagePath = `tracks/${Date.now()}_${cleanName}`;
-  const storageRef = ref(storage, storagePath);
-
   let downloadUrl = null;
+  let storagePath = null;
   let usedStorage = false;
 
   try {
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    await new Promise((resolve, reject) => {
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          if (snapshot.totalBytes > 0) {
-            const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-            onProgress(percent);
-          }
-        },
-        (error) => {
-          console.warn("Firebase Storage upload task error:", error);
-          reject(error);
-        },
-        async () => {
-          try {
-            downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            usedStorage = true;
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        }
-      );
-    });
+    const res = await uploadAudioToSupabase(file, latinName, onProgress);
+    downloadUrl = res.publicUrl;
+    storagePath = res.storagePath;
+    usedStorage = true;
   } catch (storageErr) {
-    console.warn("Firebase Storage upload failed, falling back to IndexedDB local storage:", storageErr);
+    console.warn("Supabase Storage upload failed, falling back to IndexedDB local storage:", storageErr);
     downloadUrl = `indexeddb://${trackLocalId}`;
     usedStorage = false;
   }
@@ -429,11 +405,19 @@ export async function deleteTrack(trackId, storagePath = null, audioUrl = null) 
 
   // 2. Delete file from Storage if path exists
   if (storagePath) {
-    try {
-      const fileRef = ref(storage, storagePath);
-      await deleteObject(fileRef);
-    } catch (storageErr) {
-      console.warn("Storage file could not be deleted or already removed:", storageErr);
+    if (storagePath.startsWith("tracks/")) {
+      try {
+        await deleteAudioFromSupabase(storagePath);
+      } catch (sbErr) {
+        console.warn("Supabase file could not be deleted:", sbErr);
+      }
+    } else {
+      try {
+        const fileRef = ref(storage, storagePath);
+        await deleteObject(fileRef);
+      } catch (storageErr) {
+        console.warn("Storage file could not be deleted or already removed:", storageErr);
+      }
     }
   }
 
