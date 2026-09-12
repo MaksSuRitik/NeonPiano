@@ -7,7 +7,7 @@ export const COSMIC_THEME = {
   nameKey: 'themeCosmic',
   descKey: 'themeCosmicDesc',
   badgeKey: 'themeCosmicBadge',
-  price: 20,
+  price: 60,
   unlockedByDefault: false,
   accentColor: '#818cf8',
   previewBg: 'linear-gradient(135deg, #07192f, #1e1b4b, #312e81)',

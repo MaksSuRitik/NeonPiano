@@ -10,7 +10,7 @@ export const IUNO_THEME = {
   nameKey: 'themeIuno',
   descKey: 'themeIunoDesc',
   badgeKey: 'themeIunoBadge',
-  price: 12,
+  price: 40,
   unlockedByDefault: false,
   accentColor: '#fbbf24',
   previewBg: 'linear-gradient(135deg, #0b132b, #1a2a4a, #0f2040)',

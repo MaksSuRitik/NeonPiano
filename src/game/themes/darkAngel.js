@@ -7,7 +7,7 @@ export const DARK_ANGEL_THEME = {
   nameKey: 'themeDarkAngel',
   descKey: 'themeDarkAngelDesc',
   badgeKey: 'themeDarkAngelBadge',
-  price: 15,
+  price: 50,
   unlockedByDefault: false,
   accentColor: '#a855f7',
   previewBg: 'linear-gradient(135deg, #1e0938, #3b0764, #581c87)',

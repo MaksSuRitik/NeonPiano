@@ -440,6 +440,9 @@ export default {
   themeIuno: "Lunar Eclipse",
   themeIunoDesc: "Deep celestial tones, a glowing crescent moon, and refined constellation patterns with soft azure luminescence.",
   themeIunoBadge: "Mystic",
+  themeHado99: "Hadō 99",
+  themeHado99Desc: "The ultimate majesty of Sōsuke Aizen: a shattered dimensional abyss unleashing 5 colossal dragons of pure violet Reiatsu, sacred High Kido seals, and the all-seeing amber gaze of the Las Noches sovereign.",
+  themeHado99Badge: "★ 100 🪙 • Legendary",
 
   // Customization & Inventory
   customizationTitle: "Customization",

@@ -9,8 +9,9 @@ import {
   DARK_ANGEL_THEME, 
   COSMIC_THEME, 
   IUNO_THEME,
+  HADO99_THEME,
   getThemeById 
-} from "./themes/index.js?v=63.0";
+} from "./themes/index.js?v=70.5";
 
 export { 
   FIELD_THEMES, 
@@ -19,6 +20,7 @@ export {
   DARK_ANGEL_THEME, 
   COSMIC_THEME, 
   IUNO_THEME,
+  HADO99_THEME,
   getThemeById 
 };
 

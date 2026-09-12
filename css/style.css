@@ -1702,11 +1702,17 @@ body[data-theme="light"] .track-record-label b {
   display: flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .admin-hint-chip a {
   color: #38bdf8;
   text-decoration: underline;
   font-weight: 600;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 body[data-theme="light"] .admin-hint-chip {
   background: rgba(2, 132, 199, 0.06);
@@ -1726,17 +1732,18 @@ body[data-theme="light"] .admin-hint-chip {
 
 /* Admin Spotify Autofill Component */
 .admin-spotify-box {
-  background: rgba(30, 215, 96, 0.07);
-  border: 1px solid rgba(30, 215, 96, 0.28);
+  background: rgba(30, 215, 96, 0.08);
+  border: 1px solid rgba(30, 215, 96, 0.3);
   border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 14px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .admin-spotify-box:focus-within {
   border-color: rgba(30, 215, 96, 0.6);
-  box-shadow: 0 0 12px rgba(30, 215, 96, 0.25);
+  box-shadow: 0 0 16px rgba(30, 215, 96, 0.18);
 }
 .admin-spotify-header {
   display: flex;
@@ -1757,10 +1764,10 @@ body[data-theme="light"] .admin-hint-chip {
 .admin-spotify-icon-container {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
 .admin-spotify-icon-container svg {
-  fill: #1ed760;
-  display: block;
+  vertical-align: middle;
 }
 .admin-spotify-status {
   font-size: 0.75rem;
@@ -1771,9 +1778,13 @@ body[data-theme="light"] .admin-hint-chip {
   display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 .admin-spotify-input {
   flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
   font-size: 0.84rem;
   padding: 8px 12px;
   border-color: rgba(30, 215, 96, 0.25);
@@ -9760,6 +9771,42 @@ body[data-theme=light] .filter-chip.active {
     box-sizing: border-box !important;
     width: 100% !important;
     max-width: 100% !important;
+  }
+  .admin-spotify-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 10px 10px !important;
+  }
+  .admin-spotify-input-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .admin-spotify-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .admin-spotify-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+  .admin-hint-chip {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+  }
+  .admin-modal-content input,
+  .admin-modal-content select,
+  .admin-modal-content textarea {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Settings Modal on Mobile - Fixed Scrolling & Safe Area for Android Bottom Bar */

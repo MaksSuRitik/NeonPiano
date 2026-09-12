@@ -7,7 +7,7 @@ export const PHROLOVA_THEME = {
   nameKey: 'themePhrolova',
   descKey: 'themePhrolovaDesc',
   badgeKey: 'themePhrolovaBadge',
-  price: 10,
+  price: 30,
   unlockedByDefault: false,
   accentColor: '#e11d48',
   previewBg: 'linear-gradient(135deg, #2a0812, #4c0519, #881337)',

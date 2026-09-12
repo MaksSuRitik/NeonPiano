@@ -52,7 +52,7 @@ import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB }
 import { addTrackByUrl, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=39.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=70.4";
+import * as FieldThemes from "./game/fieldThemes.js?v=70.5";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
