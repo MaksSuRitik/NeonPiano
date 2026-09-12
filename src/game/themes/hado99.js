@@ -17,13 +17,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.3';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.3';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.3';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.3';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.3';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.3';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.3';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.4';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.4';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.4';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.4';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.4';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.4';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.4';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -358,6 +358,73 @@ export const HADO99_THEME = {
     const tipY         = yTail - tailLen;
     const bladeRootY   = tipY + bladeH;
     const shaftNeckHW  = Math.max(5, hw * 0.16); // narrow shaft at base of blade
+
+    // ── NECK/SHOULDER JUNCTION ─────────────────────────────────────────────
+    // Fills the gap between the baked tail body sprite and the dragon head sprite.
+    // Drawn BELOW yTail (toward the head), fanning from bodyW → headW.
+    {
+      const neckH   = Math.round(headH * 0.55);  // how far down the collar extends
+      const headHW  = Math.round(w * 0.52);       // half-width of the head sprite area (w + 16px padding / 2)
+      const neckBot = yTail + neckH;
+
+      // Filled trapezoid collar matching body color
+      const ng = ctx.createLinearGradient(cx, yTail, cx, neckBot);
+      ng.addColorStop(0,    pal.bgBot);
+      ng.addColorStop(0.55, pal.bgTop);
+      ng.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.save();
+      ctx.fillStyle = ng;
+      ctx.beginPath();
+      ctx.moveTo(cx - hw,     yTail);
+      ctx.bezierCurveTo(cx - hw,     yTail + neckH * 0.4,
+                        cx - headHW, yTail + neckH * 0.7,
+                        cx - headHW, neckBot);
+      ctx.lineTo(cx + headHW, neckBot);
+      ctx.bezierCurveTo(cx + headHW, yTail + neckH * 0.7,
+                        cx + hw,     yTail + neckH * 0.4,
+                        cx + hw,     yTail);
+      ctx.closePath();
+      ctx.fill();
+
+      // Side border lines continuing from tail body edges
+      ctx.strokeStyle = pal.borderCol;
+      ctx.lineWidth   = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(cx - hw, yTail);
+      ctx.bezierCurveTo(cx - hw,     yTail + neckH * 0.4,
+                        cx - headHW, yTail + neckH * 0.7,
+                        cx - headHW, neckBot);
+      ctx.moveTo(cx + hw, yTail);
+      ctx.bezierCurveTo(cx + hw,     yTail + neckH * 0.4,
+                        cx + headHW, yTail + neckH * 0.7,
+                        cx + headHW, neckBot);
+      ctx.stroke();
+
+      // Small chevrons inside collar (continuation of body armor scales)
+      ctx.strokeStyle = pal.chevronCol;
+      ctx.lineWidth   = 1.2;
+      for (let i = 1; i <= 2; i++) {
+        const t   = i / 3;
+        const cy2 = yTail + t * neckH * 0.75;
+        const cw2 = hw + (headHW - hw) * t;
+        ctx.beginPath();
+        ctx.moveTo(cx - cw2 * 0.80, cy2 - 3);
+        ctx.lineTo(cx,              cy2 + 5);
+        ctx.lineTo(cx + cw2 * 0.80, cy2 - 3);
+        ctx.stroke();
+      }
+
+      // Central spine continues into collar
+      ctx.strokeStyle = pal.spineCol;
+      ctx.lineWidth   = holding ? 2.2 : 1.6;
+      ctx.beginPath();
+      ctx.moveTo(cx, yTail);
+      ctx.lineTo(cx, neckBot);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+    // ── END NECK ──────────────────────────────────────────────────────────
 
     ctx.save();
 
