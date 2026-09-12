@@ -1,12 +1,13 @@
 // ============================================================================
 // HADO 99 THEME MODULE — Sōsuke Aizen & Hadō #99: Goryūtenmetsu (破道の九十九 五龍転滅)
 // Features:
-// - Top-down dragon head matching user sketch with rich multi-tonal shading
+// - Top-down dragon head matching user sketch with 3D volumetric depth and piercing glowing eyes
+// - Dynamic Reishi lightning arcs leaping from horns, crest, and snout on tap notes & hold heads
 // - Crown of 5 Dragon Heads (Goryūtenmetsu) atop the tail per user sketch
 // - Reishi Disintegration & Falling Ash (Option 2): fiery burning edge + dark Kurohitsugi
 //   ash flakes and radiant glowing Reishi embers with zero GC allocations
 // - Seamless neck/shoulder junction collar at bottom of body (zero gaps)
-// - Unique color palettes for each combo tier (0, 50, 100, 200, 400, and 800+ Gold)
+// - Full combo adaptation for tail tip, 5-head crown, and neck across all tiers (0 to 800+ Gold)
 // ============================================================================
 
 // Preload multi-tonal dragon head sprites for all combo tiers
@@ -19,13 +20,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.6';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.6';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.6';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.6';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.6';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.6';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.6';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.7';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.7';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.7';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.7';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.7';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.7';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.7';
 
 // Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
 const dragon5HeadsSprites = {
@@ -37,13 +38,13 @@ const dragon5HeadsSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=71.6';
-if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=71.6';
-if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=71.6';
-if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=71.6';
-if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=71.6';
-if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=71.6';
-if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=71.6';
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=71.7';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=71.7';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=71.7';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=71.7';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=71.7';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=71.7';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=71.7';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -103,82 +104,96 @@ export const HADO99_THEME = {
     return dragon5HeadsSprites.tier0;
   },
 
-  // Multi-tonal color palette for body, tail and effects by combo tier
+  // Multi-tonal color palette for body, tail, volume, and effects by combo tier
   _getTierPalette(tier, isDead, isHolding) {
     if (isDead) {
       return {
-        bgTop: '#0f172a', bgBot: '#1e293b',
+        bgTop: '#0f172a', bgBot: '#1e293b', darkShade: '#050811',
         borderCol: '#334155', chevronCol: 'rgba(100, 116, 139, 0.40)',
         spineCol: '#64748b', beadCol: '#94a3b8',
         bladeCol: '#1e293b', bladeBorder: '#475569',
         finSpikeCol: '#1e293b', lightningCol: '#64748b',
         auraCol: 'rgba(71, 85, 105, 0.35)', breathCol: '#64748b',
+        eyeCol: '#64748b', eyeGlow: '#334155',
+        coreHighlight: 'rgba(148, 163, 184, 0.40)',
         ashCol: 'rgba(51, 65, 85, 0.65)', sparkCol: '#94a3b8', burnCol: '#64748b'
       };
     }
-    if (tier >= 800) { // Tier 5: Goryutenmetsu Gold (800+)
+    if (tier >= 800) { // Tier 5: Goryūtenmetsu God Gold (800+)
       return {
-        bgTop: '#78350f', bgBot: '#b45309',
-        borderCol: '#fbbf24', chevronCol: 'rgba(253, 224, 71, 0.60)',
+        bgTop: '#78350f', bgBot: '#d97706', darkShade: '#3b1702',
+        borderCol: '#ffd700', chevronCol: 'rgba(253, 224, 71, 0.70)',
         spineCol: '#ffffff', beadCol: '#fef08a',
-        bladeCol: '#d97706', bladeBorder: '#fde68a',
-        finSpikeCol: '#b45309', lightningCol: '#ffffff',
-        auraCol: 'rgba(251, 191, 36, 0.50)', breathCol: '#fbbf24',
+        bladeCol: '#d97706', bladeBorder: '#fef08a',
+        finSpikeCol: '#b45309', lightningCol: '#fef08a',
+        auraCol: 'rgba(251, 191, 36, 0.70)', breathCol: '#ffd700',
+        eyeCol: '#ffffff', eyeGlow: '#fbbf24',
+        coreHighlight: 'rgba(255, 255, 255, 1.0)',
         ashCol: 'rgba(120, 53, 15, 0.70)', sparkCol: '#fef08a', burnCol: '#fbbf24'
       };
     }
-    if (tier >= 400) { // Tier 4: Hogyoku Fusion (400-799)
+    if (tier >= 400) { // Tier 4: Hōgyoku Fusion (400-799)
       return {
-        bgTop: isHolding ? '#701a75' : '#4a044e', bgBot: isHolding ? '#be185d' : '#9d174d',
-        borderCol: '#fb7185', chevronCol: 'rgba(254, 240, 138, 0.55)',
+        bgTop: isHolding ? '#701a75' : '#4a044e', bgBot: isHolding ? '#be185d' : '#9d174d', darkShade: '#38033b',
+        borderCol: '#fb7185', chevronCol: 'rgba(254, 240, 138, 0.60)',
         spineCol: '#fef08a', beadCol: '#ffffff',
         bladeCol: '#be185d', bladeBorder: '#fef08a',
         finSpikeCol: '#9d174d', lightningCol: '#fef08a',
-        auraCol: 'rgba(251, 113, 133, 0.45)', breathCol: '#f472b6',
+        auraCol: 'rgba(251, 113, 133, 0.65)', breathCol: '#f472b6',
+        eyeCol: '#fef08a', eyeGlow: '#f43f5e',
+        coreHighlight: 'rgba(255, 254, 230, 0.95)',
         ashCol: 'rgba(74, 4, 78, 0.75)', sparkCol: '#f472b6', burnCol: '#fb7185'
       };
     }
     if (tier >= 200) { // Tier 3: Las Noches (200-399)
       return {
-        bgTop: isHolding ? '#581c87' : '#3b0764', bgBot: isHolding ? '#a21caf' : '#86198f',
-        borderCol: '#e879f9', chevronCol: 'rgba(245, 208, 254, 0.50)',
+        bgTop: isHolding ? '#581c87' : '#3b0764', bgBot: isHolding ? '#a21caf' : '#86198f', darkShade: '#26053f',
+        borderCol: '#f0abfc', chevronCol: 'rgba(245, 208, 254, 0.55)',
         spineCol: '#ffffff', beadCol: '#ffffff',
         bladeCol: '#a21caf', bladeBorder: '#ffffff',
-        finSpikeCol: '#86198f', lightningCol: '#ffffff',
-        auraCol: 'rgba(232, 121, 249, 0.45)', breathCol: '#e879f9',
+        finSpikeCol: '#86198f', lightningCol: '#fdf4ff',
+        auraCol: 'rgba(240, 171, 252, 0.60)', breathCol: '#e879f9',
+        eyeCol: '#ffffff', eyeGlow: '#f0abfc',
+        coreHighlight: 'rgba(255, 255, 255, 0.92)',
         ashCol: 'rgba(59, 7, 100, 0.75)', sparkCol: '#f0abfc', burnCol: '#e879f9'
       };
     }
     if (tier >= 100) { // Tier 2: Kurohitsugi (100-199)
       return {
-        bgTop: isHolding ? '#4a044e' : '#2e0854', bgBot: isHolding ? '#86198f' : '#701a75',
-        borderCol: '#d946ef', chevronCol: 'rgba(232, 121, 249, 0.45)',
-        spineCol: '#f5d0fe', beadCol: '#fae8ff',
+        bgTop: isHolding ? '#4a044e' : '#2e0854', bgBot: isHolding ? '#86198f' : '#701a75', darkShade: '#220326',
+        borderCol: '#e879f9', chevronCol: 'rgba(232, 121, 249, 0.52)',
+        spineCol: '#ffffff', beadCol: '#fae8ff',
         bladeCol: '#86198f', bladeBorder: '#f0abfc',
         finSpikeCol: '#701a75', lightningCol: '#f5d0fe',
-        auraCol: 'rgba(217, 70, 239, 0.40)', breathCol: '#d946ef',
+        auraCol: 'rgba(217, 70, 239, 0.55)', breathCol: '#d946ef',
+        eyeCol: '#ffffff', eyeGlow: '#d946ef',
+        coreHighlight: 'rgba(255, 255, 255, 0.90)',
         ashCol: 'rgba(46, 8, 84, 0.75)', sparkCol: '#e879f9', burnCol: '#d946ef'
       };
     }
-    if (tier >= 50) { // Tier 1: Kyoka Suigetsu (50-99)
+    if (tier >= 50) { // Tier 1: Kyōka Suigetsu (50-99)
       return {
-        bgTop: isHolding ? '#3b0764' : '#1e0538', bgBot: isHolding ? '#6b1da8' : '#4c1d95',
-        borderCol: '#c084fc', chevronCol: 'rgba(216, 180, 254, 0.40)',
-        spineCol: '#e9d5ff', beadCol: '#f3e8ff',
+        bgTop: isHolding ? '#3b0764' : '#1e0538', bgBot: isHolding ? '#6b21a8' : '#4c1d95', darkShade: '#18032c',
+        borderCol: '#d8b4fe', chevronCol: 'rgba(216, 180, 254, 0.50)',
+        spineCol: '#ffffff', beadCol: '#f3e8ff',
         bladeCol: '#6b1da8', bladeBorder: '#e9d5ff',
-        finSpikeCol: '#581c87', lightningCol: '#e9d5ff',
-        auraCol: 'rgba(192, 132, 252, 0.40)', breathCol: '#c084fc',
+        finSpikeCol: '#581c87', lightningCol: '#d8b4fe',
+        auraCol: 'rgba(192, 132, 252, 0.50)', breathCol: '#c084fc',
+        eyeCol: '#ffffff', eyeGlow: '#c084fc',
+        coreHighlight: 'rgba(255, 255, 255, 0.88)',
         ashCol: 'rgba(30, 5, 56, 0.75)', sparkCol: '#d8b4fe', burnCol: '#c084fc'
       };
     }
     // Tier 0: Reikaku Awakening (0-49)
     return {
-      bgTop: isHolding ? '#2e0854' : '#150328', bgBot: isHolding ? '#581c87' : '#3b0764',
-      borderCol: 'rgba(168, 85, 247, 0.85)', chevronCol: 'rgba(192, 132, 252, 0.35)',
-      spineCol: '#d8b4fe', beadCol: '#e9d5ff',
+      bgTop: isHolding ? '#2e0854' : '#150328', bgBot: isHolding ? '#581c87' : '#3b0764', darkShade: '#120224',
+      borderCol: '#c084fc', chevronCol: 'rgba(192, 132, 252, 0.45)',
+      spineCol: '#ffffff', beadCol: '#e9d5ff',
       bladeCol: '#581c87', bladeBorder: '#d8b4fe',
-      finSpikeCol: '#3b0764', lightningCol: '#d8b4fe',
-      auraCol: 'rgba(168, 85, 247, 0.38)', breathCol: '#a855f7',
+      finSpikeCol: '#3b0764', lightningCol: '#c084fc',
+      auraCol: 'rgba(168, 85, 247, 0.45)', breathCol: '#a855f7',
+      eyeCol: '#f3e8ff', eyeGlow: '#a855f7',
+      coreHighlight: 'rgba(255, 255, 255, 0.85)',
       ashCol: 'rgba(21, 3, 40, 0.75)', sparkCol: '#c084fc', burnCol: '#a855f7'
     };
   },
@@ -277,7 +292,59 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // DRAGON HEAD RENDERING (Top-Down View)
+  // REIATSU LIGHTNING GENERATOR (Молнии Рейацу)
+  // ==========================================================================
+  _drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, seed = 0) {
+    // Generate crackling lightning arcs branching from horns, crest, and snout
+    const t = Math.floor(now * 0.028 + seed) * 1.618;
+    const lightningCol = pal.lightningCol || '#d8b4fe';
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'bevel';
+
+    // Outer glow pass
+    ctx.strokeStyle = lightningCol;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+
+    // 1. Left horn arc: leaping up-left
+    const lx0 = cx - w * 0.30, ly0 = cy - h * 0.36;
+    const lx1 = lx0 - 9 + Math.sin(t) * 6, ly1 = ly0 - 11 + Math.cos(t * 1.3) * 5;
+    const lx2 = lx1 - 11 + Math.sin(t * 1.7) * 7, ly2 = ly1 - 13 + Math.sin(t * 0.8) * 6;
+    ctx.moveTo(lx0, ly0); ctx.lineTo(lx1, ly1); ctx.lineTo(lx2, ly2);
+    ctx.moveTo(lx1, ly1); ctx.lineTo(lx1 + 5, ly1 - 10);
+
+    // 2. Right horn arc: leaping up-right
+    const rx0 = cx + w * 0.30, ry0 = cy - h * 0.36;
+    const rx1 = rx0 + 9 + Math.cos(t * 1.1) * 6, ry1 = ry0 - 11 + Math.sin(t * 1.4) * 5;
+    const rx2 = rx1 + 11 + Math.cos(t * 1.5) * 7, ry2 = ry1 - 13 + Math.cos(t * 0.9) * 6;
+    ctx.moveTo(rx0, ry0); ctx.lineTo(rx1, ry1); ctx.lineTo(rx2, ry2);
+    ctx.moveTo(rx1, ry1); ctx.lineTo(rx1 - 5, ry1 - 10);
+
+    // 3. Brow diamond to cheek arcs
+    const bx0 = cx, by0 = cy - h * 0.16;
+    const bx1 = cx + Math.sin(t * 2.1) * (w * 0.20), by1 = by0 + 8;
+    const bx2 = cx - Math.cos(t * 1.8) * (w * 0.24), by2 = by1 + 11;
+    ctx.moveTo(bx0, by0); ctx.lineTo(bx1, by1); ctx.lineTo(bx2, by2);
+
+    // 4. Snout electric arc
+    const sx0 = cx - 3, sy0 = cy + h * 0.38;
+    const sx1 = cx + Math.sin(t * 2.5) * 7, sy1 = sy0 + 8;
+    ctx.moveTo(sx0, sy0); ctx.lineTo(sx1, sy1);
+
+    ctx.stroke();
+
+    // Inner pure white-hot core pass
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+
+    ctx.restore();
+  },
+
+  // ==========================================================================
+  // DRAGON HEAD RENDERING (Top-Down View with 3D Volumetric Depth)
   // ==========================================================================
   _drawDragonHead(ctx, cx, cy, w, h, tier, isDead) {
     const pal = this._getTierPalette(tier, isDead, false);
@@ -286,17 +353,19 @@ export const HADO99_THEME = {
     ctx.save();
 
     // 1. Soft Reiatsu Aura behind head
-    const auraG = ctx.createRadialGradient(cx, cy, w * 0.1, cx, cy, w * 0.65);
+    const auraG = ctx.createRadialGradient(cx, cy, w * 0.08, cx, cy, w * 0.68);
     auraG.addColorStop(0,   pal.auraCol);
-    auraG.addColorStop(0.65, 'rgba(20, 5, 40, 0.10)');
+    auraG.addColorStop(0.60, 'rgba(20, 5, 40, 0.15)');
     auraG.addColorStop(1,   'rgba(0, 0, 0, 0)');
     ctx.fillStyle = auraG;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, w * 0.58, h * 0.52, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, w * 0.60, h * 0.54, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // 2. Draw preloaded multi-tonal dragon head sprite
     let drawnFromSprite = false;
+    let headW = w * 0.96;
+    let headH = h * 0.94;
     if (sprite && sprite.complete && sprite.naturalWidth > 0) {
       const targetH = h * 0.94;
       const targetW = targetH * (246 / 371);
@@ -307,11 +376,14 @@ export const HADO99_THEME = {
 
       ctx.drawImage(sprite, drawX, drawY, drawW, drawH);
       drawnFromSprite = true;
+      headW = drawW;
+      headH = drawH;
     }
 
     // Procedural fallback if image is not yet loaded
     if (!drawnFromSprite) {
       const scale = Math.min(w / 246, h / 371) * 0.92;
+      ctx.save();
       ctx.translate(cx, cy);
       ctx.scale(scale, scale);
 
@@ -372,20 +444,78 @@ export const HADO99_THEME = {
         ctx.quadraticCurveTo(side * 85, -40, side * 92, -90);
         ctx.stroke();
       }
+      ctx.restore();
     }
 
-    // 3. Radiant Reiatsu breath glow at snout tip
+    // 3. 3D VOLUMETRIC DEPTH OVERLAY (игра цветами для объема)
     if (!isDead) {
-      const snoutY = cy + h * 0.44;
-      const bG = ctx.createRadialGradient(cx, snoutY, 0.5, cx, snoutY, w * 0.20);
+      // Longitudinal 3D ridge highlight: center crest is raised and bright, flanks stay in deep shadow
+      const ridgeGrad = ctx.createLinearGradient(cx, cy - headH * 0.35, cx, cy + headH * 0.35);
+      ridgeGrad.addColorStop(0,    'rgba(255, 255, 255, 0)');
+      ridgeGrad.addColorStop(0.35, pal.coreHighlight);
+      ridgeGrad.addColorStop(0.70, pal.borderCol);
+      ridgeGrad.addColorStop(1,    'rgba(255, 255, 255, 0)');
+
+      ctx.strokeStyle = ridgeGrad;
+      ctx.lineWidth   = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - headH * 0.32);
+      ctx.lineTo(cx, cy + headH * 0.30);
+      ctx.stroke();
+
+      // Diamond forehead plate highlight (volumetric crown)
+      ctx.fillStyle = pal.coreHighlight;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - headH * 0.18);
+      ctx.lineTo(cx + headW * 0.06, cy - headH * 0.13);
+      ctx.lineTo(cx, cy - headH * 0.08);
+      ctx.lineTo(cx - headW * 0.06, cy - headH * 0.13);
+      ctx.closePath();
+      ctx.fill();
+
+      // Piercing glowing dragon eyes
+      const eyeY = cy - headH * 0.04;
+      const eyeSpread = headW * 0.15;
+      const eyeLen = headW * 0.08;
+
+      for (const side of [-1, 1]) {
+        const ex = cx + side * eyeSpread;
+
+        // Outer eye glow bloom
+        const eg = ctx.createRadialGradient(ex, eyeY, 0.5, ex, eyeY, eyeLen * 1.4);
+        eg.addColorStop(0,    pal.eyeCol);
+        eg.addColorStop(0.45, pal.eyeGlow);
+        eg.addColorStop(1,    'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = eg;
+        ctx.beginPath();
+        ctx.arc(ex, eyeY, eyeLen * 1.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Slanted almond eye slit
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(ex - side * eyeLen * 0.6, eyeY + 2);
+        ctx.lineTo(ex, eyeY - 2);
+        ctx.lineTo(ex + side * eyeLen * 0.6, eyeY - 4);
+        ctx.lineTo(ex, eyeY + 1);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Snout Reiatsu breath glow
+      const snoutY = cy + headH * 0.44;
+      const bG = ctx.createRadialGradient(cx, snoutY, 0.5, cx, snoutY, w * 0.22);
       bG.addColorStop(0,   '#ffffff');
-      bG.addColorStop(0.3, pal.breathCol);
-      bG.addColorStop(0.7, pal.auraCol);
+      bG.addColorStop(0.35, pal.breathCol);
+      bG.addColorStop(0.70, pal.auraCol);
       bG.addColorStop(1,   'rgba(0, 0, 0, 0)');
       ctx.fillStyle = bG;
       ctx.beginPath();
       ctx.arc(cx, snoutY, w * 0.18, 0, Math.PI * 2);
       ctx.fill();
+
+      // Electric spiritual lightning arcs jumping from horns & crest
+      this._drawReiatsuLightning(ctx, cx, cy, headW, headH, pal, 1000, tier);
     }
 
     ctx.restore();
@@ -462,12 +592,25 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
+  // DYNAMIC TAP NOTE OVERLAY (Live crackling Reiatsu lightning on flying notes)
+  // ==========================================================================
+  drawTapOverlay(ctx, x, yTop, w, h, tile, isLight, now, combo = 0) {
+    if (tile.hit || tile.failed) return;
+    const cx = x + w / 2;
+    const cy = yTop + h / 2;
+    const pal = this._getTierPalette(combo || 0, false, false);
+    // Draw live animated crackling lightning arcs
+    this._drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, tile.lane * 9);
+  },
+
+  // ==========================================================================
   // HOLD TAIL & REISHI DISINTEGRATION ENGINE
   // - Crown of 5 Dragon Heads (Goryūtenmetsu per user sketch media_1789239860628.png)
   // - Reishi Disintegration & Falling Ash (Option 2): fiery burning edge + floating ash/embers
-  // - Seamless neck/shoulder collar at bottom of body (yTail + tailH)
+  // - Seamless neck/shoulder junction collar at bottom of body (yTail + tailH)
+  // - Live combo adaptation across all tiers
   // ==========================================================================
-  drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0) {
+  drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0, currentCombo = 0) {
     const isMob   = typeof window !== 'undefined' && (window.innerWidth <= 768 || navigator.maxTouchPoints > 1);
     const bodyW   = Math.max(10, Math.round(w - 16));
     const bodyX   = Math.round(x + 8);
@@ -476,7 +619,13 @@ export const HADO99_THEME = {
 
     const holding = tile.holding && tile.hit;
     const dead    = tile.failed;
-    const tier    = tile?.style?.tier ?? (typeof State !== 'undefined' ? State?.combo : 0);
+
+    // Get live combo: from argument, from tile, or from window.GameState
+    const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
+      ? currentCombo
+      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
+
+    const tier    = dead ? 0 : liveCombo;
     const pal     = this._getTierPalette(tier, dead, holding);
 
     // Dimensions
@@ -488,6 +637,7 @@ export const HADO99_THEME = {
     const shaftNeckHW  = Math.max(5, hw * 0.16);
 
     // ── NECK/SHOULDER JUNCTION (fills gap at bottom of body where head connects) ──
+    // Now fully adapted to live combo tier palette!
     {
       const junctionY = yTail + tailH;
       const neckH     = Math.round(headH * 0.50);
@@ -514,7 +664,7 @@ export const HADO99_THEME = {
 
       // Side border lines continuing from tail body edges
       ctx.strokeStyle = pal.borderCol;
-      ctx.lineWidth   = 1.4;
+      ctx.lineWidth   = 1.5;
       ctx.beginPath();
       ctx.moveTo(cx - hw, junctionY);
       ctx.bezierCurveTo(cx - hw,     junctionY + neckH * 0.4,
@@ -542,7 +692,7 @@ export const HADO99_THEME = {
 
       // Central spine extends through the collar
       ctx.strokeStyle = pal.spineCol;
-      ctx.lineWidth   = holding ? 2.2 : 1.6;
+      ctx.lineWidth   = holding ? 2.4 : 1.8;
       ctx.beginPath();
       ctx.moveTo(cx, junctionY);
       ctx.lineTo(cx, neckBot);
@@ -665,6 +815,7 @@ export const HADO99_THEME = {
     }
 
     // 5. CROWN OF 5 DRAGON HEADS (Goryūtenmetsu per user sketch media_1789239860628.png)
+    // Adapts sprite to combo tier (tier0 to tier5 gold)
     const headsSprite = this._getDragon5HeadsSprite(tier, dead);
     if (headsSprite && headsSprite.complete && headsSprite.naturalWidth > 0) {
       const crownW = Math.round(w * 0.96);
@@ -681,6 +832,12 @@ export const HADO99_THEME = {
         ctx.save();
         ctx.globalAlpha = dissolveAlpha;
         ctx.drawImage(headsSprite, crownX, crownY, crownW, crownH);
+
+        // Crackling lightning atop the 5 heads when holding or at high combo
+        if (holding || tier >= 400) {
+          this._drawReiatsuLightning(ctx, cx, bladeRootY - crownH * 0.6, crownW * 0.9, crownH * 0.5, pal, now, 42);
+        }
+
         ctx.restore();
       }
     }
@@ -954,7 +1111,8 @@ export const HADO99_THEME = {
     }
 
     // Update & draw any active floating Reishi ash/embers across the atmosphere
-    this._updateAndDrawReishiAsh(ctx, this._getTierPalette(State?.combo || 0, false, false));
+    const currentCombo = (typeof State !== 'undefined' && State?.combo) || 0;
+    this._updateAndDrawReishiAsh(ctx, this._getTierPalette(currentCombo, false, false));
 
     ctx.restore();
   }

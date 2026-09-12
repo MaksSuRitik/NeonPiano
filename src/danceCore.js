@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.6";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.7";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=71.6";
+import * as FieldThemes from "./game/fieldThemes.js?v=71.7";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -328,7 +328,7 @@ const State = {
     isHardcore: false,        // 1 промах = смерть
     scoreMultiplier: 1.0      // Обчислюється з модифікаторів
 };
-
+if (typeof window !== 'undefined') window.GameState = State;
 // Тут я генерую таблицю випадкових значень під час ініціалізації. Під час рендерингу я звертаюся до неї за індексом, що економить ресурси.
 for(let i = 0; i < State.shakeTable.length; i++) {
     State.shakeTable[i] = (Math.random() - 0.5);
@@ -3102,6 +3102,9 @@ function update(songTime) {
                 if (tapSprite) {
                     ctx.drawImage(tapSprite, x - 16, yTop - 16);
                 }
+                if (activeTheme && typeof activeTheme.drawTapOverlay === 'function') {
+                    activeTheme.drawTapOverlay(ctx, x, yTop, w, CONFIG.noteHeight, tile, isLight, now, State.combo);
+                }
 
                 // Динамічний світловий відблиск (Sheen) — на десктопі, строго обмежений межами ноти через clip()
                 if (!State.isMobile && State.combo >= 800 && SpriteCache.sheen) {
@@ -3239,7 +3242,7 @@ function update(songTime) {
                 // Тематичний завершальний хвіст довгої ноти + neck junction collar
                 // Pass tailH so the theme can place the neck collar at the correct position (bottom of body)
                 if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
-                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH);
+                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH, State.combo);
                 }
 
                 // Відмальовування "голови" довгої ноти через кешований спрайт (усі деталі теми вже запечені)
