@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.9";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=72.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=71.9";
+import * as FieldThemes from "./game/fieldThemes.js?v=72.0";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -3086,7 +3086,7 @@ function update(songTime) {
                                 const isPerfect = (tile.hitRating === 'perfect');
 
                                 if (activeTheme && typeof activeTheme.drawHitAnimation === 'function') {
-                                    activeTheme.drawHitAnimation(ctx, cx, cy, w, CONFIG.noteHeight, p, isPerfect, isLight, now);
+                                    activeTheme.drawHitAnimation(ctx, cx, cy, w, CONFIG.noteHeight, p, isPerfect, isLight, now, State.combo);
                                 }
                             }
                         } catch (e) {
@@ -3214,7 +3214,11 @@ function update(songTime) {
                     ctx.globalAlpha = overallAlpha;
 
                     // Попелясто-сірий хвіст, що летить далі вниз
-                    if (tailH > 1 && relTailSprite) {
+                    let customRelBodyDrawn = false;
+                    if (activeTheme && typeof activeTheme.drawHoldBody === 'function' && tailH > 1) {
+                        customRelBodyDrawn = activeTheme.drawHoldBody(ctx, x, yTail, w, headH, tile, isLight, now, tailH, 0, actualYHeadTop, true);
+                    }
+                    if (!customRelBodyDrawn && tailH > 1 && relTailSprite) {
                         ctx.drawImage(relTailSprite, 0, 0, relTailSprite.width, relTailSprite.height,
                             Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + Math.round(headH * 0.4)));
                     }
@@ -3237,9 +3241,13 @@ function update(songTime) {
                 const curTailSprite = tile.failed ? deadTailSprite : longTailSprite;
                 const curHeadSprite = tile.failed ? deadHeadSprite : longHeadSprite;
 
-                // Відмальовування "хвоста" довгої ноти через розтягування кешованого спрайту.
-                // Extend height by headH*0.4 so the body sprite overlaps the head area and leaves no gap.
-                if (tailH > 1 && curTailSprite) {
+                // Відмальовування "хвоста" довгої ноти:
+                // Якщо тема підтримує процедурне извивающееся тіло (drawHoldBody) — використовуємо його!
+                let customBodyDrawn = false;
+                if (activeTheme && typeof activeTheme.drawHoldBody === 'function' && tailH > 1) {
+                    customBodyDrawn = activeTheme.drawHoldBody(ctx, x, yTail, w, headH, tile, isLight, now, tailH, State.combo, actualYHeadTop, false);
+                }
+                if (!customBodyDrawn && tailH > 1 && curTailSprite) {
                     ctx.drawImage(curTailSprite, 0, 0, curTailSprite.width, curTailSprite.height,
                         Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + Math.round(headH * 0.4)));
                 }
@@ -3304,6 +3312,11 @@ function update(songTime) {
                     ctx.restore();
                 }
             }
+        }
+
+        // Пост-рендер оверлей активної теми (парячий попіл Рейсі, глобальні шлейфи)
+        if (activeTheme && typeof activeTheme.drawPostNotesOverlay === 'function') {
+            activeTheme.drawPostNotesOverlay(ctx, now, State.combo);
         }
 
         // 5. Рендеринг системи частинок (іскор) при влучанні по нотах.

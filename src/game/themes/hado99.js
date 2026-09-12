@@ -20,13 +20,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.9';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.9';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.9';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.9';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.9';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.9';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.9';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=72.0';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=72.0';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=72.0';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=72.0';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=72.0';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=72.0';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=72.0';
 
 // Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
 const dragon5HeadsSprites = {
@@ -38,13 +38,13 @@ const dragon5HeadsSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=71.9';
-if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=71.9';
-if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=71.9';
-if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=71.9';
-if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=71.9';
-if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=71.9';
-if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=71.9';
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=72.0';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=72.0';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=72.0';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=72.0';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=72.0';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=72.0';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=72.0';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -201,7 +201,7 @@ export const HADO99_THEME = {
   // ==========================================================================
   // REISHI DISINTEGRATION ASH & EMBERS PARTICLE POOL (0 GC Allocations)
   // ==========================================================================
-  _ashPool: Array.from({ length: 42 }, () => ({
+  _ashPool: Array.from({ length: 64 }, () => ({
     active: false,
     x: 0, y: 0,
     vx: 0, vy: 0,
@@ -219,7 +219,7 @@ export const HADO99_THEME = {
     // Spawn 2 particles along the burning horizon
     for (let c = 0; c < 2; c++) {
       const p = this._ashPool[this._ashIdx];
-      this._ashIdx = (this._ashIdx + 1) % 42;
+      this._ashIdx = (this._ashIdx + 1) % this._ashPool.length;
       p.active = true;
       p.x = cx + (Math.random() - 0.5) * (hw * 1.8);
       p.y = yTail + (Math.random() - 0.5) * 6;
@@ -238,12 +238,38 @@ export const HADO99_THEME = {
     }
   },
 
+  // Explosive burst of Reishi ash & glowing embers on note hit
+  _spawnReishiAshBurst(cx, cy, w, pal, now, count = 16) {
+    for (let c = 0; c < count; c++) {
+      const p = this._ashPool[this._ashIdx];
+      this._ashIdx = (this._ashIdx + 1) % this._ashPool.length;
+      p.active = true;
+      p.x = cx + (Math.random() - 0.5) * (w * 0.7);
+      p.y = cy + (Math.random() - 0.5) * 10;
+      p.isSpark = Math.random() < 0.65; // 65% glowing Reishi sparks
+      if (p.isSpark) {
+        const angle = (Math.random() * Math.PI) + Math.PI; // upward arc
+        const spd = 2.2 + Math.random() * 4.2;
+        p.vx = Math.cos(angle) * spd * 0.8;
+        p.vy = Math.sin(angle) * spd;
+        p.life = 0.70 + Math.random() * 0.30;
+        p.size = 2.0 + Math.random() * 2.5;
+      } else {
+        p.vx = (Math.random() - 0.5) * 3.0;
+        p.vy = -(Math.random() * 2.8 + 1.2);
+        p.life = 0.80 + Math.random() * 0.20;
+        p.size = 2.8 + Math.random() * 3.2;
+      }
+    }
+  },
+
   _updateAndDrawReishiAsh(ctx, pal) {
     let hasAsh = false;
     let hasSparks = false;
 
     // Single-pass position update & boundary check
-    for (let i = 0; i < 42; i++) {
+    const poolLen = this._ashPool.length;
+    for (let i = 0; i < poolLen; i++) {
       const p = this._ashPool[i];
       if (!p.active) continue;
       p.x += p.vx;
@@ -266,7 +292,7 @@ export const HADO99_THEME = {
     if (hasAsh) {
       ctx.fillStyle = pal.ashCol || 'rgba(30, 10, 48, 0.70)';
       ctx.beginPath();
-      for (let i = 0; i < 42; i++) {
+      for (let i = 0; i < poolLen; i++) {
         const p = this._ashPool[i];
         if (!p.active || p.isSpark) continue;
         const sz = p.size * p.life;
@@ -279,7 +305,7 @@ export const HADO99_THEME = {
     if (hasSparks) {
       ctx.fillStyle = pal.sparkCol || '#f0abfc';
       ctx.beginPath();
-      for (let i = 0; i < 42; i++) {
+      for (let i = 0; i < poolLen; i++) {
         const p = this._ashPool[i];
         if (!p.active || !p.isSpark) continue;
         const sz = p.size * (0.6 + p.life * 0.4);
@@ -292,195 +318,228 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // REIATSU LIGHTNING GENERATOR (Анимированные молнии Рейацу)
+  // FLYING REIATSU AURA (Хвост для мелких нот по эскизу: темный шлейф и позвоночник)
   // ==========================================================================
-  _drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, seed = 0, isHolding = false) {
-    // Quantize time into 38ms steps (26 fps electric crackle)
-    const step = Math.floor(now * 0.026) + seed;
-    // Deterministic pseudo-random generator for this 38ms step
-    const rand = (k) => {
-      const v = Math.sin(step * 127.1 + k * 311.7) * 43758.5453123;
-      return v - Math.floor(v);
-    };
-
-    const lightningCol = pal.lightningCol || '#d8b4fe';
+  _drawFlyingReiatsuAura(ctx, cx, yTop, w, h, pal, now, seed = 0) {
     const isGold = (pal.borderCol === '#ffd700');
-    const intensity = isHolding ? 1.4 : 1.0;
+    const trailLen = Math.round(h * 1.45);
+    const trailTop = yTop - trailLen;
 
     ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'bevel';
 
-    // Pass 1: Outer colored electric aura glow
-    ctx.strokeStyle = lightningCol;
-    ctx.lineWidth   = isHolding ? 3.0 : 2.4;
+    // 1. Pulsating spiritual pressure dome behind dragon head
+    const pulse = Math.sin(now * 0.007 + seed) * 0.14 + 0.86;
+    const auraR = (w * 0.72) * pulse;
+    const auraGrad = ctx.createRadialGradient(cx, yTop + h * 0.35, 4, cx, yTop + h * 0.35, auraR);
+    auraGrad.addColorStop(0,    pal.auraCol || 'rgba(192, 132, 252, 0.45)');
+    auraGrad.addColorStop(0.55, isGold ? 'rgba(251, 191, 36, 0.18)' : 'rgba(147, 51, 234, 0.16)');
+    auraGrad.addColorStop(1,    'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = auraGrad;
     ctx.beginPath();
+    ctx.arc(cx, yTop + h * 0.35, auraR, 0, Math.PI * 2);
+    ctx.fill();
 
-    // 1. Left Horn Electric Arc (crackles from left horn tip leaping up and outward)
-    const lx0 = cx - w * 0.28, ly0 = cy - h * 0.35;
-    const lx1 = lx0 - (5 + rand(1) * 9 * intensity),  ly1 = ly0 - (6 + rand(2) * 9 * intensity);
-    const lx2 = lx1 + (rand(3) * 8 - 4) * intensity,  ly2 = ly1 - (6 + rand(4) * 9 * intensity);
-    const lx3 = lx2 - (4 + rand(5) * 9 * intensity),  ly3 = ly2 - (4 + rand(6) * 7 * intensity);
-    ctx.moveTo(lx0, ly0); ctx.lineTo(lx1, ly1); ctx.lineTo(lx2, ly2); ctx.lineTo(lx3, ly3);
-    // Left fork
-    if (rand(7) > 0.25) {
-      ctx.moveTo(lx1, ly1);
-      ctx.lineTo(lx1 + (rand(8) * 10 - 5), ly1 - (6 + rand(9) * 8));
-    }
+    // 2. Dark smoky Reiatsu flame plume trailing upward behind head (per user sketch)
+    const plumeGrad = ctx.createLinearGradient(cx, yTop + 8, cx, trailTop);
+    plumeGrad.addColorStop(0,    pal.bgBot);
+    plumeGrad.addColorStop(0.40, pal.bgTop);
+    plumeGrad.addColorStop(0.75, isGold ? 'rgba(180, 83, 9, 0.25)' : 'rgba(88, 28, 135, 0.20)');
+    plumeGrad.addColorStop(1,    'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = plumeGrad;
 
-    // 2. Right Horn Electric Arc (crackles from right horn tip leaping up and outward)
-    const rx0 = cx + w * 0.28, ry0 = cy - h * 0.35;
-    const rx1 = rx0 + (5 + rand(10) * 9 * intensity), ry1 = ry0 - (6 + rand(11) * 9 * intensity);
-    const rx2 = rx1 + (rand(12) * 8 - 4) * intensity, ry2 = ry1 - (6 + rand(13) * 9 * intensity);
-    const rx3 = rx2 + (4 + rand(14) * 9 * intensity), ry3 = ry2 - (4 + rand(15) * 7 * intensity);
-    ctx.moveTo(rx0, ry0); ctx.lineTo(rx1, ry1); ctx.lineTo(rx2, ry2); ctx.lineTo(rx3, ry3);
-    // Right fork
-    if (rand(16) > 0.25) {
-      ctx.moveTo(rx1, ry1);
-      ctx.lineTo(rx1 + (rand(17) * 10 - 5), ry1 - (6 + rand(18) * 8));
-    }
+    const wav1 = Math.sin(now * 0.007 + seed) * 6;
+    const wav2 = Math.cos(now * 0.009 + seed * 1.4) * 6;
 
-    // 3. Brow / Forehead Diamond Crest Arc (crackles across crest plate)
-    const bx0 = cx + (rand(19) * 8 - 4), by0 = cy - h * 0.16;
-    const bx1 = cx + (rand(20) - 0.5) * (w * 0.32), by1 = by0 + 6 + rand(21) * 6;
-    const bx2 = bx1 + (rand(22) - 0.5) * (w * 0.26), by2 = by1 + 6 + rand(23) * 6;
-    ctx.moveTo(bx0, by0); ctx.lineTo(bx1, by1); ctx.lineTo(bx2, by2);
+    // Smoky contoured body of the tail
+    ctx.beginPath();
+    ctx.moveTo(cx - w * 0.28, yTop + 8);
+    ctx.bezierCurveTo(
+      cx - w * 0.34 + wav1, yTop - trailLen * 0.35,
+      cx - w * 0.18 + wav2, yTop - trailLen * 0.70,
+      cx,                   trailTop
+    );
+    ctx.bezierCurveTo(
+      cx + w * 0.18 + wav2, yTop - trailLen * 0.70,
+      cx + w * 0.34 + wav1, yTop - trailLen * 0.35,
+      cx + w * 0.28,        yTop + 8
+    );
+    ctx.closePath();
+    ctx.fill();
 
-    // 4. Snout / Fangs Electric Flare
-    const sx0 = cx + (rand(24) * 8 - 4), sy0 = cy + h * 0.38;
-    const sx1 = sx0 + (rand(25) * 10 - 5), sy1 = sy0 + 6 + rand(26) * 6;
-    ctx.moveTo(sx0, sy0); ctx.lineTo(sx1, sy1);
-
-    // Extra bolts when holding due to intense spiritual pressure
-    if (isHolding) {
-      const hx0 = cx - w * 0.15, hy0 = cy + h * 0.10;
-      const hx1 = hx0 - 8 - rand(27) * 8, hy1 = hy0 + rand(28) * 10;
-      ctx.moveTo(hx0, hy0); ctx.lineTo(hx1, hy1);
-
-      const hx2 = cx + w * 0.15, hy2 = cy + h * 0.10;
-      const hx3 = hx2 + 8 + rand(29) * 8, hy3 = hy2 + rand(30) * 10;
-      ctx.moveTo(hx2, hy2); ctx.lineTo(hx3, hy3);
-    }
-
+    // Dark outer smoke fringe
+    ctx.strokeStyle = isGold ? 'rgba(251, 191, 36, 0.40)' : (pal.borderCol || '#a855f7');
+    ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    // Pass 2: Inner pure white-hot core
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth   = isHolding ? 1.4 : 1.1;
-    ctx.stroke();
+    // 3. Lateral spike fins on the trailing tail (per user sketch)
+    ctx.fillStyle = isGold ? '#fef08a' : (pal.finSpikeCol || '#c084fc');
+    const finRatios = [0.28, 0.58];
+    for (const r of finRatios) {
+      const fy = yTop - r * trailLen;
+      const fw = (w * 0.26) * (1.0 - r * 0.4);
+      const span = 9 * (1.0 - r * 0.3);
 
-    // 5. Electric Corona Sparks dancing around horns
-    ctx.fillStyle = isGold ? '#fef08a' : '#ffffff';
-    const sparkCount = isHolding ? 5 : 3;
-    for (let s = 0; s < sparkCount; s++) {
-      const spx = cx + (rand(35 + s * 4) - 0.5) * (w * 0.82);
-      const spy = cy - h * 0.22 - rand(36 + s * 4) * (h * 0.32);
-      const sz  = 1.1 + rand(37 + s * 4) * 1.5;
+      // Left fin
       ctx.beginPath();
-      ctx.arc(spx, spy, sz, 0, Math.PI * 2);
+      ctx.moveTo(cx - fw, fy + 4);
+      ctx.lineTo(cx - fw - span, fy - 6);
+      ctx.lineTo(cx - fw + 2, fy - 4);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right fin
+      ctx.beginPath();
+      ctx.moveTo(cx + fw, fy + 4);
+      ctx.lineTo(cx + fw + span, fy - 6);
+      ctx.lineTo(cx + fw - 2, fy - 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 4. Chevrons on tail pointing down towards head
+    ctx.strokeStyle = pal.chevronCol || '#d8b4fe';
+    ctx.lineWidth = 1.3;
+    for (let c = 1; c <= 3; c++) {
+      const t = c / 4.5;
+      const cyC = yTop - t * trailLen;
+      const chw = (w * 0.22) * (1.0 - t * 0.45);
+      ctx.beginPath();
+      ctx.moveTo(cx - chw, cyC - 3);
+      ctx.lineTo(cx,       cyC + 5);
+      ctx.lineTo(cx + chw, cyC - 3);
+      ctx.stroke();
+    }
+
+    // 5. Central glowing spinal cord & luminous vertebrae beads (о-о-о-о-о)
+    ctx.strokeStyle = pal.spineCol || '#ffffff';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.moveTo(cx, yTop + 8);
+    ctx.lineTo(cx, trailTop + 10);
+    ctx.stroke();
+
+    // Glowing vertebrae beads (о-о-о-о-о)
+    const numBeads = 5;
+    for (let b = 0; b < numBeads; b++) {
+      const t = (b + 1) / (numBeads + 1.2);
+      const by = yTop - t * trailLen;
+      const wave = Math.sin(now * 0.008 - b * 0.7) * 0.5 + 0.5;
+      const bRad = (2.6 + wave * 0.8) * (1.0 - t * 0.3);
+
+      // Outer aura glow
+      ctx.fillStyle = isGold ? 'rgba(254, 240, 138, 0.45)' : (pal.auraCol || 'rgba(192, 132, 252, 0.45)');
+      ctx.beginPath();
+      ctx.arc(cx, by, bRad * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Solid bead core
+      ctx.fillStyle = isGold ? '#fef08a' : (pal.beadCol || '#f5d0fe');
+      ctx.beginPath();
+      ctx.arc(cx, by, bRad, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pure white center spark
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx, by, bRad * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 6. Ascending Reishi spiritual wisps / motes (subtle floating spiritual steam)
+    for (let i = 0; i < 3; i++) {
+      const p = ((now * 0.0012 + (seed * 0.25 + i * 0.33)) % 1.0);
+      const py = yTop - p * (trailLen * 1.05);
+      const px = cx + Math.sin(now * 0.006 + i * 2.3) * (w * 0.22) * (1.0 - p * 0.5);
+      const pa = (1.0 - p) * 0.65;
+      const pr = 1.2 + (1.0 - p) * 1.4;
+      ctx.fillStyle = isGold ? `rgba(254, 240, 138, ${pa})` : `rgba(216, 180, 254, ${pa})`;
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
       ctx.fill();
     }
 
     ctx.restore();
   },
 
-  // ==========================================================================
-  // FLYING REIATSU AURA (Струящаяся аура и шлейф Рейацу для летящих обычных нот)
-  // ==========================================================================
-  _drawFlyingReiatsuAura(ctx, cx, yTop, w, h, pal, now, seed = 0) {
-    const isGold = (pal.borderCol === '#ffd700');
-    const trailLen = Math.round(h * 1.30);
-    const trailTop = yTop - trailLen;
+  // Helper for drawing a 3-taloned dragon claw protruding from serpentine body (per sketch)
+  _drawSerpentClaw(ctx, bx, by, dir, pal) {
+    const clawSpan = 14 * dir;
+    const clawLen  = 16 * dir;
 
     ctx.save();
+    ctx.fillStyle   = pal.bgBot;
+    ctx.strokeStyle = pal.borderCol;
+    ctx.lineWidth   = 1.4;
 
-    // 1. Pulsating spiritual pressure dome around dragon head
-    const pulse = Math.sin(now * 0.007 + seed) * 0.16 + 0.84;
-    const auraR = (w * 0.75) * pulse;
-    const auraGrad = ctx.createRadialGradient(cx, yTop + h * 0.40, 4, cx, yTop + h * 0.40, auraR);
-    const auraCol = pal.auraCol || 'rgba(192, 132, 252, 0.50)';
-    auraGrad.addColorStop(0,    auraCol);
-    auraGrad.addColorStop(0.55, isGold ? 'rgba(251, 191, 36, 0.22)' : 'rgba(168, 85, 247, 0.20)');
-    auraGrad.addColorStop(1,    'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = auraGrad;
+    // Limb arm extending from serpent flank
     ctx.beginPath();
-    ctx.arc(cx, yTop + h * 0.40, auraR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. Translucent undulating spiritual vapor plume trailing upward behind head
-    const plumeGrad = ctx.createLinearGradient(cx, yTop + 6, cx, trailTop);
-    plumeGrad.addColorStop(0,    isGold ? 'rgba(251, 191, 36, 0.45)' : 'rgba(192, 132, 252, 0.38)');
-    plumeGrad.addColorStop(0.45, isGold ? 'rgba(234, 179, 8, 0.18)' : 'rgba(147, 51, 234, 0.16)');
-    plumeGrad.addColorStop(1,    'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = plumeGrad;
-
-    const wavL   = Math.sin(now * 0.008 + seed) * 7;
-    const wavR   = Math.cos(now * 0.009 + seed * 1.3) * 7;
-    const wavMid = Math.sin(now * 0.011 + seed * 0.7) * 5;
-
-    ctx.beginPath();
-    ctx.moveTo(cx - w * 0.28, yTop + 6);
-    ctx.bezierCurveTo(
-      cx - w * 0.32 + wavL,   yTop - trailLen * 0.35,
-      cx - w * 0.14 + wavMid, yTop - trailLen * 0.70,
-      cx,                     trailTop
-    );
-    ctx.bezierCurveTo(
-      cx + w * 0.14 + wavMid, yTop - trailLen * 0.70,
-      cx + w * 0.32 + wavR,   yTop - trailLen * 0.35,
-      cx + w * 0.28,          yTop + 6
-    );
+    ctx.moveTo(bx, by - 6);
+    ctx.lineTo(bx + clawSpan * 0.6, by - 4);
+    ctx.lineTo(bx + clawSpan, by);
+    ctx.lineTo(bx + clawSpan * 0.6, by + 5);
+    ctx.lineTo(bx, by + 7);
     ctx.closePath();
     ctx.fill();
-
-    // 3. Ethereal spiritual flame ribbons streaming upwards
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = isGold ? '#fef08a' : (pal.lightningCol || '#d8b4fe');
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-
-    // Center spiritual flame ribbon
-    ctx.moveTo(cx, yTop);
-    ctx.bezierCurveTo(
-      cx + wavMid * 1.4, yTop - trailLen * 0.40,
-      cx - wavMid * 1.4, yTop - trailLen * 0.75,
-      cx + wavMid * 0.6, trailTop + 6
-    );
-
-    // Left horn spirit ribbon
-    const lx0 = cx - w * 0.24, ly0 = yTop + 4;
-    ctx.moveTo(lx0, ly0);
-    ctx.bezierCurveTo(
-      lx0 + wavL,         ly0 - trailLen * 0.35,
-      lx0 + wavMid * 1.2, ly0 - trailLen * 0.65,
-      cx - w * 0.08,      trailTop + trailLen * 0.2
-    );
-
-    // Right horn spirit ribbon
-    const rx0 = cx + w * 0.24, ry0 = yTop + 4;
-    ctx.moveTo(rx0, ry0);
-    ctx.bezierCurveTo(
-      rx0 + wavR,         ry0 - trailLen * 0.35,
-      rx0 - wavMid * 1.2, ry0 - trailLen * 0.65,
-      cx + w * 0.08,      trailTop + trailLen * 0.2
-    );
     ctx.stroke();
 
-    // 4. Ascending Reishi spiritual wisps / motes rising off the head
-    for (let i = 0; i < 4; i++) {
-      const p = ((now * 0.0013 + (seed * 0.23 + i * 0.25)) % 1.0);
-      const py = yTop - p * (trailLen * 0.95);
-      const px = cx + Math.sin(now * 0.005 + i * 2.1) * (w * 0.26) * (1.0 - p * 0.4);
-      const pa = (1.0 - p) * 0.7;
-      const pr = 1.1 + (1.0 - p) * 1.6;
-      ctx.fillStyle = isGold
-        ? `rgba(254, 240, 138, ${pa})`
-        : `rgba(216, 180, 254, ${pa})`;
-      ctx.beginPath();
-      ctx.arc(px, py, pr, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // 3 Sharp Talons
+    ctx.fillStyle = pal.chevronCol || '#ffffff';
+    // Talon 1 (upper)
+    ctx.beginPath();
+    ctx.moveTo(bx + clawSpan * 0.7, by - 3);
+    ctx.lineTo(bx + clawLen + 2 * dir, by - 8);
+    ctx.lineTo(bx + clawSpan * 0.9, by - 1);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
 
+    // Talon 2 (middle forward)
+    ctx.beginPath();
+    ctx.moveTo(bx + clawSpan * 0.8, by - 1);
+    ctx.lineTo(bx + clawLen + 4 * dir, by + 1);
+    ctx.lineTo(bx + clawSpan * 0.8, by + 3);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Talon 3 (lower)
+    ctx.beginPath();
+    ctx.moveTo(bx + clawSpan * 0.7, by + 2);
+    ctx.lineTo(bx + clawLen + 1 * dir, by + 7);
+    ctx.lineTo(bx + clawSpan * 0.9, by + 4);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.restore();
+  },
+
+  // Helper for drawing serrated dorsal fins on the outer curves of the serpent body
+  _drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, ribbonHW, pal) {
+    ctx.save();
+    ctx.fillStyle   = pal.finSpikeCol || '#c084fc';
+    ctx.strokeStyle = pal.borderCol;
+    ctx.lineWidth   = 1.1;
+
+    const numSpikes = Math.max(4, Math.floor(tailH / 28));
+    for (let s = 1; s < numSpikes; s++) {
+      const prog = s / numSpikes;
+      const y = headTopY - prog * tailH;
+      const env = Math.sin(prog * Math.PI);
+      const phase = prog * numCoils * Math.PI * 2;
+      const sinV = Math.sin(phase);
+      if (Math.abs(sinV) < 0.35) continue; // only on curved sections
+
+      const dir = sinV > 0 ? 1 : -1;
+      const cx = bodyCenterX + sinV * (maxAmp * env);
+      const fx = cx + dir * ribbonHW;
+      const spikeSpan = (8 + Math.abs(sinV) * 6) * dir;
+
+      ctx.beginPath();
+      ctx.moveTo(fx, y + 4);
+      ctx.lineTo(fx + spikeSpan, y - 5);
+      ctx.lineTo(fx, y - 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.restore();
   },
 
@@ -741,9 +800,244 @@ export const HADO99_THEME = {
     if (isTapNote) {
       this._drawFlyingReiatsuAura(ctx, cx, yTop, w, h, pal, now, seed);
     }
+  },
 
-    // For both tap and long note heads: draw animated crackling Reiatsu lightning
-    this._drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, seed, isHolding);
+  // ==========================================================================
+  // HIT ANIMATION (Испепеление Рейацу: осыпание пепла и вспышка углей при ударе)
+  // ==========================================================================
+  drawHitAnimation(ctx, cx, cy, w, h, p, isPerfect, isLight, now, combo = 0) {
+    const liveCombo = (combo !== undefined && combo !== null && combo > 0)
+      ? combo
+      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
+    const pal = this._getTierPalette(liveCombo, false, true);
+    const isGold = (pal.borderCol === '#ffd700');
+
+    // Explosive burst of Reishi ash and burning embers on first frame of strike
+    if (p < 0.22 && (!this._lastHitBurstTime || now - this._lastHitBurstTime > 30)) {
+      this._lastHitBurstTime = now;
+      this._spawnReishiAshBurst(cx, cy, w, pal, now, 16);
+    }
+
+    ctx.save();
+
+    // 1. Expanding Reishi shockwave ring of spiritual pressure
+    const ringR = (w * 0.45) + p * (w * 1.35);
+    const ringAlpha = Math.max(0, (1 - p) * 0.85);
+    ctx.strokeStyle = isGold ? `rgba(254, 240, 138, ${ringAlpha})` : `rgba(216, 180, 254, ${ringAlpha})`;
+    ctx.lineWidth = 2.4 * (1 - p * 0.5);
+    ctx.beginPath();
+    ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 2. Fiery burning horizontal Reishi horizon edge (Option 2 disintegration)
+    const flameAlpha = Math.max(0, (1 - p) * 0.95);
+    const flameW = w * (0.85 + p * 0.55);
+    const flameSteps = 10;
+
+    // Outer colored burning edge
+    ctx.strokeStyle = isGold ? `rgba(251, 191, 36, ${flameAlpha})` : (pal.burnCol || `rgba(240, 171, 252, ${flameAlpha})`);
+    ctx.lineWidth = 3.2 * (1 - p * 0.4);
+    ctx.beginPath();
+    for (let s = 0; s <= flameSteps; s++) {
+      const fx = cx - flameW / 2 + (s / flameSteps) * flameW;
+      const fy = cy + Math.sin(now * 0.03 + s * 2.1) * (4.5 * (1 - p));
+      if (s === 0) ctx.moveTo(fx, fy);
+      else ctx.lineTo(fx, fy);
+    }
+    ctx.stroke();
+
+    // Inner pure white-hot core line
+    ctx.strokeStyle = `rgba(255, 255, 255, ${flameAlpha})`;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let s = 0; s <= flameSteps; s++) {
+      const fx = cx - flameW / 2 + (s / flameSteps) * flameW;
+      const fy = cy + Math.sin(now * 0.03 + s * 2.1) * (2.2 * (1 - p));
+      if (s === 0) ctx.moveTo(fx, fy);
+      else ctx.lineTo(fx, fy);
+    }
+    ctx.stroke();
+
+    // 3. Central flash of pure spiritual pressure
+    const flashR = (w * 0.60) * (1 - p * 0.3);
+    const flashGrad = ctx.createRadialGradient(cx, cy, 1, cx, cy, flashR);
+    flashGrad.addColorStop(0,   `rgba(255, 255, 255, ${Math.max(0, (1 - p * 1.4) * 0.9)})`);
+    flashGrad.addColorStop(0.35, isGold ? `rgba(251, 191, 36, ${flameAlpha * 0.7})` : `rgba(217, 70, 239, ${flameAlpha * 0.6})`);
+    flashGrad.addColorStop(1,   'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = flashGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, flashR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  },
+
+  // ==========================================================================
+  // SINUOUS SERPENTINE DRAGON BODY (Извивающийся хвост дракона по эскизу)
+  // ==========================================================================
+  drawHoldBody(ctx, x, yTail, w, headH, tile, isLight, now, tailH, currentCombo = 0, actualYHeadTop = null, isReleased = false) {
+    if (tailH <= 2) return true;
+
+    const dead      = isReleased || Boolean(tile && tile.failed);
+    const holding   = Boolean(tile && tile.holding && tile.hit);
+    const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
+      ? currentCombo
+      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
+    const tier      = dead ? 0 : liveCombo;
+    const pal       = this._getTierPalette(tier, dead, holding);
+    const isGold    = (pal.borderCol === '#ffd700');
+
+    const bodyLaneW   = Math.max(10, Math.round(w - 16));
+    const bodyCenterX = Math.round(x + 8) + bodyLaneW / 2;
+    const headTopY    = (actualYHeadTop !== null && actualYHeadTop !== undefined) ? actualYHeadTop : (yTail + tailH);
+
+    ctx.save();
+
+    // 1. Calculate serpentine parameters
+    const ribbonHW       = Math.max(7, Math.round(bodyLaneW * 0.22));
+    const maxAmp         = Math.max(4, (bodyLaneW / 2) - ribbonHW - 2);
+    const coilWavelength = 180;
+    const numCoils       = Math.max(1.0, tailH / coilWavelength);
+
+    const getCenterX = (y) => {
+      const prog = Math.max(0, Math.min(1, (headTopY - y) / tailH));
+      const env = Math.sin(prog * Math.PI);
+      const phase = prog * numCoils * Math.PI * 2;
+      return bodyCenterX + Math.sin(phase) * (maxAmp * env);
+    };
+
+    const stepY = 8;
+    const numSteps = Math.ceil(tailH / stepY);
+
+    // Path 1: Dark ethereal smoky aura hugging the winding body
+    const auraWidth = ribbonHW + 7;
+    ctx.strokeStyle = isGold ? 'rgba(251, 191, 36, 0.22)' : (pal.auraCol || 'rgba(168, 85, 247, 0.20)');
+    ctx.lineWidth   = auraWidth * 2;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= numSteps; i++) {
+      const y = Math.max(yTail, headTopY - i * stepY);
+      const cx = getCenterX(y);
+      if (i === 0) ctx.moveTo(cx, y);
+      else ctx.lineTo(cx, y);
+      if (y <= yTail) break;
+    }
+    ctx.stroke();
+
+    // Path 2: Solid dragon serpent body (filled ribbon with gradient)
+    ctx.beginPath();
+    for (let i = 0; i <= numSteps; i++) {
+      const y = Math.max(yTail, headTopY - i * stepY);
+      const cx = getCenterX(y);
+      const lx = cx - ribbonHW;
+      if (i === 0) ctx.moveTo(lx, y);
+      else ctx.lineTo(lx, y);
+      if (y <= yTail) break;
+    }
+    const topCX = getCenterX(yTail);
+    ctx.lineTo(topCX + ribbonHW, yTail);
+    for (let i = numSteps; i >= 0; i--) {
+      const y = Math.max(yTail, headTopY - i * stepY);
+      const cx = getCenterX(y);
+      const rx = cx + ribbonHW;
+      ctx.lineTo(rx, y);
+      if (y >= headTopY) break;
+    }
+    ctx.closePath();
+
+    const bgGrad = ctx.createLinearGradient(0, yTail, 0, headTopY);
+    bgGrad.addColorStop(0,   pal.bgTop);
+    bgGrad.addColorStop(0.5, pal.bgBot);
+    bgGrad.addColorStop(1,   pal.bgTop);
+    ctx.fillStyle = bgGrad;
+    ctx.fill();
+
+    // Outer edge borders of serpent body
+    ctx.strokeStyle = pal.borderCol;
+    ctx.lineWidth   = 1.6;
+    ctx.stroke();
+
+    // 3. Dragon legs & claws (Dragon Claws as in sketch) at outer peaks of coils
+    if (!dead && tailH > 130) {
+      const peakCount = Math.floor(numCoils * 2);
+      for (let p = 1; p <= peakCount; p++) {
+        const prog = p / (peakCount + 1);
+        const cy = headTopY - prog * tailH;
+        const phase = prog * numCoils * Math.PI * 2;
+        const dir = Math.sin(phase) > 0 ? 1 : -1;
+        const cx = getCenterX(cy);
+        const clawBaseX = cx + dir * ribbonHW;
+        this._drawSerpentClaw(ctx, clawBaseX, cy, dir, pal);
+      }
+    }
+
+    // 4. Serrated dorsal fin spikes along outer curves
+    if (!dead) {
+      this._drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, ribbonHW, pal);
+    }
+
+    // 5. Chevron armor scales along the winding centerline
+    ctx.strokeStyle = pal.chevronCol;
+    ctx.lineWidth   = 1.3;
+    const chevronStep = 22;
+    for (let y = headTopY - 14; y > yTail + 10; y -= chevronStep) {
+      const cx = getCenterX(y);
+      const cw = ribbonHW * 0.75;
+      ctx.beginPath();
+      ctx.moveTo(cx - cw, y - 4);
+      ctx.lineTo(cx,      y + 4);
+      ctx.lineTo(cx + cw, y - 4);
+      ctx.stroke();
+    }
+
+    // 6. Sinuous central spinal cord & glowing vertebrae beads (о-о-о-о-о)
+    ctx.strokeStyle = pal.spineCol;
+    ctx.lineWidth   = holding ? 2.2 : 1.8;
+    ctx.beginPath();
+    for (let i = 0; i <= numSteps; i++) {
+      const y = Math.max(yTail, headTopY - i * stepY);
+      const cx = getCenterX(y);
+      if (i === 0) ctx.moveTo(cx, y);
+      else ctx.lineTo(cx, y);
+      if (y <= yTail) break;
+    }
+    ctx.stroke();
+
+    // Glowing vertebrae beads following the S-curve
+    const beadStep = 22;
+    let beadIdx = 0;
+    for (let y = headTopY - 12; y > yTail + 8; y -= beadStep) {
+      const cx = getCenterX(y);
+      const wave = Math.sin(now * 0.008 - beadIdx * 0.6) * 0.5 + 0.5;
+      const bRad = 2.5 + wave * 0.7;
+
+      ctx.fillStyle = isGold ? 'rgba(254, 240, 138, 0.45)' : (pal.auraCol || 'rgba(192, 132, 252, 0.40)');
+      ctx.beginPath();
+      ctx.arc(cx, y, bRad * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = pal.beadCol || '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx, y, bRad, 0, Math.PI * 2);
+      ctx.fill();
+
+      beadIdx++;
+    }
+
+    ctx.restore();
+    return true;
+  },
+
+  // ==========================================================================
+  // POST-NOTES OVERLAY (Парящий пепел Рейси после рендеринга всех нот)
+  // ==========================================================================
+  drawPostNotesOverlay(ctx, now, combo = 0) {
+    const liveCombo = (combo !== undefined && combo !== null && combo > 0)
+      ? combo
+      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
+    const pal = this._getTierPalette(liveCombo, false, false);
+    this._updateAndDrawReishiAsh(ctx, pal);
   },
 
   // ==========================================================================
@@ -978,12 +1272,6 @@ export const HADO99_THEME = {
         ctx.save();
         ctx.globalAlpha = dissolveAlpha;
         ctx.drawImage(headsSprite, crownX, crownY, crownW, crownH);
-
-        // Crackling lightning atop the 5 heads when holding or at high combo
-        if (holding || tier >= 400) {
-          this._drawReiatsuLightning(ctx, cx, bladeRootY - crownH * 0.6, crownW * 0.9, crownH * 0.5, pal, now, 42);
-        }
-
         ctx.restore();
       }
     }
