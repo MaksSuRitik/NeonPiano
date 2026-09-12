@@ -175,6 +175,7 @@ export default {
   localBadgeTrack: "Local",
   errorMissingAudio: "Error: Audio file for this track is missing.",
   errorLoadAudio: "Failed to load track audio:\n",
+  errorAudioCors: "Audio access error (CORS / NetworkError):\nThe remote server hosting this audio blocked direct browser access.\n\nTo make your track play:\n1. Upload your .mp3 file to free host https://catbox.moe\n2. Copy the direct link (https://files.catbox.moe/xxxxxx.mp3)\n3. Paste it into the track URL field in the admin panel.",
   authRegisterSuccess: "Registration successful! Welcome, {username}",
   authLoginSuccess: "Login successful! Hello, {username}",
   settingsDangerZoneDesc: "Deleting your account permanently deletes all your saved records, stars, and leaderboard rank.",

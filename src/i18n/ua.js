@@ -175,6 +175,7 @@ export default {
   localBadgeTrack: "Локально",
   errorMissingAudio: "Помилка: Аудіофайл для цього треку відсутній.",
   errorLoadAudio: "Не вдалося завантажити аудіо треку:\n",
+  errorAudioCors: "Помилка доступу до аудіофайлу (CORS / NetworkError):\nСервер, де розміщено аудіо, забороняє пряме скачування файлу браузером.\n\nЩоб трек запустився:\n1. Завантажте ваш .mp3 на безкоштовний хостинг https://catbox.moe\n2. Скопіюйте пряме посилання (https://files.catbox.moe/xxxxxx.mp3)\n3. Вставте його в поле треку в адмінці.",
   authRegisterSuccess: "Реєстрація успішна! Вітаємо, {username}",
   authLoginSuccess: "Успішний вхід! Привіт, {username}",
   settingsDangerZoneDesc: "Видалення акаунта повністю знищує ваші збережені результати, зірки та позицію в таблиці лідерів.",

@@ -2412,7 +2412,15 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
         } catch (error) {
             console.error("GEN ERROR:", error);
-            if (sessionId === State.currentSessionId) { alert("Generation Error: " + error.message); quitGame(); }
+            if (sessionId === State.currentSessionId) {
+                const errStr = String(error?.message || '') + ' ' + String(error?.name || '');
+                let msg = "Generation Error: " + error.message;
+                if (errStr.includes('NetworkError') || errStr.includes('Failed to fetch') || errStr.includes('fetch')) {
+                    msg = getText('errorAudioCors') || ("Generation Error: " + error.message);
+                }
+                alert(msg);
+                quitGame();
+            }
             return null;
         }
         
