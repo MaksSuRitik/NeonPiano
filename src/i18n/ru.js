@@ -428,18 +428,35 @@ export default {
   themeClassic: "Кибер-Пульс",
   themeClassicDesc: "Ретро-футуристическая synthwave-сетка горизонта, неоновые эквалайзеры и голографические лазерные разрезы. Классическая новая школа — ритм в стиле киберпанка.",
   themeClassicBadge: "По умолчанию",
-  themePhrolova: "Шёлковый Реквием: Фролова",
-  themePhrolovaDesc: "«Симфония Инобытия» — единственная тема где что-то падает, и это органично: лепестки паучьей лилии в танце на кровавом ветру. Резонатор-творец музыки из Wuthering Waves.",
-  themePhrolovaBadge: "Wuthering Waves",
+  themePhrolova: "Багровый Реквием",
+  themePhrolovaDesc: "Элегантная неоновая эстетика с глубокими алыми оттенками и лепестками роз, кружащимися в такт музыке.",
+  themePhrolovaBadge: "Неон & Розы",
   themeDarkAngel: "Обсидиановый Серафим",
-  themeDarkAngelDesc: "Готический собор, где души поднимаются ВВЕРХ к сводам, а витраж-роза пульсирует в такт музыке. Ангелы здесь не падают — они возносятся.",
-  themeDarkAngelBadge: "Gothic Cathedral",
+  themeDarkAngelDesc: "Атмосферный готический стиль со светящимися витражами, пульсирующими в такт музыке.",
+  themeDarkAngelBadge: "Неоготика",
   themeCosmic: "Астральная Сингулярность",
   themeCosmicDesc: "Многослойные созвездия в глубоком космосе дрейфуют в 3D-параллаксе. При попадании взрывается планетарная сингулярность с кольцами Сатурна и пульсаром.",
   themeCosmicBadge: "Deep Space",
-  themeIuno: "Лунная Вещунья: Юно",
-  themeIunoDesc: "5★ Верховная Жрица Храма Тетрагон из Wuthering Waves. Ветер Аэро, лазурные потоки и золотой лавровый венец в сиянии лунного затмения. Судьба — просто слово.",
-  themeIunoBadge: "5★ Aero · Wuthering Waves",
+  themeIuno: "Лунное Затмение",
+  themeIunoDesc: "Глубокие ночные тона, сияние полумесяца и изящные созвездия на игровом поле с мягким лазурным свечением.",
+  themeIunoBadge: "Мистика",
+
+  // Customization & Inventory
+  customizationTitle: "Кастомизация",
+  customizationSubtitle: "Настройка вашего уникального стиля",
+  tabThemes: "Темы",
+  tabFrames: "Рамки",
+  tabTitles: "Титулы",
+  previewThemeBtn: "Опробовать",
+  previewThemeModalTitle: "Тест-драйв темы",
+  previewThemeSelectSong: "Выберите трек для просмотра:",
+  previewStartBtn: "Начать тест-драйв (20 сек)",
+  previewBannerText: "Тест-драйв темы • Играет Авто-бот",
+  previewExitBtn: "Выйти",
+  previewCompletedToast: "Тест-драйв темы завершён",
+  allThemesOwnedMsg: "Все темы уже куплены! Вы можете выбрать их во вкладке «Кастомизация».",
+  shopEquipped: "Активна",
+  shopEquip: "Надеть",
 
   // Admin Coins Management
   adminCoinsManagement: "Управление монетами игрока",
@@ -449,6 +466,8 @@ export default {
   adminCoinsSavedSuccess: "Баланс монет успешно обновлён!",
   adminSelectMyAccount: "Мой аккаунт (Админ)",
   adminSelectMyAccountTooltip: "Выбрать свой аккаунт для редактирования",
-  shopCloseBtn: "Закрыть магазин"
+  shopCloseBtn: "Закрыть магазин",
+  logoutBtn: "Выйти из аккаунта",
+  themeLabel: "Тема"
 };
 

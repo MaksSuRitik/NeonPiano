@@ -133,10 +133,24 @@ export function getUnlockedThemes() {
   return themes;
 }
 
+let previewThemeOverride = null;
+
+/**
+ * Sets or clears in-memory preview theme override for test drive mode.
+ */
+export function setPreviewThemeOverride(themeId) {
+  previewThemeOverride = themeId || null;
+}
+
+export function getPreviewThemeOverride() {
+  return previewThemeOverride;
+}
+
 /**
  * Gets currently active theme ID.
  */
 export function getActiveThemeId() {
+  if (previewThemeOverride) return previewThemeOverride;
   const unlocked = getUnlockedThemes();
   const active = localStorage.getItem('neon_active_field_theme') || 'classic';
   return unlocked.includes(active) ? active : 'classic';

@@ -52,7 +52,7 @@ import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB }
 import { addTrackByUrl, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=39.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=63.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=70.2";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -260,6 +260,15 @@ const State = {
     isMobile: window.innerWidth < 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024),
     playtimeAccumulator: 0,
     lastPlaytimeTick: 0,
+
+    // Режим 20-секундного тест-драйву теми з авто-ботом
+    isPreviewMode: false,
+    previewTimerId: null,
+    previewIntervalId: null,
+    previewOriginalTheme: null,
+    previewOriginalBotState: false,
+    previewThemeId: null,
+    previewReturnModal: null, // 'shop' | 'customization'
     
     score: 0,
     maxPossibleScore: 0,
@@ -356,6 +365,14 @@ let laneKeyElements = [null, null, null, null];
 let gameRect = null; 
 let updateShopCoins = () => {};
 let renderShop = () => {}; 
+let renderCustomizationModal = () => {};
+let openThemePreviewChooser = () => {};
+let startThemePreview = () => {};
+let exitThemePreview = () => {};
+let openCustomizationModal = () => {};
+let closeCustomizationModal = () => {};
+let openShopModal = () => {};
+let closeShopModal = () => {};
 
 // ==========================================
 // Ядро обробки аудіо. Цей модуль я розробив для аналізу аудіоданих та автоматичної генерації карти нот на основі ритму та енергії треку.
@@ -4168,6 +4185,10 @@ function updateRipples(dt) {
     }
 
     async function endGame(victory) {
+        if (State.isPreviewMode) {
+            exitThemePreview();
+            return;
+        }
         flushPlaytimeToCloud();
         State.isPlaying = false;
         if (State.sourceNode) {
@@ -5625,6 +5646,12 @@ function updateRipples(dt) {
 
         const shopModalIcon = document.querySelector('.shop-modal-icon');
         if (shopModalIcon) shopModalIcon.innerHTML = icons.shop(24);
+
+        const custIconContainer = document.querySelector('.icon-customization-container');
+        if (custIconContainer) custIconContainer.innerHTML = icons.palette(18);
+
+        const custModalIcon = document.querySelector('.cust-modal-icon');
+        if (custModalIcon) custModalIcon.innerHTML = icons.palette(24);
 
         const shopCloseBtn = document.getElementById('shop-close-btn');
         if (shopCloseBtn && !shopCloseBtn.hasChildNodes()) shopCloseBtn.innerHTML = icons.close(16);
@@ -7899,139 +7926,19 @@ function updateRipples(dt) {
             }
 
             // ------------------------------------------
-            // Вкладки кастомізації (Рамки та Титули)
+            // Дія виходу з акаунта (тільки для власного профілю)
             // ------------------------------------------
-            const custSection = document.getElementById('up-customization-section');
-            const tabFramesBtn = document.getElementById('cust-tab-frames-btn');
-            const tabTitlesBtn = document.getElementById('cust-tab-titles-btn');
-            const panelFrames = document.getElementById('cust-panel-frames');
-            const panelTitles = document.getElementById('cust-panel-titles');
-
-            if (isMe && custSection && panelFrames && panelTitles) {
-                custSection.classList.remove('hidden');
-
-                const renderFramesPanel = () => {
-                    const cosm = Cosmetics.getLocalCosmetics();
-                    panelFrames.innerHTML = Cosmetics.FRAMES.map(f => {
-                        const isUnlocked = cosm.unlockedFrames.includes(f.id);
-                        const isEquipped = cosm.selectedFrame === f.id;
-                        const frameName = getText(f.nameKey) || f.id;
-                        const frameDesc = getText(f.descKey) || '';
-                        const statusLabel = isEquipped 
-                            ? (getText('custEquipped') || 'Обрано')
-                            : (isUnlocked ? (getText('custEquip') || 'Обрати') : (getText('custLocked') || 'Заблоковано'));
-                        const statusCls = isEquipped ? 'equipped' : (isUnlocked ? 'unlocked' : 'locked');
-                        return `
-                            <div class="cosmetic-item-card ${statusCls}" data-frame-id="${f.id}" title="${escapeHtml(frameDesc)}">
-                                <div class="cust-frame-preview ${f.cssClass}">${isUnlocked ? '★' : '🔒'}</div>
-                                <div class="cust-item-info">
-                                    <div class="cust-item-name">${escapeHtml(frameName)}</div>
-                                    <div class="cust-item-desc">${escapeHtml(frameDesc)}</div>
-                                </div>
-                                <span class="cust-status-badge ${statusCls}">${statusLabel}</span>
-                            </div>
-                        `;
-                    }).join('');
-
-                    panelFrames.querySelectorAll('.cosmetic-item-card').forEach(card => {
-                        card.onclick = async () => {
-                            const frameId = card.dataset.frameId;
-                            const cosm = Cosmetics.getLocalCosmetics();
-                            if (!cosm.unlockedFrames.includes(frameId)) {
-                                playMiss();
-                                return;
-                            }
-                            playClick();
-                            Cosmetics.saveLocalCosmetics({ selectedFrame: frameId });
-                            playerData.selectedFrame = frameId;
-                            Cosmetics.FRAMES.forEach(f => { if (f.cssClass) upAvatar?.classList.remove(f.cssClass); });
-                            const newFrameCls = Cosmetics.getFrameCssClass(frameId);
-                            if (newFrameCls) upAvatar?.classList.add(newFrameCls);
-                            renderFramesPanel();
-                            updateHeaderUserBadge();
-                            if (myPlayerId) {
-                                try {
-                                    await setDoc(doc(db, "global_leaderboard", myPlayerId), { selectedFrame: frameId }, { merge: true });
-                                    await setDoc(doc(db, "user_progress", myPlayerId), { selectedFrame: frameId }, { merge: true });
-                                } catch (e) { console.warn(e); }
-                                syncGlobalProgress();
-                            }
-                        };
-                    });
-                };
-
-                const renderTitlesPanel = () => {
-                    const cosm = Cosmetics.getLocalCosmetics();
-                    panelTitles.innerHTML = Cosmetics.TITLES.map(t => {
-                        const isUnlocked = cosm.unlockedTitles.includes(t.id);
-                        const isEquipped = cosm.selectedTitle === t.id;
-                        const titleName = getText(t.nameKey) || t.id;
-                        const titleDesc = getText(t.descKey) || '';
-                        const statusLabel = isEquipped 
-                            ? (getText('custEquipped') || 'Обрано')
-                            : (isUnlocked ? (getText('custEquip') || 'Обрати') : (getText('custLocked') || 'Заблоковано'));
-                        const statusCls = isEquipped ? 'equipped' : (isUnlocked ? 'unlocked' : 'locked');
-                        return `
-                            <div class="cosmetic-item-card ${statusCls}" data-title-id="${t.id}" title="${escapeHtml(titleDesc)}">
-                                <div class="cust-frame-preview" style="font-size: 0.95rem;">${isUnlocked ? '👑' : '🔒'}</div>
-                                <div class="cust-item-info">
-                                    <div class="cust-item-name">${escapeHtml(titleName)}</div>
-                                    <div class="cust-item-desc">${escapeHtml(titleDesc)}</div>
-                                </div>
-                                <span class="cust-status-badge ${statusCls}">${statusLabel}</span>
-                            </div>
-                        `;
-                    }).join('');
-
-                    panelTitles.querySelectorAll('.cosmetic-item-card').forEach(card => {
-                        card.onclick = async () => {
-                            const titleId = card.dataset.titleId;
-                            const cosm = Cosmetics.getLocalCosmetics();
-                            if (!cosm.unlockedTitles.includes(titleId)) {
-                                playMiss();
-                                return;
-                            }
-                            playClick();
-                            Cosmetics.saveLocalCosmetics({ selectedTitle: titleId });
-                            playerData.selectedTitle = titleId;
-                            const titleDef = Cosmetics.TITLES.find(item => item.id === titleId);
-                            if (titleDef && upTitleBadge) {
-                                upTitleBadge.textContent = getText(titleDef.nameKey) || titleDef.id;
-                            }
-                            renderTitlesPanel();
-                            updateHeaderUserBadge();
-                            if (myPlayerId) {
-                                try {
-                                    await setDoc(doc(db, "global_leaderboard", myPlayerId), { selectedTitle: titleId }, { merge: true });
-                                    await setDoc(doc(db, "user_progress", myPlayerId), { selectedTitle: titleId }, { merge: true });
-                                } catch (e) { console.warn(e); }
-                                syncGlobalProgress();
-                            }
-                        };
-                    });
-                };
-
-                if (tabFramesBtn && tabTitlesBtn) {
-                    tabFramesBtn.onclick = () => {
-                        playClick();
-                        tabFramesBtn.classList.add('active');
-                        tabTitlesBtn.classList.remove('active');
-                        panelFrames.classList.remove('hidden');
-                        panelTitles.classList.add('hidden');
-                    };
-                    tabTitlesBtn.onclick = () => {
-                        playClick();
-                        tabTitlesBtn.classList.add('active');
-                        tabFramesBtn.classList.remove('active');
-                        panelTitles.classList.remove('hidden');
-                        panelFrames.classList.add('hidden');
-                    };
+            const btnLogoutInProfile = document.getElementById('btn-logout');
+            const authActionsBox = document.getElementById('user-profile-auth-actions');
+            if (authActionsBox) {
+                authActionsBox.style.display = isMe ? 'block' : 'none';
+            }
+            if (btnLogoutInProfile) {
+                btnLogoutInProfile.style.display = isMe ? 'inline-flex' : 'none';
+                const logoutIcon = btnLogoutInProfile.querySelector('.icon-logout-container');
+                if (logoutIcon && !logoutIcon.hasChildNodes()) {
+                    logoutIcon.innerHTML = icons.logout(16);
                 }
-
-                renderFramesPanel();
-                renderTitlesPanel();
-            } else if (custSection) {
-                custSection.classList.add('hidden');
             }
 
             // Кнопка швидких дій для системи друзів з підтримкою запитів
@@ -8921,22 +8828,36 @@ function updateRipples(dt) {
         updateShopCoins = function() {
             const { balance } = FieldThemes.getCoinsData(songsDB);
             const headerCoinEl = document.getElementById('header-coin-count');
-            if (headerCoinEl) headerCoinEl.textContent = balance;
+            if (headerCoinEl) headerCoinEl.textContent = balance.toLocaleString();
             const shopBalanceEl = document.getElementById('shop-balance-amount');
-            if (shopBalanceEl) shopBalanceEl.textContent = balance;
+            if (shopBalanceEl) shopBalanceEl.textContent = balance.toLocaleString();
         };
 
+        // ==========================================
+        // МАГАЗИН ТЕМ (Показує ТІЛЬКИ некуплені теми)
+        // ==========================================
         renderShop = function() {
             const grid = document.getElementById('shop-themes-grid');
             if (!grid) return;
             updateShopCoins();
 
-            const activeId = FieldThemes.getActiveThemeId();
             const unlockedIds = FieldThemes.getUnlockedThemes();
+            const allOwnedMsgEl = document.getElementById('shop-all-owned-msg');
 
-            let themes = [...FieldThemes.FIELD_THEMES];
+            // Відображаємо виключно ще не придбані теми
+            let themes = FieldThemes.FIELD_THEMES.filter(t => !unlockedIds.includes(t.id));
 
-            // 1. Фільтрація за пошуковим запитом (назва, опис або бейдж теми)
+            // Якщо всі теми вже викуплено
+            if (themes.length === 0 && !shopSearchQuery) {
+                if (allOwnedMsgEl) allOwnedMsgEl.classList.remove('hidden');
+                if (shopEmptyMsgEl) shopEmptyMsgEl.classList.add('hidden');
+                grid.innerHTML = '';
+                return;
+            } else if (allOwnedMsgEl) {
+                allOwnedMsgEl.classList.add('hidden');
+            }
+
+            // 1. Фільтрація за пошуковим запитом
             if (shopSearchQuery) {
                 themes = themes.filter(theme => {
                     const name = (getText(theme.nameKey) || theme.id).toLowerCase();
@@ -8946,21 +8867,179 @@ function updateRipples(dt) {
                 });
             }
 
-            // 2. Сортування за ціною (від меншого або від більшого)
+            // 2. Сортування за ціною
             if (shopSortMode === 'priceAsc') {
                 themes.sort((a, b) => a.price - b.price);
             } else if (shopSortMode === 'priceDesc') {
                 themes.sort((a, b) => b.price - a.price);
             }
 
-            // 3. Показ повідомлення, якщо тем за пошуком не знайдено
+            // 3. Показ сповіщення, якщо за пошуком нічого не знайдено
             if (shopEmptyMsgEl) {
                 shopEmptyMsgEl.classList.toggle('hidden', themes.length > 0);
             }
 
             grid.innerHTML = themes.map(theme => {
+                const name = getText(theme.nameKey) || theme.id;
+                const desc = getText(theme.descKey) || '';
+                const badge = getText(theme.badgeKey) || '';
+
+                let previewContent = '';
+                if (theme.image) {
+                    previewContent = `<img src="${theme.image}" alt="${name}" class="theme-card-img" />`;
+                } else {
+                    previewContent = `
+                        <div style="width: 100%; height: 100%; background: ${theme.previewBg}; display: flex; align-items: center; justify-content: center; position: relative;">
+                            <div style="position: absolute; width: 64px; height: 64px; border-radius: 50%; background: ${theme.accentColor}; opacity: 0.25; filter: blur(14px);"></div>
+                            <div style="z-index: 1; display: flex; gap: 8px;">
+                                <div style="width: 14px; height: 38px; border-radius: 4px; background: ${theme.colors.strings[2]}; box-shadow: 0 0 10px ${theme.accentColor};"></div>
+                                <div style="width: 14px; height: 50px; border-radius: 4px; background: ${theme.colors.strings[3]}; box-shadow: 0 0 12px ${theme.accentColor};"></div>
+                                <div style="width: 14px; height: 32px; border-radius: 4px; background: ${theme.colors.strings[1]}; box-shadow: 0 0 8px ${theme.accentColor};"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const buyText = (getText('shopBuy') || 'Купити за {price} 🪙').replace('{price}', theme.price);
+                const priceDisplay = `<span class="theme-card-price">${icons.coin(16)} ${theme.price}</span>`;
+
+                return `
+                    <div class="shop-theme-card" data-card-theme-id="${theme.id}">
+                        <div class="theme-card-preview">
+                            ${previewContent}
+                            ${badge ? `<div class="theme-card-badge">${badge}</div>` : ''}
+                        </div>
+                        <div class="theme-card-body">
+                            <div class="theme-card-title">
+                                <span>${name}</span>
+                            </div>
+                            <div class="theme-card-desc">${desc}</div>
+                            <div class="theme-card-footer">
+                                ${priceDisplay}
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <button type="button" class="theme-action-btn btn-theme-preview" data-preview-theme="${theme.id}">
+                                        ${getText('previewThemeBtn') || 'Опробувати'}
+                                    </button>
+                                    <button type="button" class="theme-action-btn btn-theme-buy" data-buy-theme="${theme.id}" data-price="${theme.price}">
+                                        ${buyText}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('[data-buy-theme]').forEach(btn => {
+                btn.onclick = async () => {
+                    playClick();
+                    const themeId = btn.getAttribute('data-buy-theme');
+                    try {
+                        const res = FieldThemes.purchaseTheme(themeId, songsDB);
+                        if (res.success) {
+                            showNotification(getText('shopBoughtSuccess') || 'Тему успішно придбано та додано до Кастомізації!');
+                            applyActiveThemeVisuals();
+                            renderShop();
+                            if (typeof renderCustomizationModal === 'function') renderCustomizationModal();
+                            syncGlobalProgress();
+                        }
+                    } catch (err) {
+                        showNotification(err.message === "Недостатньо монет" ? (getText('shopNotEnoughCoins') || 'Недостатньо монет!') : err.message);
+                    }
+                };
+            });
+
+            grid.querySelectorAll('[data-preview-theme]').forEach(btn => {
+                btn.onclick = () => {
+                    playClick();
+                    const themeId = btn.getAttribute('data-preview-theme');
+                    openThemePreviewChooser(themeId, 'shop');
+                };
+            });
+        };
+
+        openShopModal = function() {
+            if (!shopModal) return;
+            playClick();
+            i18n.updateDOM();
+            if (shopSearchInputEl) {
+                shopSearchInputEl.value = '';
+                shopSearchQuery = '';
+            }
+            if (shopSearchClearBtn) shopSearchClearBtn.classList.add('hidden');
+            if (shopSortSelectEl) {
+                shopSortSelectEl.value = shopSortMode;
+            }
+            renderShop();
+            shopModal.classList.remove('hidden');
+        };
+
+        closeShopModal = function() {
+            if (shopModal) shopModal.classList.add('hidden');
+        };
+
+        const shopBottomCloseBtnEl = document.getElementById('shop-bottom-close-btn');
+        if (shopBottomCloseBtnEl) shopBottomCloseBtnEl.onclick = () => { playClick(); closeShopModal(); };
+
+        if (btnOpenShop) btnOpenShop.onclick = openShopModal;
+        if (shopCloseBtnEl) shopCloseBtnEl.onclick = () => { playClick(); closeShopModal(); };
+        if (shopModal) {
+            shopModal.addEventListener('mousedown', (e) => {
+                if (e.target === shopModal) closeShopModal();
+            });
+            shopModal.addEventListener('touchstart', (e) => {
+                if (e.target === shopModal) closeShopModal();
+            }, { passive: true });
+        }
+
+        // ==========================================
+        // МОДАЛЬНЕ ВІКНО КАСТОМІЗАЦІЇ (Themes, Frames, Titles)
+        // ==========================================
+        const customizationModal = document.getElementById('customization-modal');
+        const btnOpenCustomization = document.getElementById('btn-open-customization');
+        const customizationCloseBtn = document.getElementById('customization-close-btn');
+        const custBottomCloseBtn = document.getElementById('customization-bottom-close-btn');
+
+        let activeCustTab = 'themes';
+
+        function switchCustomizationTab(tabName) {
+            activeCustTab = tabName;
+            document.querySelectorAll('.cust-main-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.custTab === tabName);
+            });
+            document.getElementById('cust-tab-themes')?.classList.toggle('hidden', tabName !== 'themes');
+            document.getElementById('cust-tab-themes')?.classList.toggle('active', tabName === 'themes');
+
+            document.getElementById('cust-tab-frames')?.classList.toggle('hidden', tabName !== 'frames');
+            document.getElementById('cust-tab-frames')?.classList.toggle('active', tabName === 'frames');
+
+            document.getElementById('cust-tab-titles')?.classList.toggle('hidden', tabName !== 'titles');
+            document.getElementById('cust-tab-titles')?.classList.toggle('active', tabName === 'titles');
+
+            if (tabName === 'themes') renderCustomizationThemes();
+            else if (tabName === 'frames') renderCustomizationFrames();
+            else if (tabName === 'titles') renderCustomizationTitles();
+        }
+
+        document.querySelectorAll('.cust-main-tab').forEach(btn => {
+            btn.onclick = () => {
+                playClick();
+                switchCustomizationTab(btn.dataset.custTab);
+            };
+        });
+
+        function renderCustomizationThemes() {
+            const grid = document.getElementById('cust-themes-grid');
+            if (!grid) return;
+
+            const activeId = FieldThemes.getActiveThemeId();
+            const unlockedIds = FieldThemes.getUnlockedThemes();
+
+            // Показуємо всі розблоковані теми
+            const themes = FieldThemes.FIELD_THEMES.filter(t => unlockedIds.includes(t.id));
+
+            grid.innerHTML = themes.map(theme => {
                 const isActive = (theme.id === activeId);
-                const isUnlocked = unlockedIds.includes(theme.id);
                 const name = getText(theme.nameKey) || theme.id;
                 const desc = getText(theme.descKey) || '';
                 const badge = getText(theme.badgeKey) || '';
@@ -8983,17 +9062,10 @@ function updateRipples(dt) {
 
                 let actionBtnHtml = '';
                 if (isActive) {
-                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-equipped" disabled>${getText('shopEquipped') || 'Вибрано'}</button>`;
-                } else if (isUnlocked) {
-                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-equip" data-equip-theme="${theme.id}">${getText('shopEquip') || 'Вибрати'}</button>`;
+                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-equipped" disabled>${getText('shopEquipped') || 'Активна'}</button>`;
                 } else {
-                    const buyText = (getText('shopBuy') || 'Купити за {price} 🪙').replace('{price}', theme.price);
-                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-buy" data-buy-theme="${theme.id}" data-price="${theme.price}">${buyText}</button>`;
+                    actionBtnHtml = `<button type="button" class="theme-action-btn btn-theme-equip" data-cust-equip-theme="${theme.id}">${getText('shopEquip') || 'Одягнути'}</button>`;
                 }
-
-                const priceDisplay = isUnlocked 
-                    ? `<span style="font-size: 0.85rem; color: #4ade80; font-weight: 600;">${getText('shopOwned') || 'Куплено'}</span>`
-                    : `<span class="theme-card-price">${icons.coin(16)} ${theme.price}</span>`;
 
                 return `
                     <div class="shop-theme-card ${isActive ? 'active-theme' : ''}" data-card-theme-id="${theme.id}">
@@ -9004,10 +9076,13 @@ function updateRipples(dt) {
                         <div class="theme-card-body">
                             <div class="theme-card-title">
                                 <span>${name}</span>
+                                ${isActive ? `<span style="font-size: 0.78rem; color: #38bdf8; font-weight: 700;">● Активна</span>` : ''}
                             </div>
                             <div class="theme-card-desc">${desc}</div>
-                            <div class="theme-card-footer">
-                                ${priceDisplay}
+                            <div class="theme-card-footer" style="display: flex; gap: 6px; justify-content: flex-end;">
+                                <button type="button" class="theme-action-btn btn-theme-preview" data-preview-theme="${theme.id}">
+                                    ${getText('previewThemeBtn') || 'Опробувати'}
+                                </button>
                                 ${actionBtnHtml}
                             </div>
                         </div>
@@ -9015,70 +9090,285 @@ function updateRipples(dt) {
                 `;
             }).join('');
 
-            grid.querySelectorAll('[data-buy-theme]').forEach(btn => {
-                btn.onclick = async () => {
-                    playClick();
-                    const themeId = btn.getAttribute('data-buy-theme');
-                    try {
-                        const res = FieldThemes.purchaseTheme(themeId, songsDB);
-                        if (res.success) {
-                            showNotification(getText('shopBoughtSuccess') || 'Тему успішно придбано та активовано!');
-                            applyActiveThemeVisuals();
-                            renderShop();
-                            syncGlobalProgress();
-                        }
-                    } catch (err) {
-                        showNotification(err.message === "Недостатньо монет" ? (getText('shopNotEnoughCoins') || 'Недостатньо монет!') : err.message);
-                    }
-                };
-            });
-
-            grid.querySelectorAll('[data-equip-theme]').forEach(btn => {
+            grid.querySelectorAll('[data-cust-equip-theme]').forEach(btn => {
                 btn.onclick = () => {
                     playClick();
-                    const themeId = btn.getAttribute('data-equip-theme');
+                    const themeId = btn.getAttribute('data-cust-equip-theme');
                     const ok = FieldThemes.setActiveThemeId(themeId);
                     if (ok) {
                         applyActiveThemeVisuals();
-                        renderShop();
+                        renderCustomizationThemes();
                         syncGlobalProgress();
                     }
                 };
             });
+
+            grid.querySelectorAll('[data-preview-theme]').forEach(btn => {
+                btn.onclick = () => {
+                    playClick();
+                    const themeId = btn.getAttribute('data-preview-theme');
+                    openThemePreviewChooser(themeId, 'customization');
+                };
+            });
+        }
+
+        function renderCustomizationFrames() {
+            const panelFrames = document.getElementById('cust-panel-frames');
+            if (!panelFrames) return;
+            const cosm = Cosmetics.getLocalCosmetics();
+
+            panelFrames.innerHTML = Cosmetics.FRAMES.map(f => {
+                const isUnlocked = cosm.unlockedFrames.includes(f.id);
+                const isEquipped = cosm.selectedFrame === f.id;
+                const frameName = getText(f.nameKey) || f.id;
+                const frameDesc = getText(f.descKey) || '';
+                const statusLabel = isEquipped 
+                    ? (getText('custEquipped') || 'Обрано')
+                    : (isUnlocked ? (getText('custEquip') || 'Обрати') : (getText('custLocked') || 'Заблоковано'));
+                const statusCls = isEquipped ? 'equipped' : (isUnlocked ? 'unlocked' : 'locked');
+                return `
+                    <div class="cosmetic-item-card ${statusCls}" data-frame-id="${f.id}" title="${escapeHtml(frameDesc)}">
+                        <div class="cust-frame-preview ${f.cssClass}">${isUnlocked ? '★' : '🔒'}</div>
+                        <div class="cust-item-info">
+                            <div class="cust-item-name">${escapeHtml(frameName)}</div>
+                            <div class="cust-item-desc">${escapeHtml(frameDesc)}</div>
+                        </div>
+                        <span class="cust-status-badge ${statusCls}">${statusLabel}</span>
+                    </div>
+                `;
+            }).join('');
+
+            panelFrames.querySelectorAll('.cosmetic-item-card').forEach(card => {
+                card.onclick = async () => {
+                    const frameId = card.dataset.frameId;
+                    const cosm = Cosmetics.getLocalCosmetics();
+                    if (!cosm.unlockedFrames.includes(frameId)) {
+                        playMiss();
+                        return;
+                    }
+                    playClick();
+                    Cosmetics.saveLocalCosmetics({ selectedFrame: frameId });
+                    renderCustomizationFrames();
+                    updateHeaderUserBadge();
+                    const myPlayerId = localStorage.getItem('playerId');
+                    if (myPlayerId) {
+                        try {
+                            await setDoc(doc(db, "global_leaderboard", myPlayerId), { selectedFrame: frameId }, { merge: true });
+                            await setDoc(doc(db, "user_progress", myPlayerId), { selectedFrame: frameId }, { merge: true });
+                        } catch (e) { console.warn(e); }
+                        syncGlobalProgress();
+                    }
+                };
+            });
+        }
+
+        function renderCustomizationTitles() {
+            const panelTitles = document.getElementById('cust-panel-titles');
+            if (!panelTitles) return;
+            const cosm = Cosmetics.getLocalCosmetics();
+
+            panelTitles.innerHTML = Cosmetics.TITLES.map(t => {
+                const isUnlocked = cosm.unlockedTitles.includes(t.id);
+                const isEquipped = cosm.selectedTitle === t.id;
+                const titleName = getText(t.nameKey) || t.id;
+                const titleDesc = getText(t.descKey) || '';
+                const statusLabel = isEquipped 
+                    ? (getText('custEquipped') || 'Обрано')
+                    : (isUnlocked ? (getText('custEquip') || 'Обрати') : (getText('custLocked') || 'Заблоковано'));
+                const statusCls = isEquipped ? 'equipped' : (isUnlocked ? 'unlocked' : 'locked');
+                return `
+                    <div class="cosmetic-item-card ${statusCls}" data-title-id="${t.id}" title="${escapeHtml(titleDesc)}">
+                        <div class="cust-frame-preview" style="font-size: 0.95rem;">${isUnlocked ? '👑' : '🔒'}</div>
+                        <div class="cust-item-info">
+                            <div class="cust-item-name">${escapeHtml(titleName)}</div>
+                            <div class="cust-item-desc">${escapeHtml(titleDesc)}</div>
+                        </div>
+                        <span class="cust-status-badge ${statusCls}">${statusLabel}</span>
+                    </div>
+                `;
+            }).join('');
+
+            panelTitles.querySelectorAll('.cosmetic-item-card').forEach(card => {
+                card.onclick = async () => {
+                    const titleId = card.dataset.titleId;
+                    const cosm = Cosmetics.getLocalCosmetics();
+                    if (!cosm.unlockedTitles.includes(titleId)) {
+                        playMiss();
+                        return;
+                    }
+                    playClick();
+                    Cosmetics.saveLocalCosmetics({ selectedTitle: titleId });
+                    renderCustomizationTitles();
+                    const myPlayerId = localStorage.getItem('playerId');
+                    if (myPlayerId) {
+                        try {
+                            await setDoc(doc(db, "global_leaderboard", myPlayerId), { selectedTitle: titleId }, { merge: true });
+                            await setDoc(doc(db, "user_progress", myPlayerId), { selectedTitle: titleId }, { merge: true });
+                        } catch (e) { console.warn(e); }
+                        syncGlobalProgress();
+                    }
+                };
+            });
+        }
+
+        renderCustomizationModal = function() {
+            switchCustomizationTab(activeCustTab);
         };
 
-        function openShopModal() {
-            if (!shopModal) return;
+        openCustomizationModal = function() {
+            if (!customizationModal) return;
             playClick();
             i18n.updateDOM();
-            if (shopSearchInputEl) {
-                shopSearchInputEl.value = '';
-                shopSearchQuery = '';
-            }
-            if (shopSearchClearBtn) shopSearchClearBtn.classList.add('hidden');
-            if (shopSortSelectEl) {
-                shopSortSelectEl.value = shopSortMode;
-            }
-            renderShop();
-            shopModal.classList.remove('hidden');
-        }
+            renderCustomizationModal();
+            customizationModal.classList.remove('hidden');
+        };
 
-        function closeShopModal() {
-            if (shopModal) shopModal.classList.add('hidden');
-        }
+        closeCustomizationModal = function() {
+            if (customizationModal) customizationModal.classList.add('hidden');
+        };
 
-        const shopBottomCloseBtnEl = document.getElementById('shop-bottom-close-btn');
-        if (shopBottomCloseBtnEl) shopBottomCloseBtnEl.onclick = () => { playClick(); closeShopModal(); };
-
-        if (btnOpenShop) btnOpenShop.onclick = openShopModal;
-        if (shopCloseBtnEl) shopCloseBtnEl.onclick = () => { playClick(); closeShopModal(); };
-        if (shopModal) {
-            shopModal.addEventListener('mousedown', (e) => {
-                if (e.target === shopModal) closeShopModal();
+        if (btnOpenCustomization) btnOpenCustomization.onclick = openCustomizationModal;
+        if (customizationCloseBtn) customizationCloseBtn.onclick = () => { playClick(); closeCustomizationModal(); };
+        if (custBottomCloseBtn) custBottomCloseBtn.onclick = () => { playClick(); closeCustomizationModal(); };
+        if (customizationModal) {
+            customizationModal.addEventListener('mousedown', (e) => {
+                if (e.target === customizationModal) closeCustomizationModal();
             });
-            shopModal.addEventListener('touchstart', (e) => {
-                if (e.target === shopModal) closeShopModal();
+            customizationModal.addEventListener('touchstart', (e) => {
+                if (e.target === customizationModal) closeCustomizationModal();
             }, { passive: true });
+        }
+
+        // ==========================================
+        // РЕЖИМ 20-СЕКУНДНОГО ТЕСТ-ДРАЙВУ ТЕМИ З АВТО-БОТОМ
+        // ==========================================
+        openThemePreviewChooser = function(themeId, returnModal = 'shop') {
+            State.previewThemeId = themeId;
+            State.previewReturnModal = returnModal;
+
+            const modal = document.getElementById('theme-preview-modal');
+            const themeNameEl = document.getElementById('theme-preview-theme-name');
+            const trackSelect = document.getElementById('preview-track-select');
+            if (!modal) return;
+
+            const theme = FieldThemes.getThemeById(themeId);
+            const localizedThemeName = theme ? (getText(theme.nameKey) || theme.id) : themeId;
+            if (themeNameEl) {
+                themeNameEl.textContent = `${getText('themeLabel') || 'Тема'}: ${localizedThemeName}`;
+            }
+
+            if (trackSelect && Array.isArray(songsDB)) {
+                trackSelect.innerHTML = songsDB.map((s, idx) => {
+                    return `<option value="${idx}">${escapeHtml(s.artist)} — ${escapeHtml(s.title)}</option>`;
+                }).join('');
+                if (State.currentSongIndex >= 0 && State.currentSongIndex < songsDB.length) {
+                    trackSelect.value = String(State.currentSongIndex);
+                }
+            }
+
+            modal.classList.remove('hidden');
+        };
+
+        startThemePreview = function(themeId, songIdx) {
+            if (State.previewTimerId) clearTimeout(State.previewTimerId);
+            if (State.previewIntervalId) clearInterval(State.previewIntervalId);
+
+            const previewModal = document.getElementById('theme-preview-modal');
+            if (previewModal) previewModal.classList.add('hidden');
+            if (shopModal) shopModal.classList.add('hidden');
+            if (customizationModal) customizationModal.classList.add('hidden');
+
+            State.previewOriginalTheme = FieldThemes.getActiveThemeId();
+            State.previewOriginalBotState = Boolean(State.isBotEnabled);
+            State.isPreviewMode = true;
+
+            FieldThemes.setPreviewThemeOverride(themeId);
+            applyActiveThemeVisuals();
+            State.isBotEnabled = true;
+
+            const sIdx = (typeof songIdx === 'number' && songIdx >= 0 && songIdx < songsDB.length) ? songIdx : 0;
+            startGame(sIdx);
+
+            const hudBanner = document.getElementById('theme-preview-hud');
+            const timerEl = document.getElementById('preview-hud-timer');
+            if (hudBanner) hudBanner.classList.remove('hidden');
+
+            let secondsLeft = 20;
+            if (timerEl) timerEl.textContent = `${secondsLeft}s`;
+
+            State.previewIntervalId = setInterval(() => {
+                secondsLeft--;
+                if (timerEl) timerEl.textContent = `${Math.max(0, secondsLeft)}s`;
+                if (secondsLeft <= 0) {
+                    clearInterval(State.previewIntervalId);
+                    State.previewIntervalId = null;
+                }
+            }, 1000);
+
+            State.previewTimerId = setTimeout(() => {
+                exitThemePreview();
+            }, 20000);
+        };
+
+        exitThemePreview = function() {
+            if (State.previewTimerId) {
+                clearTimeout(State.previewTimerId);
+                State.previewTimerId = null;
+            }
+            if (State.previewIntervalId) {
+                clearInterval(State.previewIntervalId);
+                State.previewIntervalId = null;
+            }
+
+            const wasPreview = State.isPreviewMode;
+            const retModal = State.previewReturnModal;
+            const origTheme = State.previewOriginalTheme;
+            const origBot = State.previewOriginalBotState;
+
+            State.isPreviewMode = false;
+
+            FieldThemes.setPreviewThemeOverride(null);
+            applyActiveThemeVisuals();
+            State.isBotEnabled = Boolean(origBot);
+
+            cleanLevelRemnants();
+            quitGame();
+
+            const hudBanner = document.getElementById('theme-preview-hud');
+            if (hudBanner) hudBanner.classList.add('hidden');
+
+            if (wasPreview) {
+                showNotification(getText('previewCompletedToast') || 'Тест-драйв теми завершено');
+                if (retModal === 'shop') {
+                    openShopModal();
+                } else {
+                    openCustomizationModal();
+                }
+            }
+        }
+
+        const btnStartThemePreview = document.getElementById('btn-start-theme-preview');
+        if (btnStartThemePreview) {
+            btnStartThemePreview.onclick = () => {
+                const trackSelect = document.getElementById('preview-track-select');
+                const songIdx = parseInt(trackSelect?.value || '0', 10);
+                startThemePreview(State.previewThemeId, songIdx);
+            };
+        }
+
+        const themePreviewCloseBtn = document.getElementById('theme-preview-close-btn');
+        if (themePreviewCloseBtn) {
+            themePreviewCloseBtn.onclick = () => {
+                const modal = document.getElementById('theme-preview-modal');
+                if (modal) modal.classList.add('hidden');
+            };
+        }
+
+        const btnExitPreview = document.getElementById('btn-exit-theme-preview');
+        if (btnExitPreview) {
+            btnExitPreview.onclick = () => {
+                exitThemePreview();
+            };
         }
 
         // Початкове оновлення балансу монет
@@ -9093,6 +9383,9 @@ function updateRipples(dt) {
                 if (userProfileModal && !userProfileModal.classList.contains('hidden')) userProfileModal.classList.add('hidden');
                 if (friendsModal && !friendsModal.classList.contains('hidden')) closeFriendsModal();
                 if (shopModal && !shopModal.classList.contains('hidden')) closeShopModal();
+                if (customizationModal && !customizationModal.classList.contains('hidden')) closeCustomizationModal();
+                const previewModal = document.getElementById('theme-preview-modal');
+                if (previewModal && !previewModal.classList.contains('hidden')) previewModal.classList.add('hidden');
                 const lbModal = document.getElementById('lb-modal');
                 if (lbModal) {
                     lbModal.style.opacity = '0';
@@ -9201,7 +9494,15 @@ function updateRipples(dt) {
     loadCloudSongs();
     setTimeout(resizeCanvas, 100);
 
-    window.__gameDebug = { State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, handleInputDown, handleInputUp, draw, FieldThemes, updateProgressBar, cleanLevelRemnants, i18n, updateGameText };
+    window.__gameDebug = { 
+        State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, 
+        NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, 
+        handleInputDown, handleInputUp, draw, FieldThemes, updateProgressBar, 
+        cleanLevelRemnants, i18n, updateGameText,
+        openThemePreviewChooser, startThemePreview, exitThemePreview,
+        openCustomizationModal, closeCustomizationModal, openShopModal, closeShopModal,
+        renderCustomizationModal, renderShop
+    };
 }
 
 if (document.readyState === 'loading') {

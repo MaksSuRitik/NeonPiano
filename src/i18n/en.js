@@ -428,18 +428,35 @@ export default {
   themeClassic: "Cyber Pulse",
   themeClassicDesc: "Retro-futuristic synthwave horizon grid, neon equalizers and holographic laser slashes. Classic new-school — rhythm in cyberpunk style.",
   themeClassicBadge: "Default",
-  themePhrolova: "Silk Requiem: Phrolova",
-  themePhrolovaDesc: "«Symphony of Beyond» — the only theme where things fall, and it's organic: spider lily petals dancing on a crimson wind. The music-weaving Resonator from Wuthering Waves.",
-  themePhrolovaBadge: "Wuthering Waves",
+  themePhrolova: "Crimson Requiem",
+  themePhrolovaDesc: "Elegant neon aesthetics featuring deep crimson tones and rose petals swirling in rhythm with the music.",
+  themePhrolovaBadge: "Neon & Roses",
   themeDarkAngel: "Obsidian Seraph",
-  themeDarkAngelDesc: "A gothic cathedral where souls rise UPWARD to the vaults and a rose window pulses to the music. Angels here don't fall — they ascend.",
-  themeDarkAngelBadge: "Gothic Cathedral",
+  themeDarkAngelDesc: "Atmospheric gothic style with glowing stained-glass motifs pulsating in rhythm with the music.",
+  themeDarkAngelBadge: "Neo-Gothic",
   themeCosmic: "Astral Singularity",
   themeCosmicDesc: "Layered constellations drift in deep-space 3D parallax. On hit, a planetary singularity explodes with Saturn-like rings and a 4-point pulsar.",
   themeCosmicBadge: "Deep Space",
-  themeIuno: "Lunar Oracle: Iuno",
-  themeIunoDesc: "5★ High Priestess of Tetragon Temple from Wuthering Waves. Aero wind currents, azure streams and a golden laurel wreath glowing under a lunar eclipse. Fate is just a word.",
-  themeIunoBadge: "5★ Aero · Wuthering Waves",
+  themeIuno: "Lunar Eclipse",
+  themeIunoDesc: "Deep celestial tones, a glowing crescent moon, and refined constellation patterns with soft azure luminescence.",
+  themeIunoBadge: "Mystic",
+
+  // Customization & Inventory
+  customizationTitle: "Customization",
+  customizationSubtitle: "Customize your unique visual style",
+  tabThemes: "Themes",
+  tabFrames: "Frames",
+  tabTitles: "Titles",
+  previewThemeBtn: "Preview",
+  previewThemeModalTitle: "Theme Test Drive",
+  previewThemeSelectSong: "Select a track to preview:",
+  previewStartBtn: "Start Test Drive (20 sec)",
+  previewBannerText: "Theme Test Drive • Auto-Bot Playing",
+  previewExitBtn: "Exit",
+  previewCompletedToast: "Theme test drive completed",
+  allThemesOwnedMsg: "All themes have been purchased! Select them in the Customization tab.",
+  shopEquipped: "Equipped",
+  shopEquip: "Equip",
 
   // Admin Coins Management
   adminCoinsManagement: "Player Coins Management",
@@ -449,6 +466,7 @@ export default {
   adminCoinsSavedSuccess: "Coins balance updated successfully!",
   adminSelectMyAccount: "My Account (Admin)",
   adminSelectMyAccountTooltip: "Select your own account for editing",
-  shopCloseBtn: "Close Shop"
+  shopCloseBtn: "Close Shop",
+  logoutBtn: "Log Out",
+  themeLabel: "Theme"
 };
-

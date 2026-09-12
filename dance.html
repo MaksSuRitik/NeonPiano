@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Neon Rhythm — Neon Piano</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="css/style.css?v=66.0">
+  <link rel="stylesheet" href="css/style.css?v=70.3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
 </head>
 <body data-theme="dark">
@@ -49,35 +49,6 @@
         <button id="btn-open-settings" class="nav-btn nav-btn-icon" title="Налаштування" data-i18n-title="settingsTitle" aria-label="Settings">
           <span class="icon-settings-container"></span>
         </button>
-        <button id="btn-fullscreen" class="nav-btn nav-btn-icon" title="Повний екран" data-i18n-title="fullscreen" aria-label="Fullscreen">
-          <span id="fullscreen-icon-container"></span>
-        </button>
-        <button id="btn-logout" class="nav-btn nav-btn-icon nav-btn-danger" style="display: none;" title="Вийти з акаунта" data-i18n-title="logout">
-          <span class="icon-logout-container"></span>
-        </button>
-      </div>
-
-      <div class="header-divider"></div>
-
-      <!-- Settings & Controls (Theme, Sound, Lang) -->
-      <div class="header-group settings-group">
-        <button id="themeToggle" class="nav-btn nav-btn-icon" title="Змінити тему" data-i18n-title="toggleTheme" aria-label="Toggle Theme">
-          <span id="theme-icon-container"></span>
-        </button>
-        <button id="soundToggle" class="nav-btn nav-btn-icon" title="Звук" data-i18n-title="toggleSound" aria-label="Toggle Sound">
-          <span id="sound-icon-container"></span>
-        </button>
-        <div class="lang-wrapper">
-          <button id="langToggle" class="nav-btn" title="Мова" data-i18n-title="settingsLang">
-            <span class="icon-globe-container"></span>
-            <span id="current-lang-text">RU</span>
-          </button>
-          <div class="lang-dropdown">
-            <button data-lang="UA">Українська (UA)</button>
-            <button data-lang="EN">English (EN)</button>
-            <button data-lang="RU">Русский (RU)</button>
-          </div>
-        </div>
       </div>
     </div>
   </header>
@@ -87,7 +58,7 @@
     <h1 class="shimmer-text">NEON PIANO</h1>
 
     <div class="song-catalog-container">
-      <!-- Catalog Toolbar: Stats & Leaderboard Button -->
+      <!-- Catalog Toolbar: Stats & Action Buttons -->
       <div class="catalog-toolbar">
         <div class="catalog-stats-badge" id="catalog-summary-stats">
           <span class="stats-icon-music"></span>
@@ -100,8 +71,11 @@
         <div class="catalog-toolbar-actions">
           <button type="button" id="btn-open-shop" class="btn-shop-toolbar" title="Магазин тем" data-i18n-title="shopTitle" aria-label="Shop">
             <span class="icon-shop-container"></span>
-            <span data-i18n="shopTitle">Магазин тем</span>
-            <span class="shop-coins-pill"><span class="coin-icon">🪙</span> <span id="header-coin-count">0</span></span>
+            <span data-i18n="shopTitle">Магазин</span>
+          </button>
+          <button type="button" id="btn-open-customization" class="btn-shop-toolbar" title="Кастомізація" data-i18n-title="customizationTitle" aria-label="Customization">
+            <span class="icon-customization-container"></span>
+            <span data-i18n="customizationTitle">Кастомізація</span>
           </button>
           <button type="button" id="btn-open-leaderboard" class="btn-leaderboard" style="width: auto; margin: 0 !important; padding: 8px 18px !important;">
             <span class="btn-lb-icon"></span>
@@ -970,23 +944,6 @@
         </div>
       </div>
 
-      <!-- Customization Section (Frames & Titles Selector) -->
-      <div id="up-customization-section" class="up-customization-section hidden">
-        <div class="customization-header">
-          <span class="cust-title" data-i18n="profileCustomize">Кастомізація</span>
-          <div class="customization-tabs">
-            <button type="button" class="cust-tab-btn active" id="cust-tab-frames-btn" data-cust-tab="frames" data-i18n="custTabFrames">Рамки</button>
-            <button type="button" class="cust-tab-btn" id="cust-tab-titles-btn" data-cust-tab="titles" data-i18n="custTabTitles">Титули</button>
-          </div>
-        </div>
-        <div id="cust-panel-frames" class="cust-panel">
-          <!-- Rendered dynamically -->
-        </div>
-        <div id="cust-panel-titles" class="cust-panel hidden">
-          <!-- Rendered dynamically -->
-        </div>
-      </div>
-
       <!-- Friend Action Button -->
       <div style="margin-bottom: 14px;">
         <button type="button" id="up-btn-friend-action" class="modern-btn modern-btn-primary" style="width: 100%; display: none;">
@@ -1004,6 +961,14 @@
         <button type="button" id="up-btn-admin-delete" class="modern-btn modern-btn-danger">
           <span class="btn-icon-trash-up"></span>
           <span data-i18n="profileBtnAdminDelete">Видалити гравця</span>
+        </button>
+      </div>
+
+      <!-- User Logout Action (Visible for current user) -->
+      <div id="user-profile-auth-actions" style="margin-top: 10px;">
+        <button type="button" id="btn-logout" class="modern-btn modern-btn-danger" style="width: 100%; display: none;" title="Вийти з акаунта" data-i18n-title="logout">
+          <span class="icon-logout-container"></span>
+          <span data-i18n="logoutBtn">Вийти з акаунта</span>
         </button>
       </div>
     </div>
@@ -1058,6 +1023,7 @@
         <!-- Rendered dynamically -->
       </div>
       <div id="shop-empty-msg" class="shop-empty-msg hidden" data-i18n="shopNoThemesFound">Тем не знайдено</div>
+      <div id="shop-all-owned-msg" class="shop-empty-msg hidden" data-i18n="allThemesOwnedMsg" style="padding: 24px 16px; color: #38bdf8; font-size: 0.95rem;">Всі теми вже придбано! Ви можете вибрати їх у розділі «Кастомізація».</div>
 
       <!-- Bottom Close Action Button -->
       <div style="display: flex; justify-content: center; margin-top: 10px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
@@ -1066,6 +1032,102 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: CUSTOMIZATION & INVENTORY
+       ========================================== -->
+  <div id="customization-modal" class="modal-overlay hidden">
+    <div class="customization-modal-card">
+      <div class="cust-modal-header">
+        <div class="cust-title-wrap">
+          <span class="cust-modal-icon"></span>
+          <div>
+            <span data-i18n="customizationTitle" class="shop-title-text">Кастомізація</span>
+            <div class="shop-subtitle" data-i18n="customizationSubtitle">Налаштування вашого унікального стилю</div>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="customization-close-btn" aria-label="Close"></button>
+      </div>
+
+      <!-- Navigation Tabs (Themes, Frames, Titles) -->
+      <div class="customization-nav-tabs">
+        <button type="button" class="cust-main-tab active" id="cust-nav-themes-btn" data-cust-tab="themes">
+          <span class="tab-icon-theme">🎨</span>
+          <span data-i18n="tabThemes">Теми</span>
+        </button>
+        <button type="button" class="cust-main-tab" id="cust-nav-frames-btn" data-cust-tab="frames">
+          <span class="tab-icon-frame">🖼️</span>
+          <span data-i18n="tabFrames">Рамки</span>
+        </button>
+        <button type="button" class="cust-main-tab" id="cust-nav-titles-btn" data-cust-tab="titles">
+          <span class="tab-icon-title">🏷️</span>
+          <span data-i18n="tabTitles">Титули</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Owned Field Themes -->
+      <div id="cust-tab-themes" class="cust-tab-pane active">
+        <div id="cust-themes-grid" class="shop-themes-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Tab 2: Frames -->
+      <div id="cust-tab-frames" class="cust-tab-pane hidden">
+        <div id="cust-panel-frames" class="cust-panel">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Tab 3: Titles -->
+      <div id="cust-tab-titles" class="cust-tab-pane hidden">
+        <div id="cust-panel-titles" class="cust-panel">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Bottom Close Button -->
+      <div style="display: flex; justify-content: center; margin-top: 10px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+        <button type="button" id="customization-bottom-close-btn" class="modern-btn modern-btn-secondary" style="padding: 8px 28px; border-radius: 999px;">
+          <span data-i18n="shopCloseBtn">Закрити</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: THEME PREVIEW TRACK SELECTOR
+       ========================================== -->
+  <div id="theme-preview-modal" class="modal-overlay hidden">
+    <div class="theme-preview-card">
+      <div class="theme-preview-header">
+        <h3 data-i18n="previewThemeModalTitle" style="margin: 0; font-size: 1.15rem; color: #38bdf8;">Тест-драйв теми</h3>
+        <button type="button" class="modal-close-btn" id="theme-preview-close-btn" aria-label="Close"></button>
+      </div>
+      <div id="theme-preview-theme-name" class="theme-preview-name-label" style="font-size: 0.95rem; font-weight: 700; color: #f8fafc; margin: 10px 0 14px 0;"></div>
+      <label data-i18n="previewThemeSelectSong" style="font-size: 0.82rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 6px;">
+        Оберіть трек для перегляду:
+      </label>
+      <select id="preview-track-select" class="modern-select" style="margin-bottom: 16px;">
+        <!-- Filled dynamically from songsDB -->
+      </select>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" id="btn-start-theme-preview" class="modern-btn modern-btn-primary" style="flex: 1; height: 42px; font-weight: 700;">
+          <span data-i18n="previewStartBtn">Почати тест-драйв (20 сек)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-Game Theme Preview HUD Banner -->
+  <div id="theme-preview-hud" class="theme-preview-hud hidden">
+    <div class="preview-hud-content">
+      <span class="preview-hud-pulse"></span>
+      <span class="preview-hud-title" data-i18n="previewBannerText">Тест-драйв теми • Грає Авто-бот</span>
+      <span id="preview-hud-timer" class="preview-hud-timer">20s</span>
+    </div>
+    <button type="button" id="btn-exit-theme-preview" class="preview-hud-exit-btn" data-i18n="previewExitBtn">Вийти</button>
   </div>
 
   <!-- ==========================================
@@ -1135,6 +1197,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=69.0"></script>
+  <script type="module" src="src/main.js?v=70.2"></script>
 </body>
 </html>

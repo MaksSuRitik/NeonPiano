@@ -428,18 +428,35 @@ export default {
   themeClassic: "Кібер-Пульс",
   themeClassicDesc: "Retro-футуристична synthwave-сітка горизонту, неонові еквалайзери та голографічні лазерні розрізи. Класична нова школа — ритм у стилі кіберпанку.",
   themeClassicBadge: "За замовчуванням",
-  themePhrolova: "Шовковий Реквієм: Фролова",
-  themePhrolovaDesc: "«Симфонія Інобуття» — єдина тема де щось падає, і це органічно: пелюстки павукової лілії у танці на кривавому вітрі. Резонатор-творець музики із Wuthering Waves.",
-  themePhrolovaBadge: "Wuthering Waves",
+  themePhrolova: "Багряний Реквієм",
+  themePhrolovaDesc: "Елегантна неонова естетика з глибокими багряними відтінками та пелюстками троянд, що кружляють у такт музиці.",
+  themePhrolovaBadge: "Неон & Троянди",
   themeDarkAngel: "Обсидіановий Серафим",
-  themeDarkAngelDesc: "Готичний собор де душі піднімаються ВГОРУ до склепінь, а вітраж-розета пульсує у такт музиці. Ангели тут не падають — вони возносяться.",
-  themeDarkAngelBadge: "Gothic Cathedral",
+  themeDarkAngelDesc: "Атмосферний готичний стиль із сяючими вітражами, що пульсують у такт музиці.",
+  themeDarkAngelBadge: "Неоготика",
   themeCosmic: "Астральна Сингулярність",
   themeCosmicDesc: "Багатошарові сузір'я у глибокому космосі дрейфують у 3D-паралаксі. При влучанні вибухає планетарна сингулярність із кільцями Сатурна та пульсаром.",
   themeCosmicBadge: "Deep Space",
-  themeIuno: "Місячна Віщунка: Юно",
-  themeIunoDesc: "5★ Велика Жриця Храму Тетрагон із Wuthering Waves. Вітер Аеро, лазурні потоки та золотий лавровий вінець у сяйві місячного затемнення. Доля — це лише слово.",
-  themeIunoBadge: "5★ Aero · Wuthering Waves",
+  themeIuno: "Місячне Затемнення",
+  themeIunoDesc: "Глибокі нічні тони, сяйво півмісяця та витончені сузір'я на ігровому полі з м'яким лазурним світінням.",
+  themeIunoBadge: "Містика",
+
+  // Customization & Inventory
+  customizationTitle: "Кастомізація",
+  customizationSubtitle: "Налаштування вашого унікального стилю",
+  tabThemes: "Теми",
+  tabFrames: "Рамки",
+  tabTitles: "Титули",
+  previewThemeBtn: "Опробувати",
+  previewThemeModalTitle: "Тест-драйв теми",
+  previewThemeSelectSong: "Оберіть трек для перегляду:",
+  previewStartBtn: "Почати тест-драйв (20 сек)",
+  previewBannerText: "Тест-драйв теми • Грає Авто-бот",
+  previewExitBtn: "Вийти",
+  previewCompletedToast: "Тест-драйв теми завершено",
+  allThemesOwnedMsg: "Всі теми вже придбано! Ви можете вибрати їх у розділі «Кастомізація».",
+  shopEquipped: "Активна",
+  shopEquip: "Одягнути",
 
   // Admin Coins Management
   adminCoinsManagement: "Керування монетами гравця",
@@ -449,6 +466,8 @@ export default {
   adminCoinsSavedSuccess: "Баланс монет успішно оновлено!",
   adminSelectMyAccount: "Мій акаунт (Адмін)",
   adminSelectMyAccountTooltip: "Обрати свій акаунт для налаштування",
-  shopCloseBtn: "Закрити магазин"
+  shopCloseBtn: "Закрити магазин",
+  logoutBtn: "Вийти з акаунта",
+  themeLabel: "Тема"
 };
 
