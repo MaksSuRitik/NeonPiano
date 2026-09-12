@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.7";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.8";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=71.7";
+import * as FieldThemes from "./game/fieldThemes.js?v=71.8";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -3102,7 +3102,9 @@ function update(songTime) {
                 if (tapSprite) {
                     ctx.drawImage(tapSprite, x - 16, yTop - 16);
                 }
-                if (activeTheme && typeof activeTheme.drawTapOverlay === 'function') {
+                if (activeTheme && typeof activeTheme.drawHeadOverlay === 'function') {
+                    activeTheme.drawHeadOverlay(ctx, x, yTop, w, CONFIG.noteHeight, tile, isLight, now, State.combo);
+                } else if (activeTheme && typeof activeTheme.drawTapOverlay === 'function') {
                     activeTheme.drawTapOverlay(ctx, x, yTop, w, CONFIG.noteHeight, tile, isLight, now, State.combo);
                 }
 
@@ -3248,6 +3250,9 @@ function update(songTime) {
                 // Відмальовування "голови" довгої ноти через кешований спрайт (усі деталі теми вже запечені)
                 if (curHeadSprite && actualYHeadTop > -headH + 4) {
                     ctx.drawImage(curHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
+                }
+                if (activeTheme && typeof activeTheme.drawHeadOverlay === 'function' && actualYHeadTop > -headH + 4 && actualYHeadTop < State.gameHeight + 40) {
+                    activeTheme.drawHeadOverlay(ctx, x, actualYHeadTop, w, headH, tile, isLight, now, State.combo);
                 }
                 ctx.globalAlpha = 1.0;
 

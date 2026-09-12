@@ -20,13 +20,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.7';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.7';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.7';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.7';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.7';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.7';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.7';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.8';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.8';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.8';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.8';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.8';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.8';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.8';
 
 // Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
 const dragon5HeadsSprites = {
@@ -38,13 +38,13 @@ const dragon5HeadsSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=71.7';
-if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=71.7';
-if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=71.7';
-if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=71.7';
-if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=71.7';
-if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=71.7';
-if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=71.7';
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=71.8';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=71.8';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=71.8';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=71.8';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=71.8';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=71.8';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=71.8';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -292,53 +292,94 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // REIATSU LIGHTNING GENERATOR (Молнии Рейацу)
+  // REIATSU LIGHTNING GENERATOR (Анимированные молнии Рейацу)
   // ==========================================================================
-  _drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, seed = 0) {
-    // Generate crackling lightning arcs branching from horns, crest, and snout
-    const t = Math.floor(now * 0.028 + seed) * 1.618;
+  _drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, seed = 0, isHolding = false) {
+    // Quantize time into 38ms steps (26 fps electric crackle)
+    const step = Math.floor(now * 0.026) + seed;
+    // Deterministic pseudo-random generator for this 38ms step
+    const rand = (k) => {
+      const v = Math.sin(step * 127.1 + k * 311.7) * 43758.5453123;
+      return v - Math.floor(v);
+    };
+
     const lightningCol = pal.lightningCol || '#d8b4fe';
+    const isGold = (pal.borderCol === '#ffd700');
+    const intensity = isHolding ? 1.4 : 1.0;
 
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'bevel';
 
-    // Outer glow pass
+    // Pass 1: Outer colored electric aura glow
     ctx.strokeStyle = lightningCol;
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth   = isHolding ? 3.0 : 2.4;
     ctx.beginPath();
 
-    // 1. Left horn arc: leaping up-left
-    const lx0 = cx - w * 0.30, ly0 = cy - h * 0.36;
-    const lx1 = lx0 - 9 + Math.sin(t) * 6, ly1 = ly0 - 11 + Math.cos(t * 1.3) * 5;
-    const lx2 = lx1 - 11 + Math.sin(t * 1.7) * 7, ly2 = ly1 - 13 + Math.sin(t * 0.8) * 6;
-    ctx.moveTo(lx0, ly0); ctx.lineTo(lx1, ly1); ctx.lineTo(lx2, ly2);
-    ctx.moveTo(lx1, ly1); ctx.lineTo(lx1 + 5, ly1 - 10);
+    // 1. Left Horn Electric Arc (crackles from left horn tip leaping up and outward)
+    const lx0 = cx - w * 0.28, ly0 = cy - h * 0.35;
+    const lx1 = lx0 - (5 + rand(1) * 9 * intensity),  ly1 = ly0 - (6 + rand(2) * 9 * intensity);
+    const lx2 = lx1 + (rand(3) * 8 - 4) * intensity,  ly2 = ly1 - (6 + rand(4) * 9 * intensity);
+    const lx3 = lx2 - (4 + rand(5) * 9 * intensity),  ly3 = ly2 - (4 + rand(6) * 7 * intensity);
+    ctx.moveTo(lx0, ly0); ctx.lineTo(lx1, ly1); ctx.lineTo(lx2, ly2); ctx.lineTo(lx3, ly3);
+    // Left fork
+    if (rand(7) > 0.25) {
+      ctx.moveTo(lx1, ly1);
+      ctx.lineTo(lx1 + (rand(8) * 10 - 5), ly1 - (6 + rand(9) * 8));
+    }
 
-    // 2. Right horn arc: leaping up-right
-    const rx0 = cx + w * 0.30, ry0 = cy - h * 0.36;
-    const rx1 = rx0 + 9 + Math.cos(t * 1.1) * 6, ry1 = ry0 - 11 + Math.sin(t * 1.4) * 5;
-    const rx2 = rx1 + 11 + Math.cos(t * 1.5) * 7, ry2 = ry1 - 13 + Math.cos(t * 0.9) * 6;
-    ctx.moveTo(rx0, ry0); ctx.lineTo(rx1, ry1); ctx.lineTo(rx2, ry2);
-    ctx.moveTo(rx1, ry1); ctx.lineTo(rx1 - 5, ry1 - 10);
+    // 2. Right Horn Electric Arc (crackles from right horn tip leaping up and outward)
+    const rx0 = cx + w * 0.28, ry0 = cy - h * 0.35;
+    const rx1 = rx0 + (5 + rand(10) * 9 * intensity), ry1 = ry0 - (6 + rand(11) * 9 * intensity);
+    const rx2 = rx1 + (rand(12) * 8 - 4) * intensity, ry2 = ry1 - (6 + rand(13) * 9 * intensity);
+    const rx3 = rx2 + (4 + rand(14) * 9 * intensity), ry3 = ry2 - (4 + rand(15) * 7 * intensity);
+    ctx.moveTo(rx0, ry0); ctx.lineTo(rx1, ry1); ctx.lineTo(rx2, ry2); ctx.lineTo(rx3, ry3);
+    // Right fork
+    if (rand(16) > 0.25) {
+      ctx.moveTo(rx1, ry1);
+      ctx.lineTo(rx1 + (rand(17) * 10 - 5), ry1 - (6 + rand(18) * 8));
+    }
 
-    // 3. Brow diamond to cheek arcs
-    const bx0 = cx, by0 = cy - h * 0.16;
-    const bx1 = cx + Math.sin(t * 2.1) * (w * 0.20), by1 = by0 + 8;
-    const bx2 = cx - Math.cos(t * 1.8) * (w * 0.24), by2 = by1 + 11;
+    // 3. Brow / Forehead Diamond Crest Arc (crackles across crest plate)
+    const bx0 = cx + (rand(19) * 8 - 4), by0 = cy - h * 0.16;
+    const bx1 = cx + (rand(20) - 0.5) * (w * 0.32), by1 = by0 + 6 + rand(21) * 6;
+    const bx2 = bx1 + (rand(22) - 0.5) * (w * 0.26), by2 = by1 + 6 + rand(23) * 6;
     ctx.moveTo(bx0, by0); ctx.lineTo(bx1, by1); ctx.lineTo(bx2, by2);
 
-    // 4. Snout electric arc
-    const sx0 = cx - 3, sy0 = cy + h * 0.38;
-    const sx1 = cx + Math.sin(t * 2.5) * 7, sy1 = sy0 + 8;
+    // 4. Snout / Fangs Electric Flare
+    const sx0 = cx + (rand(24) * 8 - 4), sy0 = cy + h * 0.38;
+    const sx1 = sx0 + (rand(25) * 10 - 5), sy1 = sy0 + 6 + rand(26) * 6;
     ctx.moveTo(sx0, sy0); ctx.lineTo(sx1, sy1);
 
+    // Extra bolts when holding due to intense spiritual pressure
+    if (isHolding) {
+      const hx0 = cx - w * 0.15, hy0 = cy + h * 0.10;
+      const hx1 = hx0 - 8 - rand(27) * 8, hy1 = hy0 + rand(28) * 10;
+      ctx.moveTo(hx0, hy0); ctx.lineTo(hx1, hy1);
+
+      const hx2 = cx + w * 0.15, hy2 = cy + h * 0.10;
+      const hx3 = hx2 + 8 + rand(29) * 8, hy3 = hy2 + rand(30) * 10;
+      ctx.moveTo(hx2, hy2); ctx.lineTo(hx3, hy3);
+    }
+
     ctx.stroke();
 
-    // Inner pure white-hot core pass
+    // Pass 2: Inner pure white-hot core
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.1;
+    ctx.lineWidth   = isHolding ? 1.4 : 1.1;
     ctx.stroke();
+
+    // 5. Electric Corona Sparks dancing around horns
+    ctx.fillStyle = isGold ? '#fef08a' : '#ffffff';
+    const sparkCount = isHolding ? 5 : 3;
+    for (let s = 0; s < sparkCount; s++) {
+      const spx = cx + (rand(35 + s * 4) - 0.5) * (w * 0.82);
+      const spy = cy - h * 0.22 - rand(36 + s * 4) * (h * 0.32);
+      const sz  = 1.1 + rand(37 + s * 4) * 1.5;
+      ctx.beginPath();
+      ctx.arc(spx, spy, sz, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
   },
@@ -513,9 +554,6 @@ export const HADO99_THEME = {
       ctx.beginPath();
       ctx.arc(cx, snoutY, w * 0.18, 0, Math.PI * 2);
       ctx.fill();
-
-      // Electric spiritual lightning arcs jumping from horns & crest
-      this._drawReiatsuLightning(ctx, cx, cy, headW, headH, pal, 1000, tier);
     }
 
     ctx.restore();
@@ -595,12 +633,21 @@ export const HADO99_THEME = {
   // DYNAMIC TAP NOTE OVERLAY (Live crackling Reiatsu lightning on flying notes)
   // ==========================================================================
   drawTapOverlay(ctx, x, yTop, w, h, tile, isLight, now, combo = 0) {
-    if (tile.hit || tile.failed) return;
+    this.drawHeadOverlay(ctx, x, yTop, w, h, tile, isLight, now, combo);
+  },
+
+  drawHeadOverlay(ctx, x, yTop, w, h, tile, isLight, now, combo = 0) {
+    if (tile.failed || tile.released) return;
+    if (!tile.tailLen && tile.hit) return;
     const cx = x + w / 2;
     const cy = yTop + h / 2;
-    const pal = this._getTierPalette(combo || 0, false, false);
-    // Draw live animated crackling lightning arcs
-    this._drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, tile.lane * 9);
+    const liveCombo = (combo !== undefined && combo !== null && combo > 0)
+      ? combo
+      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
+    const isHolding = Boolean(tile.holding && tile.hit);
+    const pal = this._getTierPalette(liveCombo, false, isHolding);
+    const seed = ((tile.lane ?? 0) * 13 + (tile.id ? (tile.id & 31) : 0));
+    this._drawReiatsuLightning(ctx, cx, cy, w, h, pal, now, seed, isHolding);
   },
 
   // ==========================================================================
