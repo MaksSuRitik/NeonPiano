@@ -9,6 +9,7 @@ import {
   getDoc,
   getDocs,
   addDoc,
+  updateDoc,
   deleteDoc,
   query,
   where,
@@ -432,6 +433,139 @@ export async function deleteTrack(trackId, storagePath = null, audioUrl = null) 
   }
 
   return true;
+}
+
+/**
+ * Updates an existing track in Firestore and optionally replaces its audio file in Supabase Storage.
+ * Admin only.
+ * 
+ * @param {object} params
+ * @param {string} params.trackId Firestore track document ID
+ * @param {File} [params.file] Optional new audio file
+ * @param {string} [params.title] Optional new or existing title
+ * @param {string} [params.artist] Optional new or existing artist
+ * @param {number} [params.duration] Optional duration
+ * @param {string} [params.audioUrl] Optional manual URL
+ * @param {string} [params.oldStoragePath] Old storage path to clean up
+ * @param {function} [params.onProgress] Progress callback for file upload
+ * @returns {Promise<object>} Updated track data
+ */
+export async function updateTrackAdmin({
+  trackId,
+  file = null,
+  title = null,
+  artist = null,
+  duration = null,
+  audioUrl = null,
+  oldStoragePath = null,
+  onProgress = () => {}
+}) {
+  const admin = requireAdmin();
+  if (!trackId) throw new Error("ID треку не вказано.");
+
+  const trackDocRef = doc(db, "tracks", trackId);
+  const updateData = {
+    updatedAt: new Date().toISOString(),
+    updatedBy: admin.username
+  };
+
+  if (title && title.trim()) updateData.title = title.trim();
+  if (artist && artist.trim()) updateData.artist = artist.trim();
+
+  // If a new audio file is provided:
+  if (file) {
+    let calcDuration = Number(duration) || 0;
+    if (calcDuration <= 0) {
+      try {
+        calcDuration = await calculateAudioDuration(file);
+      } catch (e) {
+        console.warn("Could not calculate duration for new file:", e);
+      }
+    }
+    if (calcDuration > 0) {
+      updateData.duration = calcDuration;
+    }
+
+    // Save to local IndexedDB for instant offline/cache availability
+    const trackLocalId = `track_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      await saveAudioToIndexedDB(trackLocalId, file);
+    } catch (idbErr) {
+      console.warn("IndexedDB caching warning:", idbErr);
+    }
+
+    // Upload new file to Supabase Cloud Storage
+    const latinName = transliterate(file.name);
+    try {
+      const res = await uploadAudioToSupabase(file, latinName, onProgress);
+      updateData.audioUrl = res.publicUrl;
+      updateData.storagePath = res.storagePath;
+      updateData.isLocalFallback = false;
+
+      // Delete old file from Supabase if an old storagePath existed
+      if (oldStoragePath && oldStoragePath !== res.storagePath) {
+        try {
+          if (oldStoragePath.startsWith("tracks/")) {
+            await deleteAudioFromSupabase(oldStoragePath);
+          } else {
+            const oldFileRef = ref(storage, oldStoragePath);
+            await deleteObject(oldFileRef);
+          }
+        } catch (cleanupErr) {
+          console.warn("Could not delete old storage file:", cleanupErr);
+        }
+      }
+    } catch (storageErr) {
+      console.warn("Supabase upload failed, falling back to IndexedDB:", storageErr);
+      updateData.audioUrl = `indexeddb://${trackLocalId}`;
+      updateData.storagePath = null;
+      updateData.isLocalFallback = true;
+    }
+  } else if (audioUrl && audioUrl.trim()) {
+    // If a direct URL is specified
+    let cleanUrl = audioUrl.trim();
+    if (cleanUrl.includes("pixeldrain.com/u/")) {
+      cleanUrl = cleanUrl.replace("pixeldrain.com/u/", "pixeldrain.com/api/file/");
+    }
+    if (cleanUrl.includes("dropbox.com") && cleanUrl.includes("dl=0")) {
+      cleanUrl = cleanUrl.replace("dl=0", "raw=1");
+    }
+
+    updateData.audioUrl = cleanUrl;
+    updateData.storagePath = null;
+    updateData.isLocalFallback = false;
+
+    let calcDuration = Number(duration) || 0;
+    if (calcDuration <= 0) {
+      try {
+        calcDuration = await calculateAudioDurationFromUrl(cleanUrl);
+      } catch (e) {
+        console.warn("Could not calculate duration from URL:", e);
+      }
+    }
+    if (calcDuration > 0) {
+      updateData.duration = calcDuration;
+    }
+
+    // Delete old storage file if migrating from Supabase to URL
+    if (oldStoragePath) {
+      try {
+        if (oldStoragePath.startsWith("tracks/")) {
+          await deleteAudioFromSupabase(oldStoragePath);
+        } else {
+          const oldFileRef = ref(storage, oldStoragePath);
+          await deleteObject(oldFileRef);
+        }
+      } catch (cleanupErr) {
+        console.warn("Could not delete old storage file:", cleanupErr);
+      }
+    }
+  } else if (duration !== null && duration !== undefined && Number(duration) > 0) {
+    updateData.duration = Number(duration);
+  }
+
+  await updateDoc(trackDocRef, updateData);
+  return { id: trackId, ...updateData };
 }
 
 /**

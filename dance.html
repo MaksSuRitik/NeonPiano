@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Neon Rhythm — Neon Piano</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="css/style.css?v=70.7">
+  <link rel="stylesheet" href="css/style.css?v=70.8">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
 </head>
 <body data-theme="dark">
@@ -730,6 +730,114 @@
   </div>
 
   <!-- ==========================================
+       MODAL: ADMIN EDIT TRACK (REPLACE AUDIO / SETTINGS)
+       ========================================== -->
+  <div id="admin-edit-track-modal" class="modal-overlay hidden" style="z-index: 100000;">
+    <div class="admin-modal-content" style="max-width: 580px; max-height: 90vh;">
+      <div class="admin-sticky-header">
+        <div class="admin-header-title-wrap">
+          <h2 class="admin-header-title" style="font-size: 1.25rem;" data-i18n="adminEditTrackTitle">Редагування треку</h2>
+          <p class="admin-header-subtitle" data-i18n="adminEditTrackSubtitle">
+            Замініть аудіофайл або оновіть назву та автора
+          </p>
+        </div>
+        <button type="button" id="admin-edit-close-btn" class="modal-close-btn admin-sticky-close-btn" title="Закрити панель (Esc)" aria-label="Close">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="admin-modal-scroll-area" style="padding: 20px 24px;">
+        <form id="admin-edit-track-form">
+          <input type="hidden" id="admin-edit-track-id">
+          <input type="hidden" id="admin-edit-old-storage-path">
+
+          <!-- Current Track Info Banner -->
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;">
+            <div style="font-size: 0.74rem; color: #38bdf8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;" data-i18n="adminCurrentTrack">
+              Поточний трек у базі
+            </div>
+            <div id="admin-edit-preview-name" style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 4px;">
+              Artist - Title
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+              <span id="admin-edit-preview-duration">0.0 сек.</span>
+              <span>•</span>
+              <span id="admin-edit-preview-source" style="word-break: break-all;">Supabase Storage</span>
+            </div>
+          </div>
+
+          <!-- Direct File Upload Option (Recommended) -->
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 0.84rem; color: var(--highlight); font-weight: 700; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <span data-i18n="adminReplaceAudioLabel">Завантажити новий аудіофайл:</span>
+              <span style="font-size: 0.72rem; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 4px;">Supabase CDN</span>
+            </label>
+            <label for="admin-edit-file-input" class="modern-btn admin-file-drop-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; background: rgba(56, 189, 248, 0.12); border: 1.5px dashed rgba(56, 189, 248, 0.45); border-radius: 10px; cursor: pointer; color: #38bdf8; font-weight: 600; font-size: 0.86rem; box-sizing: border-box; transition: all 0.2s;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span id="admin-edit-file-label" data-i18n="adminSelectAudioFile">Обрати аудіофайл з пристрою (.mp3)</span>
+            </label>
+            <input type="file" id="admin-edit-file-input" accept="audio/*,.mp3,.wav,.ogg,.m4a" style="display: none;">
+            <div id="admin-edit-file-info" class="duration-feedback-row" style="display: none; margin-top: 6px;"></div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0 12px 0;">
+            <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
+            <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;" data-i18n="adminOrByUrl">або пряме посилання (URL)</span>
+            <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
+          </div>
+
+          <!-- Direct URL Input -->
+          <div style="margin-bottom: 14px;">
+            <label for="admin-edit-url-input" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;" data-i18n="adminUrlLabel">
+              Пряме посилання на аудіофайл (URL):
+            </label>
+            <input type="url" id="admin-edit-url-input" class="modern-input" placeholder="https://..." style="margin: 0 !important;">
+            <div id="admin-edit-url-feedback" class="duration-feedback-row"></div>
+          </div>
+
+          <!-- Track Metadata (Title, Artist, Duration) -->
+          <div class="admin-grid-2col" style="gap: 12px; margin-bottom: 10px;">
+            <div>
+              <label for="admin-edit-title-input" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;" data-i18n="adminTrackTitle">Назва треку:</label>
+              <input type="text" id="admin-edit-title-input" class="modern-input" required style="margin: 0 !important;">
+            </div>
+            <div>
+              <label for="admin-edit-artist-input" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;" data-i18n="adminArtist">Виконавець / Автор:</label>
+              <input type="text" id="admin-edit-artist-input" class="modern-input" required style="margin: 0 !important;">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label for="admin-edit-duration-input" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;" data-i18n="adminDuration">Тривалість (сек.):</label>
+            <input type="number" id="admin-edit-duration-input" class="modern-input" step="0.1" required style="margin: 0 !important;">
+          </div>
+
+          <!-- Progress Indicator -->
+          <div id="admin-edit-progress-wrap" style="display: none; margin-bottom: 14px; background: rgba(0, 0, 0, 0.2); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.3);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 6px;">
+              <span id="admin-edit-progress-text" style="color: #38bdf8; font-weight: 600;">Завантаження у Supabase...</span>
+              <span id="admin-edit-progress-pct" style="font-weight: 700; color: #38bdf8;">0%</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 999px; overflow: hidden;">
+              <div id="admin-edit-progress-bar" style="width: 0%; height: 100%; background: #38bdf8; transition: width 0.15s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px;">
+            <button type="button" id="admin-edit-cancel-btn" class="modern-btn modern-btn-secondary" data-i18n="adminCancel">
+              Скасувати
+            </button>
+            <button type="submit" id="admin-edit-save-btn" class="modern-btn modern-btn-primary" data-i18n="adminSaveTrackChanges">
+              Зберегти зміни
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
        MODAL: PLAYER PROFILE & STATS
        ========================================== -->
   <div id="profile-modal" class="modal-overlay hidden">
@@ -1238,6 +1346,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=70.7"></script>
+  <script type="module" src="src/main.js?v=70.8"></script>
 </body>
 </html>

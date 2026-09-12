@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=70.7";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=70.8";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=70.7";
+import * as FieldThemes from "./game/fieldThemes.js?v=70.8";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -6395,12 +6395,16 @@ function updateRipples(dt) {
                     item.className = 'admin-track-item';
 
                     const isLocal = Boolean(track.audioUrl && track.audioUrl.startsWith('indexeddb://'));
-                    const badge = isLocal
-                        ? `<span style="font-size:0.7rem; background:rgba(56,189,248,0.15); color:#38bdf8; padding:2px 8px; border-radius:4px; margin-left:6px; display:inline-flex; align-items:center; gap:4px;">${icons.hardDrive(12)} ${getText('localBadgeTrack') || 'Local'}</span>`
-                        : '';
+                    const isSupabase = Boolean(track.audioUrl && track.audioUrl.includes('supabase.co'));
+                    let badge = '';
+                    if (isLocal) {
+                        badge = `<span style="font-size:0.7rem; background:rgba(56,189,248,0.15); color:#38bdf8; padding:2px 8px; border-radius:4px; margin-left:6px; display:inline-flex; align-items:center; gap:4px;">${icons.hardDrive(12)} ${getText('localBadgeTrack') || 'Local'}</span>`;
+                    } else if (isSupabase) {
+                        badge = `<span style="font-size:0.7rem; background:rgba(16,185,129,0.15); color:#34d399; padding:2px 8px; border-radius:4px; margin-left:6px; display:inline-flex; align-items:center; gap:4px;">${icons.cloud(12)} Supabase</span>`;
+                    }
 
                     item.innerHTML = `
-                        <div style="flex: 1; min-width: 0; padding-right: 10px;">
+                        <div class="admin-track-item-info" style="flex: 1; min-width: 0; padding-right: 10px; cursor: pointer;" title="${getText('adminEditTrack') || 'Редагувати / Замінити аудіо'}">
                             <div class="admin-track-item-title">
                                 ${escapeHtml(track.title)} ${badge}
                             </div>
@@ -6408,13 +6412,35 @@ function updateRipples(dt) {
                                 ${escapeHtml(track.artist)} • ${track.duration || 0} ${getText('secondsShort') || 'сек.'}
                             </div>
                         </div>
-                        <button class="nav-btn admin-btn-danger admin-btn-sm btn-delete-track" title="${getText('adminDeleteTrack') || 'Видалити трек'}">
-                            ${icons.trash(14)}
-                        </button>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button class="nav-btn admin-btn-secondary admin-btn-sm btn-edit-track" title="${getText('adminEditTrack') || 'Редагувати / Замінити аудіо'}">
+                                ${icons.edit(14)}
+                            </button>
+                            <button class="nav-btn admin-btn-danger admin-btn-sm btn-delete-track" title="${getText('adminDeleteTrack') || 'Видалити трек'}">
+                                ${icons.trash(14)}
+                            </button>
+                        </div>
                     `;
 
+                    const editBtn = item.querySelector('.btn-edit-track');
+                    const infoArea = item.querySelector('.admin-track-item-info');
+                    if (editBtn) {
+                        editBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            playClick();
+                            openAdminEditModal(track);
+                        };
+                    }
+                    if (infoArea) {
+                        infoArea.onclick = () => {
+                            playClick();
+                            openAdminEditModal(track);
+                        };
+                    }
+
                     const delBtn = item.querySelector('.btn-delete-track');
-                    delBtn.onclick = async () => {
+                    delBtn.onclick = async (e) => {
+                        e.stopPropagation();
                         const confirmPrompt = (getText('adminDeleteConfirmPrompt') || 'Ви дійсно бажаєте видалити трек "{title}"?').replace('{title}', track.title);
                         if (!confirm(confirmPrompt)) return;
                         delBtn.disabled = true;
@@ -6440,6 +6466,251 @@ function updateRipples(dt) {
             } catch (err) {
                 listEl.innerHTML = `<div style="color: #ff5555; padding: 15px; font-size: 0.85rem;">${getText('adminError') || 'Помилка'}: ${escapeHtml(err.message)}</div>`;
             }
+        }
+
+        // ==========================================
+        // Модальне вікно редагування треку (Track Editor & Audio Replacer)
+        // ==========================================
+        const adminEditModal = document.getElementById('admin-edit-track-modal');
+        const adminEditCloseBtn = document.getElementById('admin-edit-close-btn');
+        const adminEditCancelBtn = document.getElementById('admin-edit-cancel-btn');
+        const adminEditForm = document.getElementById('admin-edit-track-form');
+        const adminEditTrackId = document.getElementById('admin-edit-track-id');
+        const adminEditOldStoragePath = document.getElementById('admin-edit-old-storage-path');
+        const adminEditPreviewName = document.getElementById('admin-edit-preview-name');
+        const adminEditPreviewDuration = document.getElementById('admin-edit-preview-duration');
+        const adminEditPreviewSource = document.getElementById('admin-edit-preview-source');
+        const adminEditFileInput = document.getElementById('admin-edit-file-input');
+        const adminEditFileLabel = document.getElementById('admin-edit-file-label');
+        const adminEditFileInfo = document.getElementById('admin-edit-file-info');
+        const adminEditUrlInput = document.getElementById('admin-edit-url-input');
+        const adminEditUrlFeedback = document.getElementById('admin-edit-url-feedback');
+        const adminEditTitleInput = document.getElementById('admin-edit-title-input');
+        const adminEditArtistInput = document.getElementById('admin-edit-artist-input');
+        const adminEditDurationInput = document.getElementById('admin-edit-duration-input');
+        const adminEditProgressWrap = document.getElementById('admin-edit-progress-wrap');
+        const adminEditProgressBar = document.getElementById('admin-edit-progress-bar');
+        const adminEditProgressPct = document.getElementById('admin-edit-progress-pct');
+        const adminEditProgressText = document.getElementById('admin-edit-progress-text');
+        const adminEditSaveBtn = document.getElementById('admin-edit-save-btn');
+
+        let editSelectedFile = null;
+
+        function resetEditFileInput() {
+            editSelectedFile = null;
+            if (adminEditFileInput) adminEditFileInput.value = '';
+            if (adminEditFileLabel) {
+                adminEditFileLabel.textContent = getText('adminSelectAudioFile') || 'Обрати аудіофайл з пристрою (.mp3)';
+                const parentLabel = adminEditFileLabel.closest('label');
+                if (parentLabel) {
+                    parentLabel.style.background = 'rgba(56, 189, 248, 0.12)';
+                    parentLabel.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+                    parentLabel.style.color = '#38bdf8';
+                }
+            }
+            if (adminEditFileInfo) {
+                adminEditFileInfo.style.display = 'none';
+                adminEditFileInfo.innerHTML = '';
+            }
+        }
+
+        function openAdminEditModal(track) {
+            if (!adminEditModal || !track) return;
+            if (adminEditTrackId) adminEditTrackId.value = track.id || '';
+            if (adminEditOldStoragePath) adminEditOldStoragePath.value = track.storagePath || '';
+            if (adminEditTitleInput) adminEditTitleInput.value = track.title || '';
+            if (adminEditArtistInput) adminEditArtistInput.value = track.artist || '';
+            if (adminEditDurationInput) adminEditDurationInput.value = track.duration || 0;
+            if (adminEditUrlInput) adminEditUrlInput.value = '';
+            if (adminEditUrlFeedback) adminEditUrlFeedback.innerHTML = '';
+
+            if (adminEditPreviewName) {
+                adminEditPreviewName.textContent = `${track.artist ? track.artist + ' - ' : ''}${track.title}`;
+            }
+            if (adminEditPreviewDuration) {
+                adminEditPreviewDuration.textContent = `${track.duration || 0} ${getText('secondsShort') || 'сек.'}`;
+            }
+            if (adminEditPreviewSource) {
+                let sourceText = 'URL';
+                if (track.audioUrl) {
+                    if (track.audioUrl.startsWith('indexeddb://')) {
+                        sourceText = 'IndexedDB (Local)';
+                    } else if (track.audioUrl.includes('supabase.co')) {
+                        sourceText = 'Supabase Storage (CDN)';
+                    } else if (track.audioUrl.includes('catbox.moe')) {
+                        sourceText = `Catbox.moe (${track.audioUrl.split('/').pop()})`;
+                    } else {
+                        try {
+                            const u = new URL(track.audioUrl);
+                            sourceText = `${u.hostname} (${track.audioUrl.split('/').pop()})`;
+                        } catch (_) {
+                            sourceText = track.audioUrl.slice(0, 35) + '...';
+                        }
+                    }
+                }
+                adminEditPreviewSource.textContent = sourceText;
+            }
+
+            resetEditFileInput();
+            if (adminEditProgressWrap) adminEditProgressWrap.style.display = 'none';
+            if (adminEditProgressBar) adminEditProgressBar.style.width = '0%';
+            if (adminEditSaveBtn) {
+                adminEditSaveBtn.disabled = false;
+                adminEditSaveBtn.innerText = getText('adminSaveTrackChanges') || 'Зберегти зміни';
+            }
+
+            adminEditModal.classList.remove('hidden');
+        }
+
+        function closeAdminEditModal() {
+            if (adminEditModal) adminEditModal.classList.add('hidden');
+            resetEditFileInput();
+        }
+
+        if (adminEditCloseBtn) adminEditCloseBtn.onclick = closeAdminEditModal;
+        if (adminEditCancelBtn) adminEditCancelBtn.onclick = closeAdminEditModal;
+        if (adminEditModal) {
+            adminEditModal.addEventListener('mousedown', (e) => {
+                if (e.target === adminEditModal) closeAdminEditModal();
+            });
+        }
+
+        if (adminEditFileInput) {
+            adminEditFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+                editSelectedFile = file;
+
+                if (adminEditFileLabel) {
+                    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                    adminEditFileLabel.textContent = `✓ ${file.name} (${sizeMb} MB)`;
+                    const parentLabel = adminEditFileLabel.closest('label');
+                    if (parentLabel) {
+                        parentLabel.style.background = 'rgba(16, 185, 129, 0.16)';
+                        parentLabel.style.borderColor = 'rgba(16, 185, 129, 0.6)';
+                        parentLabel.style.color = '#34d399';
+                    }
+                }
+
+                if (adminEditFileInfo) {
+                    adminEditFileInfo.style.display = 'flex';
+                    adminEditFileInfo.className = 'duration-feedback-row calculating';
+                    adminEditFileInfo.innerHTML = `${icons.refresh(13)} <span>${getText('adminDurationCalculating') || 'Розрахунок тривалості...'}</span>`;
+                }
+
+                try {
+                    const dur = await calculateAudioDuration(file);
+                    if (dur > 0 && adminEditDurationInput) {
+                        adminEditDurationInput.value = dur;
+                        if (adminEditFileInfo) {
+                            adminEditFileInfo.className = 'duration-feedback-row success';
+                            adminEditFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminDurationDetected') || 'Авто-визначено:'} <strong>${dur} ${getText('secondsShort') || 'сек.'}</strong></span>`;
+                        }
+                    } else if (adminEditFileInfo) {
+                        adminEditFileInfo.style.display = 'none';
+                    }
+                } catch (err) {
+                    console.warn('Edit file duration calculation error:', err);
+                    if (adminEditFileInfo) adminEditFileInfo.style.display = 'none';
+                }
+            });
+        }
+
+        if (adminEditUrlInput) {
+            adminEditUrlInput.addEventListener('input', () => {
+                const url = adminEditUrlInput.value.trim();
+                if (!url && adminEditUrlFeedback) {
+                    adminEditUrlFeedback.innerHTML = '';
+                }
+            });
+            adminEditUrlInput.addEventListener('change', async () => {
+                const url = adminEditUrlInput.value.trim();
+                if (!url) return;
+                if (adminEditUrlFeedback) {
+                    adminEditUrlFeedback.className = 'duration-feedback-row calculating';
+                    adminEditUrlFeedback.innerHTML = `${icons.refresh(13)} <span>${getText('adminDurationCalculating') || 'Аналіз тривалості...'}</span>`;
+                }
+                try {
+                    const dur = await calculateAudioDurationFromUrl(url);
+                    if (dur > 0 && adminEditDurationInput) {
+                        adminEditDurationInput.value = dur;
+                        if (adminEditUrlFeedback) {
+                            adminEditUrlFeedback.className = 'duration-feedback-row success';
+                            adminEditUrlFeedback.innerHTML = `${icons.check(13)} <span>${getText('adminDurationDetected') || 'Авто-визначено:'} <strong>${dur} ${getText('secondsShort') || 'сек.'}</strong></span>`;
+                        }
+                    } else if (adminEditUrlFeedback) {
+                        adminEditUrlFeedback.innerHTML = '';
+                    }
+                } catch (_) {
+                    if (adminEditUrlFeedback) adminEditUrlFeedback.innerHTML = '';
+                }
+            });
+        }
+
+        if (adminEditForm) {
+            adminEditForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const trackId = adminEditTrackId ? adminEditTrackId.value : null;
+                if (!trackId) return;
+
+                const title = adminEditTitleInput ? adminEditTitleInput.value.trim() : '';
+                const artist = adminEditArtistInput ? adminEditArtistInput.value.trim() : '';
+                const duration = adminEditDurationInput ? parseFloat(adminEditDurationInput.value) : 0;
+                const newUrl = adminEditUrlInput ? adminEditUrlInput.value.trim() : '';
+                const oldStoragePath = adminEditOldStoragePath ? adminEditOldStoragePath.value : null;
+
+                if (!title) {
+                    alert(getText('adminSpecifyTitle') || 'Вкажіть назву треку.');
+                    return;
+                }
+
+                try {
+                    if (adminEditSaveBtn) {
+                        adminEditSaveBtn.disabled = true;
+                        adminEditSaveBtn.innerText = getText('adminSavingTrack') || 'Збереження треку...';
+                    }
+
+                    if (editSelectedFile && adminEditProgressWrap) {
+                        adminEditProgressWrap.style.display = 'block';
+                        if (adminEditProgressBar) adminEditProgressBar.style.width = '0%';
+                        if (adminEditProgressPct) adminEditProgressPct.textContent = '0%';
+                    }
+
+                    await updateTrackAdmin({
+                        trackId,
+                        file: editSelectedFile,
+                        title,
+                        artist,
+                        duration,
+                        audioUrl: newUrl || null,
+                        oldStoragePath,
+                        onProgress: (pct) => {
+                            if (adminEditProgressWrap) adminEditProgressWrap.style.display = 'block';
+                            if (adminEditProgressBar) adminEditProgressBar.style.width = `${pct}%`;
+                            if (adminEditProgressPct) adminEditProgressPct.textContent = `${pct}%`;
+                            if (adminEditProgressText) {
+                                adminEditProgressText.textContent = `${getText('adminUploadingProgress') || 'Завантаження:'} ${pct}%`;
+                            }
+                        }
+                    });
+
+                    // Invalidate audio buffer and tile map cache for this track
+                    audioBufferCache.delete(trackId);
+                    tileMapCache.delete(trackId);
+
+                    showNotification(getText('adminTrackUpdatedSuccess') || 'Трек успішно оновлено!');
+                    closeAdminEditModal();
+                    await renderAdminTrackList();
+                    await loadCloudSongs();
+                } catch (err) {
+                    console.error('Помилка оновлення треку:', err);
+                    alert((getText('adminTrackUpdateError') || 'Помилка оновлення треку: ') + (err.message || err));
+                    if (adminEditSaveBtn) {
+                        adminEditSaveBtn.disabled = false;
+                        adminEditSaveBtn.innerText = getText('adminSaveTrackChanges') || 'Зберегти зміни';
+                    }
+                }
+            };
         }
 
         // ==========================================
@@ -9558,6 +9829,10 @@ function updateRipples(dt) {
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                if (adminEditModal && !adminEditModal.classList.contains('hidden')) {
+                    closeAdminEditModal();
+                    return;
+                }
                 if (adminModal && !adminModal.classList.contains('hidden')) closeAdminPanel();
                 if (authModal && !authModal.classList.contains('hidden')) authModal.classList.add('hidden');
                 if (profileModal && !profileModal.classList.contains('hidden')) profileModal.classList.add('hidden');
