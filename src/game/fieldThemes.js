@@ -11,7 +11,7 @@ import {
   IUNO_THEME,
   HADO99_THEME,
   getThemeById 
-} from "./themes/index.js?v=71.8";
+} from "./themes/index.js?v=71.9";
 
 export { 
   FIELD_THEMES, 

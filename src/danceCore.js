@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.8";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.9";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=71.8";
+import * as FieldThemes from "./game/fieldThemes.js?v=71.9";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -3224,6 +3224,9 @@ function update(songTime) {
 
                     // Попелясто-сіра голова, що летить далі вниз
                     if (relHeadSprite && actualYHeadTop > -headH - 20 && actualYHeadTop < State.gameHeight + 40) {
+                        if (activeTheme && typeof activeTheme.drawNeck === 'function') {
+                            activeTheme.drawNeck(ctx, x, actualYHeadTop, w, headH, tile, true, 0);
+                        }
                         ctx.drawImage(relHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
                     }
 
@@ -3242,9 +3245,9 @@ function update(songTime) {
                 }
 
                 // Тематичний завершальний хвіст довгої ноти + neck junction collar
-                // Pass tailH so the theme can place the neck collar at the correct position (bottom of body)
+                // Pass tailH and actualYHeadTop so the theme can anchor the neck to the head with zero gap
                 if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
-                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH, State.combo);
+                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH, State.combo, actualYHeadTop);
                 }
 
                 // Відмальовування "голови" довгої ноти через кешований спрайт (усі деталі теми вже запечені)
