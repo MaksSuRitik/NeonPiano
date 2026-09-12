@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=73.0";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=73.1";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=73.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=73.1";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -2952,7 +2952,10 @@ function update(songTime) {
         // ==========================================
         let stringColors = [];
         let stringGlow = p.glow || 'rgba(56, 189, 248, 0.4)';
-        if (activeTheme.id !== 'classic' && activeTheme.colors?.strings) {
+        if (activeTheme && typeof activeTheme.getStringColors === 'function') {
+            stringColors = activeTheme.getStringColors(State.combo);
+            stringGlow = p.glow || activeTheme.colors?.stringGlow;
+        } else if (activeTheme.id !== 'classic' && activeTheme.colors?.strings) {
             stringColors = activeTheme.colors.strings;
             stringGlow = activeTheme.colors.stringGlow || p.glow;
         } else if (State.combo >= 800) {
@@ -3442,11 +3445,19 @@ function update(songTime) {
         }
         if (alpha <= 0) return;
         
+        const curTier = (activeTheme && typeof activeTheme.getTier === 'function') 
+            ? activeTheme.getTier(State.combo) 
+            : null;
+
         let gradColors = ['#fff', '#ccc'];
         let fontSize = 60;
         let labelColor = '#fff';
 
-        if (State.combo >= 800) {
+        if (curTier && Array.isArray(curTier.particleColors) && curTier.particleColors.length > 0) {
+            gradColors = [curTier.particleColors[0], curTier.particleColors[1] || curTier.particleColors[0]];
+            fontSize = (State.combo >= 800) ? 70 : ((State.combo >= 400) ? 68 : ((State.combo >= 200) ? 66 : ((State.combo >= 100) ? 64 : 60)));
+            labelColor = curTier.border || '#fff';
+        } else if (State.combo >= 800) {
             gradColors = ['#43dca9ff', '#1f7da2ff']; 
             fontSize = 70; labelColor = '#e1bee7a4';
         } else if (State.combo >= 400) {

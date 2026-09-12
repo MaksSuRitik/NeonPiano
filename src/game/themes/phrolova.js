@@ -59,6 +59,26 @@ export const PHROLOVA_THEME = {
     return 0;
   },
 
+  getStringColors(combo = 0) {
+    const tier = this._resolveTierNum(combo);
+    if (tier >= 800) {
+      return ['#f8fafc', '#e2e8f0', '#cbd5e1', '#ff1744'];
+    }
+    if (tier >= 400) {
+      return ['#ffffff', '#fda4af', '#ff758f', '#ff0055'];
+    }
+    if (tier >= 200) {
+      return ['#ffffff', '#fecdd3', '#fda4af', '#ff1744'];
+    }
+    if (tier >= 100) {
+      return ['#fff1f2', '#fecdd3', '#fda4af', '#f43f5e'];
+    }
+    if (tier >= 50) {
+      return ['#fecdd3', '#fda4af', '#f43f5e', '#e11d48'];
+    }
+    return ['#fda4af', '#fb7185', '#f43f5e', '#be123c'];
+  },
+
   // Color palette by combo tier (Authentic Phrolova: Obsidian, Blood Crimson, Lycoris Ruby, Bordeaux Claret, Ash Platinum Silver — ZERO yellow/orange)
   _getPalette(tierInput, isDead = false) {
     if (isDead) {
@@ -248,7 +268,7 @@ export const PHROLOVA_THEME = {
 
   bakeLongHead(ctx, x, yTop, w, h, isLight, style) {
     this.bakeTapNote(ctx, x, yTop, w, h, isLight, style);
-    const tier = style?.tier || 0;
+    const tier = this._resolveTierNum(style);
     const pal = this._getPalette(tier, false);
     const cx = x + w / 2;
 
@@ -719,14 +739,15 @@ export const PHROLOVA_THEME = {
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
 
-    const colBlade = isPerfect ? '#ff4d6d' : '#e11d48';
-    const colCore = isPerfect ? '#ffffff' : '#fecdd3';
+    const pal = this._getPalette(combo);
+    const colBlade = isPerfect ? (combo >= 800 ? '#f8fafc' : pal.border) : pal.gemCol;
+    const colCore = isPerfect ? '#ffffff' : (combo >= 800 ? '#ffffff' : pal.core);
 
     // 1. Acoustic Soundwave Resonance Ripples
     const rippleR = (w * 0.18) + easeOut * (w * 0.52);
     const rippleAlpha = Math.max(0, (1.0 - p) * 0.6);
     ctx.lineWidth = Math.max(1, 2.2 * (1.0 - p));
-    ctx.strokeStyle = `rgba(244, 63, 94, ${rippleAlpha})`;
+    ctx.strokeStyle = (combo >= 800) ? `rgba(248, 250, 252, ${rippleAlpha})` : `rgba(244, 63, 94, ${rippleAlpha})`;
     ctx.beginPath();
     ctx.arc(cx, cy, rippleR, 0, Math.PI * 2);
     ctx.stroke();
@@ -861,6 +882,8 @@ export const PHROLOVA_THEME = {
     const isLight = document.body.getAttribute('data-theme') === 'light';
     const pulse = State.bgPulse || 0;
     const now = songTime || 0;
+    const combo = State.combo || 0;
+    const pal = this._getPalette(combo);
 
     ctx.save();
 
@@ -874,8 +897,8 @@ export const PHROLOVA_THEME = {
     const breath = Math.sin(now * 0.0018) * 0.03 + pulse * 0.09;
     const archAlpha = (isLight ? 0.12 : 0.22) + breath;
 
-    // Outer Gothic Arch Silhouette
-    ctx.strokeStyle = isLight ? `rgba(225, 29, 72, ${archAlpha})` : `rgba(244, 63, 94, ${archAlpha})`;
+    // Outer Gothic Arch Silhouette (adapts to combo!)
+    ctx.strokeStyle = isLight ? `rgba(225, 29, 72, ${archAlpha})` : ((combo >= 800) ? `rgba(248, 250, 252, ${archAlpha})` : pal.border);
     ctx.lineWidth = 1.4;
 
     const archLeft = mcx - archW / 2;
@@ -908,7 +931,7 @@ export const PHROLOVA_THEME = {
 
     // Shattered Mirror Crystalline Cracks radiating from center nexus (Audio-Reactive!)
     const crackAlpha = (isLight ? 0.18 : 0.35) + pulse * 0.35;
-    ctx.strokeStyle = isLight ? `rgba(225, 29, 72, ${crackAlpha})` : `rgba(255, 115, 140, ${crackAlpha})`;
+    ctx.strokeStyle = isLight ? `rgba(225, 29, 72, ${crackAlpha})` : ((combo >= 800) ? `rgba(248, 250, 252, ${crackAlpha})` : pal.border);
     ctx.lineWidth = 1.1;
 
     // Crack rays
@@ -944,7 +967,7 @@ export const PHROLOVA_THEME = {
     // Orbiting Shattered Glass Shards around the mirror arch
     const shardCount = 6;
     ctx.fillStyle = isLight ? 'rgba(225, 29, 72, 0.25)' : 'rgba(254, 205, 211, 0.32)';
-    ctx.strokeStyle = isLight ? 'rgba(225, 29, 72, 0.4)' : 'rgba(255, 77, 109, 0.5)';
+    ctx.strokeStyle = isLight ? 'rgba(225, 29, 72, 0.4)' : ((combo >= 800) ? 'rgba(248, 250, 252, 0.6)' : pal.border);
     ctx.lineWidth = 0.8;
     for (let i = 0; i < shardCount; i++) {
       const orbitAng = (now * 0.0006) + (i * Math.PI * 2 / shardCount);
