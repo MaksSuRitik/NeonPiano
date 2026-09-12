@@ -223,7 +223,7 @@ async function loadCloudSongs() {
                 rawDuration: dur,
                 audioUrl: data.audioUrl,
                 storagePath: data.storagePath || null,
-                isSecret: false,
+                isSecret: Boolean(data.isSecret),
                 isLocal: Boolean(data.audioUrl && data.audioUrl.startsWith("indexeddb://")),
                 createdAt: data.createdAt || 0
             });
@@ -1901,7 +1901,13 @@ function bootGame() {
         if (progressBar) progressBar.style.width = '0%';
         document.getElementById('pause-modal')?.classList.add('hidden');
         document.getElementById('result-screen')?.classList.add('hidden');
-        starsElements.forEach(s => { if (s) { s.classList.remove('active'); s.style.display = ''; } });
+        starsElements.forEach(s => {
+            if (s) {
+                s.className = 'star-marker';
+                s.innerHTML = icons.starEmpty(16);
+                s.style.display = '';
+            }
+        });
         laneElements.forEach(el => { if (el) el.classList.remove('active'); });
         laneKeyElements.forEach(el => { if (el) el.classList.remove('active'); });
         updateGameText();
@@ -3470,11 +3476,9 @@ function handleInputDown(lane, touchY, touchX) {
         if (!State.isPlaying || State.isPaused) return;
         const now = Date.now();
         
-        // Захист від надмірного спаму клавішами тільки для клавіатури
-        if (touchY === undefined) {
-            if (now - (State.laneLastInputTime[lane] || 0) < 40) return;
-            State.laneLastInputTime[lane] = now;
-        }
+        // Захист від надмірного спаму / апаратного дребезгу контактів (40 мс)
+        if (now - (State.laneLastInputTime[lane] || 0) < 40) return;
+        State.laneLastInputTime[lane] = now;
         
         State.keyState[lane] = true;
         
@@ -3641,15 +3645,10 @@ function handleInputDown(lane, touchY, touchX) {
             }
         }
 
-        // Натискання на доріжку, коли ноти немає:
-        // Для клавіатури на ПК (touchY === undefined): фіксуємо промах (неправильна клавіша або натискання повз ноту)
-        if (touchY === undefined) {
-            missNote(null, false);
-            State.laneBeamAlpha[lane] = 0.25;
-        } else {
-            // Для мобільних пристроїв (тач): м'який підсвіт рецептора без штрафу
-            State.laneBeamAlpha[lane] = 0.35;
-        }
+        // Натискання на доріжку, коли ноти немає або повз хітбокс:
+        // Фіксуємо промах для всіх типів вводу (як клавіатура, так і тач)
+        missNote(null, false);
+        State.laneBeamAlpha[lane] = 0.25;
     }
 
     function handleInputUp(lane) {
@@ -3941,13 +3940,13 @@ function updateProgressBar(current, total) {
         if (State.starStatus[i] !== targetStatus) {
             State.starStatus[i] = targetStatus;
             if (targetStatus === 2) {
-                starEl.className = 'hud-star active diamond';
+                starEl.className = 'star-marker active diamond';
                 starEl.innerHTML = icons.diamond(16);
             } else if (targetStatus === 1) {
-                starEl.className = 'hud-star active';
+                starEl.className = 'star-marker active';
                 starEl.innerHTML = icons.starFilled(16);
             } else {
-                starEl.className = 'hud-star';
+                starEl.className = 'star-marker';
                 starEl.innerHTML = icons.starEmpty(16);
             }
         }
@@ -4019,12 +4018,13 @@ function updateRipples(dt) {
             starContainer.innerHTML = '';
             const count = (song && song.isSecret) ? 5 : 3;
             starsElements = [];
+            const secretPercentages = ['20%', '40%', '60%', '80%', '99.9%'];
             for (let i = 1; i <= count; i++) {
                 const s = document.createElement('div');
                 s.id = `star-${i}`;
                 s.className = 'star-marker';
                 s.innerHTML = icons.starEmpty(16);
-                s.style.left = (song && song.isSecret) ? `${i * 19}%` : (i === 1 ? '33.3%' : (i === 2 ? '66.6%' : '99.9%'));
+                s.style.left = (song && song.isSecret) ? secretPercentages[i - 1] : (i === 1 ? '33.3%' : (i === 2 ? '66.6%' : '99.9%'));
                 starContainer.appendChild(s);
                 starsElements.push(s);
             }
@@ -9151,7 +9151,7 @@ function updateRipples(dt) {
     loadCloudSongs();
     setTimeout(resizeCanvas, 100);
 
-    window.__gameDebug = { State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, handleInputDown, handleInputUp, draw, FieldThemes };
+    window.__gameDebug = { State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, handleInputDown, handleInputUp, draw, FieldThemes, updateProgressBar };
 }
 
 if (document.readyState === 'loading') {
