@@ -2,8 +2,10 @@
 // HADO 99 THEME MODULE — Sōsuke Aizen & Hadō #99: Goryūtenmetsu (破道の九十九 五龍転滅)
 // Features:
 // - Top-down dragon head matching user sketch with rich multi-tonal shading
-// - Seamless long note body and tail matching user tail sketch (barbed arrowhead spade blade,
-//   vertebrae chain, lateral fin spikes)
+// - Crown of 5 Dragon Heads (Goryūtenmetsu) atop the tail per user sketch
+// - Reishi Disintegration & Falling Ash (Option 2): fiery burning edge + dark Kurohitsugi
+//   ash flakes and radiant glowing Reishi embers with zero GC allocations
+// - Seamless neck/shoulder junction collar at bottom of body (zero gaps)
 // - Unique color palettes for each combo tier (0, 50, 100, 200, 400, and 800+ Gold)
 // ============================================================================
 
@@ -17,13 +19,31 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.5';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.5';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.5';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.5';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.5';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.5';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.5';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.6';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.6';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.6';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.6';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.6';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.6';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.6';
+
+// Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
+const dragon5HeadsSprites = {
+  tier0: typeof Image !== 'undefined' ? new Image() : null,
+  tier1: typeof Image !== 'undefined' ? new Image() : null,
+  tier2: typeof Image !== 'undefined' ? new Image() : null,
+  tier3: typeof Image !== 'undefined' ? new Image() : null,
+  tier4: typeof Image !== 'undefined' ? new Image() : null,
+  tier5: typeof Image !== 'undefined' ? new Image() : null,
+  dead:  typeof Image !== 'undefined' ? new Image() : null
+};
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=71.6';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=71.6';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=71.6';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=71.6';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=71.6';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=71.6';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=71.6';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -72,6 +92,17 @@ export const HADO99_THEME = {
     return dragonSprites.tier0;
   },
 
+  // Pick 5-heads crown sprite matching the combo tier
+  _getDragon5HeadsSprite(tier, isDead) {
+    if (isDead) return dragon5HeadsSprites.dead;
+    if (tier >= 800) return dragon5HeadsSprites.tier5;
+    if (tier >= 400) return dragon5HeadsSprites.tier4;
+    if (tier >= 200) return dragon5HeadsSprites.tier3;
+    if (tier >= 100) return dragon5HeadsSprites.tier2;
+    if (tier >= 50)  return dragon5HeadsSprites.tier1;
+    return dragon5HeadsSprites.tier0;
+  },
+
   // Multi-tonal color palette for body, tail and effects by combo tier
   _getTierPalette(tier, isDead, isHolding) {
     if (isDead) {
@@ -81,7 +112,8 @@ export const HADO99_THEME = {
         spineCol: '#64748b', beadCol: '#94a3b8',
         bladeCol: '#1e293b', bladeBorder: '#475569',
         finSpikeCol: '#1e293b', lightningCol: '#64748b',
-        auraCol: 'rgba(71, 85, 105, 0.35)', breathCol: '#64748b'
+        auraCol: 'rgba(71, 85, 105, 0.35)', breathCol: '#64748b',
+        ashCol: 'rgba(51, 65, 85, 0.65)', sparkCol: '#94a3b8', burnCol: '#64748b'
       };
     }
     if (tier >= 800) { // Tier 5: Goryutenmetsu Gold (800+)
@@ -91,7 +123,8 @@ export const HADO99_THEME = {
         spineCol: '#ffffff', beadCol: '#fef08a',
         bladeCol: '#d97706', bladeBorder: '#fde68a',
         finSpikeCol: '#b45309', lightningCol: '#ffffff',
-        auraCol: 'rgba(251, 191, 36, 0.50)', breathCol: '#fbbf24'
+        auraCol: 'rgba(251, 191, 36, 0.50)', breathCol: '#fbbf24',
+        ashCol: 'rgba(120, 53, 15, 0.70)', sparkCol: '#fef08a', burnCol: '#fbbf24'
       };
     }
     if (tier >= 400) { // Tier 4: Hogyoku Fusion (400-799)
@@ -101,7 +134,8 @@ export const HADO99_THEME = {
         spineCol: '#fef08a', beadCol: '#ffffff',
         bladeCol: '#be185d', bladeBorder: '#fef08a',
         finSpikeCol: '#9d174d', lightningCol: '#fef08a',
-        auraCol: 'rgba(251, 113, 133, 0.45)', breathCol: '#f472b6'
+        auraCol: 'rgba(251, 113, 133, 0.45)', breathCol: '#f472b6',
+        ashCol: 'rgba(74, 4, 78, 0.75)', sparkCol: '#f472b6', burnCol: '#fb7185'
       };
     }
     if (tier >= 200) { // Tier 3: Las Noches (200-399)
@@ -111,7 +145,8 @@ export const HADO99_THEME = {
         spineCol: '#ffffff', beadCol: '#ffffff',
         bladeCol: '#a21caf', bladeBorder: '#ffffff',
         finSpikeCol: '#86198f', lightningCol: '#ffffff',
-        auraCol: 'rgba(232, 121, 249, 0.45)', breathCol: '#e879f9'
+        auraCol: 'rgba(232, 121, 249, 0.45)', breathCol: '#e879f9',
+        ashCol: 'rgba(59, 7, 100, 0.75)', sparkCol: '#f0abfc', burnCol: '#e879f9'
       };
     }
     if (tier >= 100) { // Tier 2: Kurohitsugi (100-199)
@@ -121,7 +156,8 @@ export const HADO99_THEME = {
         spineCol: '#f5d0fe', beadCol: '#fae8ff',
         bladeCol: '#86198f', bladeBorder: '#f0abfc',
         finSpikeCol: '#701a75', lightningCol: '#f5d0fe',
-        auraCol: 'rgba(217, 70, 239, 0.40)', breathCol: '#d946ef'
+        auraCol: 'rgba(217, 70, 239, 0.40)', breathCol: '#d946ef',
+        ashCol: 'rgba(46, 8, 84, 0.75)', sparkCol: '#e879f9', burnCol: '#d946ef'
       };
     }
     if (tier >= 50) { // Tier 1: Kyoka Suigetsu (50-99)
@@ -131,7 +167,8 @@ export const HADO99_THEME = {
         spineCol: '#e9d5ff', beadCol: '#f3e8ff',
         bladeCol: '#6b1da8', bladeBorder: '#e9d5ff',
         finSpikeCol: '#581c87', lightningCol: '#e9d5ff',
-        auraCol: 'rgba(192, 132, 252, 0.40)', breathCol: '#c084fc'
+        auraCol: 'rgba(192, 132, 252, 0.40)', breathCol: '#c084fc',
+        ashCol: 'rgba(30, 5, 56, 0.75)', sparkCol: '#d8b4fe', burnCol: '#c084fc'
       };
     }
     // Tier 0: Reikaku Awakening (0-49)
@@ -141,13 +178,106 @@ export const HADO99_THEME = {
       spineCol: '#d8b4fe', beadCol: '#e9d5ff',
       bladeCol: '#581c87', bladeBorder: '#d8b4fe',
       finSpikeCol: '#3b0764', lightningCol: '#d8b4fe',
-      auraCol: 'rgba(168, 85, 247, 0.38)', breathCol: '#a855f7'
+      auraCol: 'rgba(168, 85, 247, 0.38)', breathCol: '#a855f7',
+      ashCol: 'rgba(21, 3, 40, 0.75)', sparkCol: '#c084fc', burnCol: '#a855f7'
     };
   },
 
   // ==========================================================================
-  // DRAGON HEAD RENDERER (TOP-DOWN AERIAL VIEW per user sketch)
-  // Multi-tonal shaded segmented horns, scalloped crown collar, side quills, snout (no eyes).
+  // REISHI DISINTEGRATION ASH & EMBERS PARTICLE POOL (0 GC Allocations)
+  // ==========================================================================
+  _ashPool: Array.from({ length: 42 }, () => ({
+    active: false,
+    x: 0, y: 0,
+    vx: 0, vy: 0,
+    life: 0,
+    size: 2,
+    isSpark: false
+  })),
+  _ashIdx: 0,
+  _lastAshSpawn: 0,
+
+  _spawnReishiAsh(cx, yTail, hw, pal, now) {
+    if (now - this._lastAshSpawn < 28) return;
+    this._lastAshSpawn = now;
+
+    // Spawn 2 particles along the burning horizon
+    for (let c = 0; c < 2; c++) {
+      const p = this._ashPool[this._ashIdx];
+      this._ashIdx = (this._ashIdx + 1) % 42;
+      p.active = true;
+      p.x = cx + (Math.random() - 0.5) * (hw * 1.8);
+      p.y = yTail + (Math.random() - 0.5) * 6;
+      p.isSpark = Math.random() < 0.45; // 45% glowing spark, 55% dark ash
+      if (p.isSpark) {
+        p.vx = (Math.random() - 0.5) * 2.8;
+        p.vy = -(Math.random() * 2.6 + 1.4); // upward drift
+        p.life = 0.50 + Math.random() * 0.35;
+        p.size = 1.8 + Math.random() * 2.0;
+      } else {
+        p.vx = (Math.random() - 0.5) * 1.8;
+        p.vy = -(Math.random() * 1.8 + 0.8); // upward drift
+        p.life = 0.60 + Math.random() * 0.40;
+        p.size = 2.6 + Math.random() * 2.8;
+      }
+    }
+  },
+
+  _updateAndDrawReishiAsh(ctx, pal) {
+    let hasAsh = false;
+    let hasSparks = false;
+
+    // Single-pass position update & boundary check
+    for (let i = 0; i < 42; i++) {
+      const p = this._ashPool[i];
+      if (!p.active) continue;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy -= 0.022; // buoyant spiritual updraft
+      p.life -= 0.026;
+      if (p.life <= 0.01) {
+        p.active = false;
+        continue;
+      }
+      if (p.isSpark) hasSparks = true;
+      else hasAsh = true;
+    }
+
+    if (!hasAsh && !hasSparks) return;
+
+    ctx.save();
+
+    // Batch 1: Dark Kurohitsugi Ash Flakes
+    if (hasAsh) {
+      ctx.fillStyle = pal.ashCol || 'rgba(30, 10, 48, 0.70)';
+      ctx.beginPath();
+      for (let i = 0; i < 42; i++) {
+        const p = this._ashPool[i];
+        if (!p.active || p.isSpark) continue;
+        const sz = p.size * p.life;
+        ctx.rect(p.x - sz * 0.5, p.y - sz * 0.5, sz, sz);
+      }
+      ctx.fill();
+    }
+
+    // Batch 2: Radiant Reishi Embers
+    if (hasSparks) {
+      ctx.fillStyle = pal.sparkCol || '#f0abfc';
+      ctx.beginPath();
+      for (let i = 0; i < 42; i++) {
+        const p = this._ashPool[i];
+        if (!p.active || !p.isSpark) continue;
+        const sz = p.size * (0.6 + p.life * 0.4);
+        ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
+
+    ctx.restore();
+  },
+
+  // ==========================================================================
+  // DRAGON HEAD RENDERING (Top-Down View)
   // ==========================================================================
   _drawDragonHead(ctx, cx, cy, w, h, tier, isDead) {
     const pal = this._getTierPalette(tier, isDead, false);
@@ -332,12 +462,10 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // HOLD TAIL (per user sketch media_1789237167068.png)
-  // - Seamless vertical tangent at body connection (w - 16)
-  // - Tapering shaft with lateral fin spikes
-  // - Chain of vertebrae beads (о-о-о-о-о)
-  // - Arrowhead / crescent spade dragon blade at the tip
-  // - Multi-tonal shading by combo tier (800+ Gold)
+  // HOLD TAIL & REISHI DISINTEGRATION ENGINE
+  // - Crown of 5 Dragon Heads (Goryūtenmetsu per user sketch media_1789239860628.png)
+  // - Reishi Disintegration & Falling Ash (Option 2): fiery burning edge + floating ash/embers
+  // - Seamless neck/shoulder collar at bottom of body (yTail + tailH)
   // ==========================================================================
   drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0) {
     const isMob   = typeof window !== 'undefined' && (window.innerWidth <= 768 || navigator.maxTouchPoints > 1);
@@ -357,16 +485,13 @@ export const HADO99_THEME = {
     const shaftLen     = tailLen - bladeH;
     const tipY         = yTail - tailLen;
     const bladeRootY   = tipY + bladeH;
-    const shaftNeckHW  = Math.max(5, hw * 0.16); // narrow shaft at base of blade
+    const shaftNeckHW  = Math.max(5, hw * 0.16);
 
-    // ── NECK/SHOULDER JUNCTION ─────────────────────────────────────────────
-    // Fills the gap between the baked tail body sprite and the dragon head sprite.
-    // Placed at the BOTTOM of the body (yTail + tailH), fanning from bodyW → headW.
-    // When tailH = 0 (note being held at receptor), junctionY = yTail = actualYHeadTop.
+    // ── NECK/SHOULDER JUNCTION (fills gap at bottom of body where head connects) ──
     {
-      const junctionY = yTail + tailH;           // bottom edge of body = where head starts
-      const neckH     = Math.round(headH * 0.50);// how far down the collar extends into head area
-      const headHW    = Math.round(w * 0.52);    // half-width matching the head sprite (w + 16px padding / 2)
+      const junctionY = yTail + tailH;
+      const neckH     = Math.round(headH * 0.50);
+      const headHW    = Math.round(w * 0.52);
       const neckBot   = junctionY + neckH;
 
       const ng = ctx.createLinearGradient(cx, junctionY, cx, neckBot);
@@ -387,7 +512,7 @@ export const HADO99_THEME = {
       ctx.closePath();
       ctx.fill();
 
-      // Side border lines continuing from the tail body edges
+      // Side border lines continuing from tail body edges
       ctx.strokeStyle = pal.borderCol;
       ctx.lineWidth   = 1.4;
       ctx.beginPath();
@@ -401,7 +526,7 @@ export const HADO99_THEME = {
                         cx + headHW, neckBot);
       ctx.stroke();
 
-      // Small chevrons inside collar (continuation of body armor scales)
+      // Chevrons inside collar
       ctx.strokeStyle = pal.chevronCol;
       ctx.lineWidth   = 1.2;
       for (let i = 1; i <= 2; i++) {
@@ -429,7 +554,7 @@ export const HADO99_THEME = {
 
     ctx.save();
 
-    // 1. Tapering dragon tail shaft (cubic bezier with vertical tangent at body connection)
+    // 1. Tapering dragon tail shaft
     const tg = ctx.createLinearGradient(cx, tipY, cx, yTail + 2);
     tg.addColorStop(0, pal.bgTop);
     tg.addColorStop(1, pal.bgBot);
@@ -438,38 +563,38 @@ export const HADO99_THEME = {
     ctx.beginPath();
     ctx.moveTo(cx - hw, yTail + 2);
     ctx.bezierCurveTo(
-      cx - hw,           yTail - shaftLen * 0.35,
+      cx - hw,                yTail - shaftLen * 0.35,
       cx - shaftNeckHW * 2.2, bladeRootY + shaftLen * 0.25,
-      cx - shaftNeckHW,  bladeRootY
+      cx - shaftNeckHW,       bladeRootY
     );
     ctx.lineTo(cx + shaftNeckHW, bladeRootY);
     ctx.bezierCurveTo(
       cx + shaftNeckHW * 2.2, bladeRootY + shaftLen * 0.25,
-      cx + hw,           yTail - shaftLen * 0.35,
-      cx + hw,           yTail + 2
+      cx + hw,                yTail - shaftLen * 0.35,
+      cx + hw,                yTail + 2
     );
     ctx.closePath();
     ctx.fill();
 
-    // Stroke ONLY left and right outer contours (NO horizontal line at the base!)
+    // Stroke left and right outer contours
     ctx.strokeStyle = pal.borderCol;
     ctx.lineWidth   = 1.6;
     ctx.beginPath();
     ctx.moveTo(cx - hw, yTail + 2);
     ctx.bezierCurveTo(
-      cx - hw,           yTail - shaftLen * 0.35,
+      cx - hw,                yTail - shaftLen * 0.35,
       cx - shaftNeckHW * 2.2, bladeRootY + shaftLen * 0.25,
-      cx - shaftNeckHW,  bladeRootY
+      cx - shaftNeckHW,       bladeRootY
     );
     ctx.moveTo(cx + shaftNeckHW, bladeRootY);
     ctx.bezierCurveTo(
       cx + shaftNeckHW * 2.2, bladeRootY + shaftLen * 0.25,
-      cx + hw,           yTail - shaftLen * 0.35,
-      cx + hw,           yTail + 2
+      cx + hw,                yTail - shaftLen * 0.35,
+      cx + hw,                yTail + 2
     );
     ctx.stroke();
 
-    // 2. Lateral fin spikes along the shaft (from user sketch)
+    // 2. Lateral fin spikes along the shaft
     if (!dead) {
       ctx.fillStyle   = pal.finSpikeCol;
       ctx.strokeStyle = pal.bladeBorder;
@@ -499,7 +624,7 @@ export const HADO99_THEME = {
       }
     }
 
-    // 3. Tapering chevron armor scales on shaft
+    // 3. Chevrons on shaft
     ctx.strokeStyle = pal.chevronCol;
     ctx.lineWidth   = 1.3;
     const chevrons  = 3;
@@ -514,7 +639,7 @@ export const HADO99_THEME = {
       ctx.stroke();
     }
 
-    // 4. Spine line & Chain of vertebrae beads (о-о-о-о-о)
+    // 4. Central spine line & glowing vertebrae beads
     ctx.strokeStyle = pal.spineCol;
     ctx.lineWidth   = holding ? 2.6 : 2.0;
     ctx.beginPath();
@@ -529,7 +654,9 @@ export const HADO99_THEME = {
     for (let i = 0; i < numBeads; i++) {
       const t = (i + 1) / (numBeads + 1);
       const vy = yTail - t * shaftLen;
-      const bw = 3.2 * (1.0 - t * 0.40);
+      // Pulsing spiritual energy wave running down the spine
+      const wave = Math.sin(now * 0.007 - i * 0.6) * 0.5 + 0.5;
+      const bw = (3.0 + wave * 0.8) * (1.0 - t * 0.35);
       const bh = bw * 1.35;
       ctx.beginPath();
       ctx.ellipse(cx, vy, bw, bh, 0, 0, Math.PI * 2);
@@ -537,66 +664,60 @@ export const HADO99_THEME = {
       ctx.stroke();
     }
 
-    // 5. Arrowhead / Crescent Spade Dragon Blade at tip (per sketch)
-    const bladeW = Math.min(22, hw * 0.42);
-    ctx.fillStyle   = pal.bladeCol;
-    ctx.strokeStyle = pal.bladeBorder;
-    ctx.lineWidth   = 1.5;
+    // 5. CROWN OF 5 DRAGON HEADS (Goryūtenmetsu per user sketch media_1789239860628.png)
+    const headsSprite = this._getDragon5HeadsSprite(tier, dead);
+    if (headsSprite && headsSprite.complete && headsSprite.naturalWidth > 0) {
+      const crownW = Math.round(w * 0.96);
+      const crownH = Math.round(crownW * (255 / 198));
+      // Subtle spiritual tremor when holding
+      const tremor = (holding && !isMob) ? Math.sin(now * 0.055) * 1.5 : 0;
+      const crownX = cx - crownW / 2 + tremor;
+      const crownY = bladeRootY - crownH + 28; // overlap necks with shaft
 
-    ctx.beginPath();
-    ctx.moveTo(cx, tipY);                                        // blade tip
-    ctx.bezierCurveTo(
-      cx - bladeW * 0.38, tipY + bladeH * 0.45,
-      cx - bladeW * 0.85, tipY + bladeH * 0.80,
-      cx - bladeW,        tipY + bladeH                          // left barb wing tip
-    );
-    ctx.bezierCurveTo(
-      cx - bladeW * 0.65, tipY + bladeH - 5,
-      cx - bladeW * 0.25, tipY + bladeH - 3,
-      cx,                 bladeRootY                             // center root
-    );
-    ctx.bezierCurveTo(
-      cx + bladeW * 0.25, tipY + bladeH - 3,
-      cx + bladeW * 0.65, tipY + bladeH - 5,
-      cx + bladeW,        tipY + bladeH                          // right barb wing tip
-    );
-    ctx.bezierCurveTo(
-      cx + bladeW * 0.85, tipY + bladeH * 0.80,
-      cx + bladeW * 0.38, tipY + bladeH * 0.45,
-      cx,                 tipY
-    );
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+      // If tail is almost fully consumed during hold (tailH < 120), smoothly dissolve the 5 heads
+      const dissolveAlpha = (holding && tailH < 120) ? Math.max(0, tailH / 120) : 1.0;
 
-    // Blade central spine ridge & crystalline bevel lines
-    ctx.strokeStyle = pal.spineCol;
-    ctx.lineWidth   = 2.0;
-    ctx.beginPath();
-    ctx.moveTo(cx, tipY);
-    ctx.lineTo(cx, bladeRootY);
-    ctx.stroke();
+      if (dissolveAlpha > 0.01) {
+        ctx.save();
+        ctx.globalAlpha = dissolveAlpha;
+        ctx.drawImage(headsSprite, crownX, crownY, crownW, crownH);
+        ctx.restore();
+      }
+    }
 
-    ctx.strokeStyle = pal.bladeBorder;
-    ctx.lineWidth   = 1.0;
-    ctx.beginPath();
-    ctx.moveTo(cx, tipY + bladeH * 0.35);
-    ctx.lineTo(cx - bladeW * 0.88, tipY + bladeH - 2);
-    ctx.moveTo(cx, tipY + bladeH * 0.35);
-    ctx.lineTo(cx + bladeW * 0.88, tipY + bladeH - 2);
-    ctx.stroke();
+    // 6. REISHI DISINTEGRATION & FALLING ASH EFFECT (OPTION 2)
+    if (holding) {
+      // Spawn floating ash and glowing Reishi embers at yTail
+      this._spawnReishiAsh(cx, yTail, hw, pal, now);
 
-    // 6. Spiritual lightning arcs when holding
-    if (holding && !isMob) {
-      const fl = Math.sin(now * 0.022) * 3.5;
-      ctx.strokeStyle = pal.lightningCol;
-      ctx.lineWidth   = 1.5;
+      // Fiery animated burning Reishi line along the active yTail horizon
+      const flameSteps = 12;
+      ctx.strokeStyle = pal.burnCol || '#f0abfc';
+      ctx.lineWidth   = 2.4;
       ctx.beginPath();
-      ctx.moveTo(cx, tipY - 8);
-      ctx.lineTo(cx + fl, tipY - 18);
-      ctx.lineTo(cx - fl * 0.6, tipY - 28);
+      for (let s = 0; s <= flameSteps; s++) {
+        const fx = cx - hw + (s / flameSteps) * (hw * 2);
+        const fy = yTail + Math.sin(now * 0.025 + s * 1.9) * 3.5;
+        if (s === 0) ctx.moveTo(fx, fy);
+        else ctx.lineTo(fx, fy);
+      }
+      ctx.stroke();
+
+      // White-hot core highlight line
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth   = 1.1;
+      ctx.beginPath();
+      for (let s = 0; s <= flameSteps; s++) {
+        const fx = cx - hw + (s / flameSteps) * (hw * 2);
+        const fy = yTail + Math.sin(now * 0.025 + s * 1.9) * 2.0;
+        if (s === 0) ctx.moveTo(fx, fy);
+        else ctx.lineTo(fx, fy);
+      }
       ctx.stroke();
     }
+
+    // Update & draw all active ash and Reishi embers
+    this._updateAndDrawReishiAsh(ctx, pal);
 
     ctx.restore();
   },
@@ -627,56 +748,7 @@ export const HADO99_THEME = {
       cg.addColorStop(0.45, 'rgba(192, 132, 252, 0.35)');
       cg.addColorStop(1,    'rgba(0, 0, 0, 0)');
       ctx.fillStyle = cg;
-      ctx.fillRect(x, y, w, h);
-    }
-    ctx.restore();
-  },
-
-  // ==========================================================================
-  // HIT ANIMATION (5-Ray Goryūtenmetsu Shockwave)
-  // ==========================================================================
-  drawHitAnimation(ctx, cx, cy, w, h, p, isPerfect, isLight, now) {
-    if (p >= 1) return;
-    const ease = 1 - (1 - p) * (1 - p);
-    ctx.save();
-
-    const dist = (w * 0.80) * ease;
-    ctx.globalAlpha = Math.max(0, 0.90 - ease * 0.90);
-    ctx.lineCap     = 'round';
-    ctx.lineWidth   = 3.0;
-
-    for (let i = 0; i < 5; i++) {
-      const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-      const ex = cx + Math.cos(angle) * dist, ey = cy + Math.sin(angle) * dist;
-      const mx = cx + Math.cos(angle) * dist * 0.55, my = cy + Math.sin(angle) * dist * 0.55;
-      const wg = ctx.createLinearGradient(cx, cy, ex, ey);
-      wg.addColorStop(0,   isPerfect ? 'rgba(255, 255, 255, 0.9)' : 'rgba(192, 132, 252, 0.9)');
-      wg.addColorStop(0.6, isPerfect ? 'rgba(251, 191, 36, 0.75)'  : 'rgba(147, 51, 234, 0.75)');
-      wg.addColorStop(1,   'rgba(0, 0, 0, 0)');
-      ctx.strokeStyle = wg;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.quadraticCurveTo(mx + Math.cos(angle + Math.PI / 2) * 8, my + Math.sin(angle + Math.PI / 2) * 8, ex, ey);
-      ctx.stroke();
-    }
-
-    const dr = (w * 0.65) * ease;
-    ctx.strokeStyle = isPerfect ? '#ffd700' : '#c084fc';
-    ctx.lineWidth   = isPerfect ? 2.2 : 1.4;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - dr);
-    ctx.lineTo(cx + dr, cy);
-    ctx.lineTo(cx, cy + dr);
-    ctx.lineTo(cx - dr, cy);
-    ctx.closePath();
-    ctx.stroke();
-
-    if (p < 0.30) {
-      ctx.globalAlpha = (0.30 - p) / 0.30;
-      ctx.fillStyle   = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(cx, cy, Math.max(0, (w * 0.28) * (1 - p * 3.3)), 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
     }
     ctx.restore();
   },
@@ -768,35 +840,25 @@ export const HADO99_THEME = {
         if (s === 0) { hx = px; hy = py; }
       }
       ctx.strokeStyle = dr.col; ctx.lineWidth = dr.bw; ctx.lineCap = 'round'; ctx.stroke();
-      ctx.strokeStyle = dr.spine; ctx.lineWidth = isMob ? 2.5 : 4.5; ctx.stroke();
 
-      // Background dragon head
-      const hs = isMob ? 9 : 15;
-      ctx.save();
-      ctx.translate(hx, hy);
-      ctx.fillStyle = dr.col;
+      // Dragon Head Silhouette
+      ctx.fillStyle = dr.spine;
       ctx.beginPath();
-      ctx.moveTo(0, -hs * 0.8);
-      ctx.bezierCurveTo(hs * 1.2, -hs * 0.9, hs * 1.5, hs * 0.2, hs * 0.5, hs * 0.9);
-      ctx.bezierCurveTo(hs * 0.15, hs * 1.1, -hs * 0.15, hs * 1.1, -hs * 0.5, hs * 0.9);
-      ctx.bezierCurveTo(-hs * 1.5, hs * 0.2, -hs * 1.2, -hs * 0.9, 0, -hs * 0.8);
-      ctx.closePath(); ctx.fill();
+      ctx.arc(hx, hy, dr.bw * 0.45, 0, Math.PI * 2);
+      ctx.fill();
 
-      ctx.strokeStyle = dr.spine; ctx.lineWidth = isMob ? 1.4 : 2.2; ctx.lineCap = 'round';
-      for (const s of [-1, 1]) {
-        ctx.beginPath();
-        ctx.moveTo(s * hs * 0.45, -hs * 0.65);
-        ctx.bezierCurveTo(s * hs * 0.75, -hs * 1.30, s * hs * 1.0, -hs * 1.60, s * hs * 0.85, -hs * 2.0);
-        ctx.stroke();
-      }
-      ctx.restore();
+      // Glowing Dragon Eyes
+      ctx.fillStyle = '#f0abfc';
+      ctx.beginPath();
+      ctx.arc(hx - dr.bw * 0.18, hy - 2, 2.0, 0, Math.PI * 2);
+      ctx.arc(hx + dr.bw * 0.18, hy - 2, 2.0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    // Aizen silhouette
-    ctx.globalAlpha = 0.88;
-    const ax = W * 0.5, ay = H * 0.72, asc = isMob ? 0.78 : 1.08;
-    const halo = ctx.createRadialGradient(ax, ay - 26 * asc, 7, ax, ay - 26 * asc, 42 * asc);
-    halo.addColorStop(0,   'rgba(255, 255, 255, 0.36)');
+    // Aizen Silhouette atop central spire
+    const ax = W * 0.50, ay = H * 0.74, asc = isMob ? 0.85 : 1.15;
+    const halo = ctx.createRadialGradient(ax, ay - 26 * asc, 2, ax, ay - 26 * asc, 42 * asc);
+    halo.addColorStop(0,   'rgba(255, 255, 255, 0.45)');
     halo.addColorStop(0.4, 'rgba(192, 132, 252, 0.20)');
     halo.addColorStop(1,   'rgba(0, 0, 0, 0)');
     ctx.fillStyle = halo;
@@ -890,6 +952,10 @@ export const HADO99_THEME = {
         ctx.beginPath(); ctx.moveTo(W * 0.22 + wo, wy); ctx.lineTo(W * 0.78 + wo, wy); ctx.stroke();
       }
     }
+
+    // Update & draw any active floating Reishi ash/embers across the atmosphere
+    this._updateAndDrawReishiAsh(ctx, this._getTierPalette(State?.combo || 0, false, false));
+
     ctx.restore();
   }
 };
