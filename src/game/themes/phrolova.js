@@ -40,55 +40,88 @@ export const PHROLOVA_THEME = {
     return tiers[0];
   },
 
-  // Color palette by combo tier
-  _getPalette(tier, isDead = false) {
+  _resolveTierNum(tier) {
+    if (typeof tier === 'number') return tier;
+    if (tier && typeof tier === 'object') {
+      if (typeof tier.min === 'number') return tier.min;
+      if (typeof tier.tier === 'number') return tier.tier;
+      if (typeof tier.name === 'string') tier = tier.name;
+    }
+    if (typeof tier === 'string') {
+      const s = tier.toLowerCase();
+      if (s === 'celestial_lily' || s === 'legendary' || s === 'gold_tier') return 800;
+      if (s === 'royal_vermilion' || s === 'cosmic') return 400;
+      if (s === 'fiery_carnation' || s === 'gold') return 200;
+      if (s === 'rose_gold' || s === 'electric') return 100;
+      if (s === 'blood_velvet') return 50;
+      if (s === 'crimson_rose' || s === 'steel') return 0;
+    }
+    return 0;
+  },
+
+  // Color palette by combo tier (vivid adaptation across all 6 tiers)
+  _getPalette(tierInput, isDead = false) {
     if (isDead) {
       return {
         bgTop: '#1e293b', bgMid: '#0f172a', bgBot: '#050811',
         border: '#475569', core: '#94a3b8', ribbonGlow: 'rgba(71, 85, 105, 0.3)',
-        starCol: '#94a3b8', stringCol: '#64748b', beadCol: '#94a3b8'
+        starCol: '#94a3b8', stringCol: '#64748b', beadCol: '#94a3b8',
+        gemCol: '#334155', obsCol: '#111827', trackBg: 'rgba(20, 25, 35, 0.40)'
       };
     }
+    const tier = this._resolveTierNum(tierInput);
+
     if (tier >= 800) {
+      // 800+: celestial_lily (Ascended Celestial Imperial Gold & White)
       return {
-        bgTop: '#78350f', bgMid: '#450a0a', bgBot: '#1c050a',
-        border: '#ffd700', core: '#fffbeb', ribbonGlow: 'rgba(251, 191, 36, 0.70)',
-        starCol: '#ffffff', stringCol: '#fef08a', beadCol: '#ffd700'
+        bgTop: '#78350f', bgMid: '#451a03', bgBot: '#1c0c02',
+        border: '#ffd700', core: '#ffffff', ribbonGlow: 'rgba(251, 191, 36, 0.85)',
+        starCol: '#ffffff', stringCol: '#fef08a', beadCol: '#ffd700',
+        gemCol: '#ffd700', obsCol: '#181200', trackBg: 'rgba(35, 25, 5, 0.45)'
       };
     }
     if (tier >= 400) {
+      // 400+: royal_vermilion (Royal Radiant Vermilion / Neon Magenta-Crimson)
       return {
-        bgTop: '#881337', bgMid: '#4c0519', bgBot: '#1a0309',
-        border: '#ff4d6d', core: '#fff0f3', ribbonGlow: 'rgba(255, 77, 109, 0.65)',
-        starCol: '#ffffff', stringCol: '#ff758f', beadCol: '#ff4d6d'
+        bgTop: '#831843', bgMid: '#500724', bgBot: '#1f020e',
+        border: '#ff0054', core: '#fff0f5', ribbonGlow: 'rgba(255, 0, 84, 0.80)',
+        starCol: '#ffffff', stringCol: '#ff758f', beadCol: '#ff0054',
+        gemCol: '#ff0054', obsCol: '#0f0108', trackBg: 'rgba(30, 2, 14, 0.45)'
       };
     }
     if (tier >= 200) {
+      // 200+: fiery_carnation (Blazing Fiery Flame-Orange / Molten Crimson)
       return {
-        bgTop: '#7c1d1d', bgMid: '#450a0a', bgBot: '#190308',
-        border: '#fb7185', core: '#ffe4e6', ribbonGlow: 'rgba(251, 113, 133, 0.60)',
-        starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#fb7185'
+        bgTop: '#7c2d12', bgMid: '#431407', bgBot: '#1a0502',
+        border: '#f97316', core: '#fffbeb', ribbonGlow: 'rgba(249, 115, 22, 0.75)',
+        starCol: '#ffffff', stringCol: '#fed7aa', beadCol: '#f97316',
+        gemCol: '#f97316', obsCol: '#140402', trackBg: 'rgba(28, 8, 3, 0.45)'
       };
     }
     if (tier >= 100) {
+      // 100+: rose_gold (Warm Rose Gold / Sunset Coral)
       return {
-        bgTop: '#831843', bgMid: '#4c0519', bgBot: '#1a0309',
-        border: '#f43f5e', core: '#fff1f2', ribbonGlow: 'rgba(244, 63, 94, 0.55)',
-        starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#f43f5e'
+        bgTop: '#701a35', bgMid: '#440f20', bgBot: '#1c050d',
+        border: '#fb923c', core: '#fff7ed', ribbonGlow: 'rgba(251, 146, 60, 0.70)',
+        starCol: '#ffffff', stringCol: '#fdba74', beadCol: '#fb923c',
+        gemCol: '#fb7185', obsCol: '#120408', trackBg: 'rgba(26, 6, 12, 0.45)'
       };
     }
     if (tier >= 50) {
+      // 50+: blood_velvet (Deep Blood Carmine / Rich Scarlet Ruby)
       return {
         bgTop: '#6b0724', bgMid: '#390312', bgBot: '#170206',
-        border: '#e11d48', core: '#ffe4e6', ribbonGlow: 'rgba(225, 29, 72, 0.50)',
-        starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#e11d48'
+        border: '#e11d48', core: '#ffe4e6', ribbonGlow: 'rgba(225, 29, 72, 0.60)',
+        starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#e11d48',
+        gemCol: '#f43f5e', obsCol: '#0c0105', trackBg: 'rgba(24, 2, 8, 0.45)'
       };
     }
-    // Tier 0
+    // Tier 0 (0-49): crimson_rose (Dark Crimson & Obsidian)
     return {
       bgTop: '#4c0519', bgMid: '#28030c', bgBot: '#120105',
-      border: '#be123c', core: '#fecdd3', ribbonGlow: 'rgba(190, 18, 60, 0.45)',
-      starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#be123c'
+      border: '#be123c', core: '#fecdd3', ribbonGlow: 'rgba(190, 18, 60, 0.50)',
+      starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#be123c',
+      gemCol: '#e11d48', obsCol: '#080104', trackBg: 'rgba(18, 2, 7, 0.45)'
     };
   },
 
@@ -99,7 +132,7 @@ export const PHROLOVA_THEME = {
   // - Delicate violin f-hole / Lycoris stamen filigree lines
   // ==========================================================================
   bakeTapNote(ctx, x, yTop, w, h, isLight, style) {
-    const tier = style?.tier || 0;
+    const tier = this._resolveTierNum(style);
     const isGold = (tier >= 800);
     const pal = this._getPalette(tier, false);
     const cx = x + w / 2;
@@ -231,11 +264,10 @@ export const PHROLOVA_THEME = {
   },
 
   bakeLongTail(ctx, tailW, tailH, isLight, style) {
-    const tier = style?.tier || 0;
+    const tier = this._resolveTierNum(style);
     const pal = this._getPalette(tier, false);
     const cx = tailW / 2;
     const hw = Math.round(tailW * 0.46);
-    const isGold = (tier >= 800);
 
     // 1. Semi-transparent Obsidian-Crimson Track (matches standard tail width)
     const bg = ctx.createLinearGradient(0, 0, 0, tailH);
@@ -266,73 +298,96 @@ export const PHROLOVA_THEME = {
     ctx.moveTo(cx, 0); ctx.lineTo(cx, tailH);
     ctx.stroke();
 
-    ctx.strokeStyle = isGold ? '#fef08a' : (pal.core || '#ffffff');
+    ctx.strokeStyle = pal.core || '#ffffff';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(cx, 0); ctx.lineTo(cx, tailH);
     ctx.stroke();
 
-    // 3. Segmented Blade Links / Raptor Thorns
+    // 3. Segmented Blade Links / Raptor Thorns (Alternating pairs + backward rounded claws)
     const linkSpacing = 28;
     const numLinks = Math.max(1, Math.floor(tailH / linkSpacing));
     const effectiveSpacing = tailH / numLinks;
 
+    // Pass 3a: Obsidian claws (batched)
     ctx.beginPath();
     for (let i = 0; i <= numLinks; i++) {
       const ly = i * effectiveSpacing;
-      const topY = ly - 7;
-      const botY = ly + 8;
-      const midY = ly;
+      const isLong = (i % 2 === 0);
+      const curHW = isLong ? hw : Math.round(hw * 0.52);
+      const backLen = isLong ? 24 : 12;
+      const fwdLen = isLong ? 8 : 4;
 
-      // Left curved blade
-      ctx.moveTo(cx - 3, topY);
-      ctx.quadraticCurveTo(cx - hw * 0.45, topY + 2, cx - hw, midY + 4);
-      ctx.quadraticCurveTo(cx - hw * 0.65, botY - 2, cx - hw * 0.4, botY);
-      ctx.lineTo(cx - 2, botY - 3);
-      ctx.lineTo(cx - 2, midY);
+      const tipXL = cx - curHW + (isLong ? 2.5 : 1.0);
+      const tipY = ly - backLen;
+
+      // Left curved hooked claw
+      ctx.moveTo(cx - 3, ly + fwdLen);
+      ctx.quadraticCurveTo(cx - curHW * 1.05, ly + fwdLen * 0.20, tipXL, tipY);
+      ctx.quadraticCurveTo(cx - curHW * 0.40, ly - backLen * 0.20, cx - 2.5, ly - 2);
       ctx.closePath();
 
-      // Right curved blade
-      ctx.moveTo(cx + 3, topY);
-      ctx.quadraticCurveTo(cx + hw * 0.45, topY + 2, cx + hw, midY + 4);
-      ctx.quadraticCurveTo(cx + hw * 0.65, botY - 2, cx + hw * 0.4, botY);
-      ctx.lineTo(cx + 2, botY - 3);
-      ctx.lineTo(cx + 2, midY);
+      // Right curved hooked claw (symmetrical)
+      const tipXR = cx + curHW - (isLong ? 2.5 : 1.0);
+      ctx.moveTo(cx + 3, ly + fwdLen);
+      ctx.quadraticCurveTo(cx + curHW * 1.05, ly + fwdLen * 0.20, tipXR, tipY);
+      ctx.quadraticCurveTo(cx + curHW * 0.40, ly - backLen * 0.20, cx + 2.5, ly - 2);
       ctx.closePath();
     }
-    ctx.fillStyle = '#0d0106';
+    ctx.fillStyle = pal.obsCol;
     ctx.fill();
     ctx.strokeStyle = pal.border;
     ctx.lineWidth = 1.3;
     ctx.stroke();
 
-    // Central ruby diamond cores
+    // Pass 3b: Central glowing chevron / arrowhead nucleus
     ctx.beginPath();
     for (let i = 0; i <= numLinks; i++) {
       const ly = i * effectiveSpacing;
-      ctx.moveTo(cx, ly - 6);
-      ctx.lineTo(cx + 4, ly);
-      ctx.lineTo(cx, ly + 6);
-      ctx.lineTo(cx - 4, ly);
+      const isLong = (i % 2 === 0);
+      const gemW = isLong ? 7 : 4.5;
+      const backLen = isLong ? 24 : 12;
+      const fwdLen = isLong ? 8 : 4;
+      const gemTop = ly - backLen * 0.45;
+      const gemBot = ly + fwdLen + 2;
+
+      ctx.moveTo(cx, gemBot);
+      ctx.lineTo(cx + gemW, ly + 1);
+      ctx.lineTo(cx, gemTop);
+      ctx.lineTo(cx - gemW, ly + 1);
       ctx.closePath();
     }
-    ctx.fillStyle = pal.beadCol || '#f43f5e';
+    ctx.fillStyle = pal.gemCol;
+    ctx.fill();
+    ctx.strokeStyle = pal.border;
+    ctx.lineWidth = 1.0;
+    ctx.stroke();
+
+    // Diamond core sparkling highlight dots
+    ctx.beginPath();
+    for (let i = 0; i <= numLinks; i++) {
+      const ly = i * effectiveSpacing;
+      ctx.moveTo(cx + 1.2, ly);
+      ctx.arc(cx, ly, 1.2, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = pal.core;
     ctx.fill();
 
     return true;
   },
 
   drawNoteDetails(ctx, x, yTop, w, h, isLight, comboTier) {
-    return this.bakeTapNote(ctx, x, yTop, w, h, isLight, { tier: comboTier?.min || 0 });
+    return this.bakeTapNote(ctx, x, yTop, w, h, isLight, comboTier);
   },
 
   // ==========================================================================
   // PROCEDURAL HOLD BODY — THORNED WHIP / SEGMENTED BLADES / BLOOD SLASH
   // - Straight, taut razor energy string (NO snaking/undulation)
   // - Standard tail width: bodyLaneW = Math.max(10, Math.round(w - 16))
+  // - Alternating thorn pairs: Long pair vs Short pair (через 1 пару разной длины)
+  // - Hooked sickle claws rounded backwards (шыпы заокруглены назад)
   // - Central glowing scarlet/crimson energy incision ("Кровавый след")
-  // - Repeating segmented obsidian blade arrowheads / chitinous raptor thorns
-  // - Audio/holding energetic pulse along the axis
+  // - Full color palette adaptation across all 6 combo tiers
   // ==========================================================================
   drawHoldBody(ctx, x, yTail, w, headH, tile, isLight, now, tailH, currentCombo = 0, actualYHeadTop = null, isReleased = false) {
     if (tailH <= 2) return true;
@@ -345,7 +400,6 @@ export const PHROLOVA_THEME = {
 
     const tier = dead ? 0 : liveCombo;
     const pal = this._getPalette(tier, dead);
-    const isGold = (tier >= 800);
 
     const bodyLaneW = Math.max(10, Math.round(w - 16));
     const bodyX = Math.round(x + 8);
@@ -357,9 +411,9 @@ export const PHROLOVA_THEME = {
 
     // 1. Semi-transparent Obsidian/Crimson Track (defines standard tail body width)
     const trackGrad = ctx.createLinearGradient(0, yTail, 0, headTopY);
-    trackGrad.addColorStop(0, dead ? 'rgba(30, 30, 30, 0.35)' : 'rgba(26, 3, 10, 0.45)');
-    trackGrad.addColorStop(0.5, dead ? 'rgba(20, 20, 20, 0.30)' : 'rgba(40, 5, 16, 0.40)');
-    trackGrad.addColorStop(1, dead ? 'rgba(10, 10, 10, 0.35)' : 'rgba(18, 2, 8, 0.45)');
+    trackGrad.addColorStop(0, dead ? 'rgba(30, 30, 30, 0.35)' : pal.trackBg);
+    trackGrad.addColorStop(0.5, dead ? 'rgba(20, 20, 20, 0.30)' : pal.trackBg);
+    trackGrad.addColorStop(1, dead ? 'rgba(10, 10, 10, 0.35)' : pal.trackBg);
     ctx.fillStyle = trackGrad;
     ctx.fillRect(bodyX, yTail, bodyLaneW, tailH);
 
@@ -394,15 +448,16 @@ export const PHROLOVA_THEME = {
     ctx.stroke();
 
     // 2c. Incandescent White/Gold Laser Cord
-    ctx.strokeStyle = dead ? '#999999' : (isGold ? '#fef08a' : (pal.core || '#ffffff'));
+    ctx.strokeStyle = dead ? '#999999' : (pal.core || '#ffffff');
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(cx, yTail);
     ctx.lineTo(cx, headTopY);
     ctx.stroke();
 
-    // 3. Repeating Segmented Blades / Chitinous Raptor Thorns ("Сегментированные лезвия")
-    // Each link is composed of crossed obsidian blades + glowing ruby diamond core
+    // 3. Repeating Segmented Blades / Raptor Thorns ("Сегментированные лезвия")
+    // Alternating pairs: Long pair vs Short pair (через 1 пару разной длины)
+    // Hooked sickle claws rounded backwards (шыпы заокруглены назад)
     const linkSpacing = 28;
     const startY = headTopY - 14;
     const endY = yTail + 12;
@@ -415,63 +470,73 @@ export const PHROLOVA_THEME = {
       ctx.beginPath();
       for (let i = 0; i <= numLinks; i++) {
         const ly = startY - i * effectiveSpacing;
-        const topY = ly - 7;
-        const botY = ly + 8;
-        const midY = ly;
+        const isLong = (i % 2 === 0);
+        const curHW = isLong ? hw : Math.round(hw * 0.52);
+        const backLen = isLong ? 24 : 12;
+        const fwdLen = isLong ? 8 : 4;
+
+        // Hooked claw: outer curve is rounded convexly, then hooks back and slightly inward at the tip
+        const tipXL = cx - curHW + (isLong ? 2.5 : 1.0);
+        const tipY = ly - backLen;
 
         // Left curved razor blade / claw
-        ctx.moveTo(cx - 3, topY);
-        ctx.quadraticCurveTo(cx - hw * 0.45, topY + 2, cx - hw, midY + 4);
-        ctx.quadraticCurveTo(cx - hw * 0.65, botY - 2, cx - hw * 0.4, botY);
-        ctx.lineTo(cx - 2, botY - 3);
-        ctx.lineTo(cx - 2, midY);
+        ctx.moveTo(cx - 3, ly + fwdLen);
+        ctx.quadraticCurveTo(cx - curHW * 1.05, ly + fwdLen * 0.20, tipXL, tipY);
+        ctx.quadraticCurveTo(cx - curHW * 0.40, ly - backLen * 0.20, cx - 2.5, ly - 2);
         ctx.closePath();
 
         // Right curved razor blade / claw (symmetrical)
-        ctx.moveTo(cx + 3, topY);
-        ctx.quadraticCurveTo(cx + hw * 0.45, topY + 2, cx + hw, midY + 4);
-        ctx.quadraticCurveTo(cx + hw * 0.65, botY - 2, cx + hw * 0.4, botY);
-        ctx.lineTo(cx + 2, botY - 3);
-        ctx.lineTo(cx + 2, midY);
+        const tipXR = cx + curHW - (isLong ? 2.5 : 1.0);
+        ctx.moveTo(cx + 3, ly + fwdLen);
+        ctx.quadraticCurveTo(cx + curHW * 1.05, ly + fwdLen * 0.20, tipXR, tipY);
+        ctx.quadraticCurveTo(cx + curHW * 0.40, ly - backLen * 0.20, cx + 2.5, ly - 2);
         ctx.closePath();
       }
-      ctx.fillStyle = dead ? '#222222' : '#0d0106';
+      ctx.fillStyle = dead ? '#222222' : pal.obsCol;
       ctx.fill();
 
-      // Sharp razor edge outlines on the obsidian blades
+      // Sharp razor edge outlines on the obsidian blades (adapts to combo tier!)
       ctx.strokeStyle = dead ? '#555555' : pal.border;
       ctx.lineWidth = 1.3;
       ctx.stroke();
 
-      // Pass 3b: Central Glowing Diamond Jewel Cores (threaded on the axis)
+      // Pass 3b: Central Glowing Chevron / Arrowhead Nucleus (connecting the horns)
       ctx.beginPath();
       for (let i = 0; i <= numLinks; i++) {
         const ly = startY - i * effectiveSpacing;
-        const rY = 6;
-        const rX = 4;
-        ctx.moveTo(cx, ly - rY);
-        ctx.lineTo(cx + rX, ly);
-        ctx.lineTo(cx, ly + rY);
-        ctx.lineTo(cx - rX, ly);
+        const isLong = (i % 2 === 0);
+        const gemW = isLong ? 7 : 4.5;
+        const backLen = isLong ? 24 : 12;
+        const fwdLen = isLong ? 8 : 4;
+        const gemTop = ly - backLen * 0.45;
+        const gemBot = ly + fwdLen + 2;
+
+        ctx.moveTo(cx, gemBot);
+        ctx.lineTo(cx + gemW, ly + 1);
+        ctx.lineTo(cx, gemTop);
+        ctx.lineTo(cx - gemW, ly + 1);
         ctx.closePath();
       }
-      ctx.fillStyle = dead ? '#444444' : (pal.beadCol || '#f43f5e');
+      ctx.fillStyle = dead ? '#444444' : (pal.gemCol || '#f43f5e');
       ctx.fill();
+      ctx.strokeStyle = dead ? '#666666' : pal.border;
+      ctx.lineWidth = 1.0;
+      ctx.stroke();
 
-      // Diamond core sparkling highlight dots
+      // Diamond core sparkling highlight dots (adapts to combo tier!)
       ctx.beginPath();
       for (let i = 0; i <= numLinks; i++) {
         const ly = startY - i * effectiveSpacing;
         ctx.moveTo(cx + 1.2, ly);
         ctx.arc(cx, ly, 1.2, 0, Math.PI * 2);
       }
-      ctx.fillStyle = isGold ? '#ffffff' : '#ffe4e6';
+      ctx.fillStyle = dead ? '#888888' : (pal.core || '#ffe4e6');
       ctx.fill();
 
-      // 4. Holding/Audio energetic pulse: glowing blood particles rushing down the cord
+      // 4. Holding/Audio energetic pulse: glowing particles rushing down the cord
       if (holding && !dead) {
         const pulseOffset = ((now || 0) * 0.12) % effectiveSpacing;
-        ctx.fillStyle = isGold ? '#fef08a' : '#ffffff';
+        ctx.fillStyle = pal.core || '#ffffff';
         ctx.beginPath();
         for (let i = 0; i <= numLinks; i++) {
           const py = startY - i * effectiveSpacing - pulseOffset;
@@ -491,6 +556,7 @@ export const PHROLOVA_THEME = {
   // ==========================================================================
   // HOLD TAIL TIP (Кристальний шипастий наконечник-шпиль плети)
   // - Dynamic anti-overlap safety clamping: guarantee tail tip never breaches the next incoming note
+  // - Full color palette adaptation across all 6 combo tiers
   // ==========================================================================
   drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0, currentCombo = 0, actualYHeadTop = null, nextTileDist = 9999) {
     const bodyW = Math.max(10, Math.round(w - 16));
@@ -505,7 +571,6 @@ export const PHROLOVA_THEME = {
 
     const tier = dead ? 0 : liveCombo;
     const pal = this._getPalette(tier, dead);
-    const isGold = (tier >= 800);
 
     // Dynamic anti-overlap safety clamping: guarantee tail tip never breaches the next incoming note
     const availableGap = (typeof nextTileDist === 'number' && nextTileDist > 0) ? nextTileDist : 9999;
@@ -530,14 +595,14 @@ export const PHROLOVA_THEME = {
     ctx.lineTo(cx + finialW * 0.5, yTail);
     ctx.closePath();
 
-    ctx.fillStyle = dead ? '#1a1a1a' : '#0d0106';
+    ctx.fillStyle = dead ? '#1a1a1a' : pal.obsCol;
     ctx.fill();
     ctx.strokeStyle = dead ? '#555555' : pal.border;
     ctx.lineWidth = 1.4;
     ctx.stroke();
 
-    // Central ruby laser filament tapering to the point
-    ctx.strokeStyle = dead ? '#888888' : (isGold ? '#fef08a' : (pal.core || '#ffffff'));
+    // Central laser filament tapering to the point
+    ctx.strokeStyle = dead ? '#888888' : pal.core;
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(cx, yTail);
@@ -546,7 +611,7 @@ export const PHROLOVA_THEME = {
 
     // Terminal diamond star at apex
     const starR = Math.max(2.5, Math.min(5, tailLen * 0.16));
-    ctx.fillStyle = isGold ? '#ffffff' : (pal.beadCol || '#f43f5e');
+    ctx.fillStyle = dead ? '#666666' : (pal.gemCol || pal.beadCol);
     ctx.beginPath();
     ctx.moveTo(cx, tipY - starR * 0.5);
     ctx.lineTo(cx + starR * 0.5, tipY);
@@ -560,6 +625,7 @@ export const PHROLOVA_THEME = {
 
   // ==========================================================================
   // NECK JUNCTION COLLAR (Zero-gap connection between note head and whip body)
+  // - Full color palette adaptation across all 6 combo tiers
   // ==========================================================================
   drawNeck(ctx, x, junctionY, w, headH, tile, isReleased = false, currentCombo = 0) {
     const bodyW = Math.max(10, Math.round(w - 16));
@@ -576,7 +642,7 @@ export const PHROLOVA_THEME = {
 
     ctx.save();
     // Straight obsidian coupling collar connecting straight into head
-    ctx.fillStyle = dead ? '#222222' : '#0d0106';
+    ctx.fillStyle = dead ? '#222222' : pal.obsCol;
     ctx.strokeStyle = dead ? '#555555' : pal.border;
     ctx.lineWidth = 1.3;
 
@@ -589,7 +655,7 @@ export const PHROLOVA_THEME = {
     ctx.fill();
     ctx.stroke();
 
-    // Continuous scarlet laser through the collar
+    // Continuous laser through the collar
     ctx.strokeStyle = dead ? '#888888' : pal.border;
     ctx.lineWidth = 2.4;
     ctx.beginPath();

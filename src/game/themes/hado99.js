@@ -20,13 +20,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=72.8';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=72.8';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=72.8';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=72.8';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=72.8';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=72.8';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=72.8';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=72.9';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=72.9';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=72.9';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=72.9';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=72.9';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=72.9';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=72.9';
 
 // Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
 const dragon5HeadsSprites = {
@@ -38,13 +38,13 @@ const dragon5HeadsSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=72.8';
-if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=72.8';
-if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=72.8';
-if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=72.8';
-if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=72.8';
-if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=72.8';
-if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=72.8';
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=72.9';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=72.9';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=72.9';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=72.9';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=72.9';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=72.9';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=72.9';
 
 export const HADO99_THEME = {
   id: 'hado99',
