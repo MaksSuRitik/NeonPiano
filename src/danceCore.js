@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=70.8";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=70.9";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=70.8";
+import * as FieldThemes from "./game/fieldThemes.js?v=70.9";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -223,6 +223,8 @@ async function loadCloudSongs() {
                 rawDuration: dur,
                 audioUrl: data.audioUrl,
                 storagePath: data.storagePath || null,
+                fileHash: data.fileHash || null,
+                fileSize: Number(data.fileSize) || 0,
                 isSecret: Boolean(data.isSecret),
                 isLocal: Boolean(data.audioUrl && data.audioUrl.startsWith("indexeddb://")),
                 createdAt: data.createdAt || 0
@@ -6018,17 +6020,54 @@ function updateRipples(dt) {
 
                 try {
                     const dur = await calculateAudioDuration(file);
-                    if (dur > 0) {
-                        if (adminDurationInput) adminDurationInput.value = dur;
-                        const mins = Math.floor(dur / 60);
-                        const secs = Math.floor(dur % 60).toString().padStart(2, '0');
+                    if (dur > 0 && adminDurationInput) {
+                        adminDurationInput.value = dur;
+                    }
+
+                    // Duplicate check immediately upon file selection
+                    let fileHash = '';
+                    try { fileHash = await calculateFileHash(file); } catch (_) {}
+
+                    const dupCheck = findDuplicateTrack(songsDB, {
+                        file,
+                        fileHash,
+                        fileSize: file.size,
+                        title: adminTitleInput?.value || parsedTitle || '',
+                        artist: adminArtistInput?.value || parsedArtist || '',
+                        duration: dur
+                    });
+
+                    if (dupCheck.duplicate && dupCheck.track) {
+                        const d = dupCheck.track;
+                        const fullTrackName = `${d.artist ? d.artist + ' - ' : ''}${d.title}`;
+                        const dupMsg = (getText('trackAlreadyExists') || 'Цей трек уже є у фонотеці ({title})!').replace('{title}', fullTrackName);
                         if (adminFileInfo) {
-                            adminFileInfo.className = 'duration-feedback-row detected';
-                            adminFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminFileSelected') || 'Файл обрано:'} <b>${dur}s</b> (${mins}:${secs})</span>`;
+                            adminFileInfo.className = 'duration-feedback-row warning';
+                            adminFileInfo.innerHTML = `⚠️ <span style="color:#f87171; font-weight:700;">${escapeHtml(dupMsg)}</span>`;
                         }
-                    } else if (adminFileInfo) {
-                        adminFileInfo.className = 'duration-feedback-row detected';
-                        adminFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminFileSelected') || 'Файл обрано'}</span>`;
+                        if (adminUploadBtn) {
+                            adminUploadBtn.disabled = true;
+                            adminUploadBtn.style.opacity = '0.5';
+                            adminUploadBtn.title = dupMsg;
+                        }
+                        showNotification(dupMsg, 'warning');
+                    } else {
+                        if (adminUploadBtn) {
+                            adminUploadBtn.disabled = false;
+                            adminUploadBtn.style.opacity = '1';
+                            adminUploadBtn.title = '';
+                        }
+                        if (dur > 0) {
+                            const mins = Math.floor(dur / 60);
+                            const secs = Math.floor(dur % 60).toString().padStart(2, '0');
+                            if (adminFileInfo) {
+                                adminFileInfo.className = 'duration-feedback-row detected';
+                                adminFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminFileSelected') || 'Файл обрано:'} <b>${dur}s</b> (${mins}:${secs})</span>`;
+                            }
+                        } else if (adminFileInfo) {
+                            adminFileInfo.className = 'duration-feedback-row detected';
+                            adminFileInfo.innerHTML = `${icons.check(13)} <span>${getText('adminFileSelected') || 'Файл обрано'}</span>`;
+                        }
                     }
                 } catch (err) {
                     console.warn('[AdminFile] Duration calc warning:', err);
@@ -6301,20 +6340,25 @@ function updateRipples(dt) {
                     return;
                 }
 
-                // Перевірка на дублікат треку перед відправкою
-                const cleanUrl = url ? url.trim().toLowerCase().replace(/\/$/, '') : '';
-                const cleanTitle = title.trim().toLowerCase();
-                const cleanArtist = artist.trim().toLowerCase();
+                // Перевірка на дублікат треку перед відправкою (по файлу, назві, автору, тривалості, хешу або URL)
+                let fileHash = '';
+                if (file) {
+                    try { fileHash = await calculateFileHash(file); } catch (_) {}
+                }
 
-                const duplicateSong = Array.isArray(songsDB) && songsDB.find(s => {
-                    if (cleanUrl && s.audioUrl && s.audioUrl.trim().toLowerCase().replace(/\/$/, '') === cleanUrl) return true;
-                    const sTitle = (s.title || '').trim().toLowerCase();
-                    const sArtist = (s.artist || '').trim().toLowerCase();
-                    return cleanTitle && cleanArtist && sTitle === cleanTitle && sArtist === cleanArtist;
+                const dupCheck = findDuplicateTrack(songsDB, {
+                    file,
+                    fileHash,
+                    fileSize: file ? file.size : 0,
+                    url,
+                    title,
+                    artist,
+                    duration
                 });
 
-                if (duplicateSong) {
-                    const fullTrackName = `${duplicateSong.artist ? duplicateSong.artist + ' - ' : ''}${duplicateSong.title}`;
+                if (dupCheck.duplicate && dupCheck.track) {
+                    const d = dupCheck.track;
+                    const fullTrackName = `${d.artist ? d.artist + ' - ' : ''}${d.title}`;
                     const dupMsg = (getText('trackAlreadyExists') || 'Цей трек уже є у фонотеці ({title})!').replace('{title}', fullTrackName);
                     showNotification(dupMsg, 'warning');
                     alert(dupMsg);

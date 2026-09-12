@@ -26,7 +26,8 @@ import { i18n } from "../i18n/index.js";
 /**
  * Transliterates Cyrillic text to safe Latin characters for filenames.
  */
-function transliterate(str) {
+export function transliterate(str) {
+  if (!str) return "";
   const ru = {
     "а":"a","б":"b","в":"v","г":"g","ґ":"g","д":"d","е":"e","є":"ye","ё":"yo","ж":"zh",
     "з":"z","и":"i","і":"i","ї":"yi","й":"y","к":"k","л":"l","м":"m","н":"n","о":"o",
@@ -40,6 +41,180 @@ function transliterate(str) {
     const trans = ru[lower] !== undefined ? ru[lower] : char;
     return isUpper ? trans.toUpperCase() : trans;
   }).join("");
+}
+
+/**
+ * Normalizes text for comparison:
+ * - Cyrillic to Latin transliteration
+ * - Lowercase
+ * - Strips all non-alphanumeric characters
+ * 
+ * @param {string} str 
+ * @returns {string}
+ */
+export function normalizeForComparison(str) {
+  if (!str || typeof str !== "string") return "";
+  return transliterate(str)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Extracts base filename from a storagePath or audioUrl.
+ * E.g., 'tracks/1789230861731_Bleach_OST_-_Treachery__.mp3' -> 'Bleach_OST_-_Treachery__.mp3'
+ * E.g., 'https://files.catbox.moe/qcc0pu.mp3' -> 'qcc0pu.mp3'
+ * 
+ * @param {string} pathOrUrl 
+ * @returns {string}
+ */
+export function extractBaseFilename(pathOrUrl) {
+  if (!pathOrUrl || typeof pathOrUrl !== "string") return "";
+  const clean = pathOrUrl.split("?")[0].split("#")[0];
+  const lastPart = clean.split("/").pop() || "";
+  return lastPart.replace(/^\d{10,}_+/, "");
+}
+
+/**
+ * Calculates SHA-256 hash of a file or Blob for binary duplicate detection.
+ * 
+ * @param {File|Blob} file 
+ * @returns {Promise<string>}
+ */
+export async function calculateFileHash(file) {
+  if (!file) return "";
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch (err) {
+    console.warn("calculateFileHash warning:", err);
+    return "";
+  }
+}
+
+/**
+ * Checks whether an incoming track or audio file is a duplicate of any existing track.
+ * 
+ * @param {Array<object>} existingTracks 
+ * @param {object} params
+ * @param {File} [params.file]
+ * @param {string} [params.fileHash]
+ * @param {number} [params.fileSize]
+ * @param {string} [params.url]
+ * @param {string} [params.title]
+ * @param {string} [params.artist]
+ * @param {number} [params.duration]
+ * @param {string} [params.excludeTrackId]
+ * @returns {{ duplicate: boolean, track: object|null, reason: string }}
+ */
+export function findDuplicateTrack(existingTracks, {
+  file = null,
+  fileHash = "",
+  fileSize = 0,
+  url = "",
+  title = "",
+  artist = "",
+  duration = 0,
+  excludeTrackId = null
+} = {}) {
+  if (!Array.isArray(existingTracks) || !existingTracks.length) {
+    return { duplicate: false, track: null, reason: "" };
+  }
+
+  const normTitle = normalizeForComparison(title);
+  const normArtist = normalizeForComparison(artist);
+  const normFull = normalizeForComparison(`${artist} ${title}`);
+  const normFullRev = normalizeForComparison(`${title} ${artist}`);
+  const cleanUrl = url ? url.trim().toLowerCase().replace(/\/$/, "") : "";
+  const inputDuration = Number(duration) || 0;
+  const inputSize = fileSize || (file ? file.size : 0) || 0;
+
+  // Extract filename without extension
+  const rawFileName = file ? file.name : (url ? extractBaseFilename(url) : "");
+  const normFileName = rawFileName ? normalizeForComparison(rawFileName.replace(/\.[^/.]+$/, "")) : "";
+
+  for (const track of existingTracks) {
+    if (!track) continue;
+    const trackId = track.id || track._id;
+    if (excludeTrackId && trackId === excludeTrackId) continue;
+
+    const trackTitle = track.title || "";
+    const trackArtist = track.artist || "";
+    const trackUrl = track.audioUrl || "";
+    const trackStorage = track.storagePath || "";
+    const trackDuration = Number(track.rawDuration !== undefined ? track.rawDuration : track.duration) || 0;
+    const trackHash = track.fileHash || "";
+    const trackSize = Number(track.fileSize) || 0;
+
+    // 1. SHA-256 Hash exact match (100% identical file binary)
+    if (fileHash && trackHash && fileHash === trackHash) {
+      return { duplicate: true, track, reason: "hash" };
+    }
+
+    // 2. Audio URL exact match
+    if (cleanUrl && trackUrl) {
+      const existingCleanUrl = trackUrl.trim().toLowerCase().replace(/\/$/, "");
+      if (cleanUrl === existingCleanUrl) {
+        return { duplicate: true, track, reason: "url" };
+      }
+    }
+
+    // 3. Audio File Name match (matches against storagePath or audioUrl)
+    if (normFileName) {
+      const existingBase = extractBaseFilename(trackStorage || trackUrl);
+      const normExistingBase = existingBase ? normalizeForComparison(existingBase.replace(/\.[^/.]+$/, "")) : "";
+      if (normExistingBase && (normExistingBase === normFileName || normExistingBase.endsWith(normFileName) || normFileName.endsWith(normExistingBase))) {
+        return { duplicate: true, track, reason: "filename" };
+      }
+    }
+
+    // 4. File Size + close duration match (<0.5s)
+    const durDiff = inputDuration > 0 && trackDuration > 0 ? Math.abs(inputDuration - trackDuration) : 999;
+    if (inputSize > 0 && trackSize > 0 && inputSize === trackSize && durDiff <= 0.5) {
+      return { duplicate: true, track, reason: "filesize" };
+    }
+
+    // 5. Normalized Title & Artist match
+    const tTitle = normalizeForComparison(trackTitle);
+    const tArtist = normalizeForComparison(trackArtist);
+    const tFull = normalizeForComparison(`${trackArtist} ${trackTitle}`);
+
+    if (normTitle && tTitle && normTitle === tTitle) {
+      // If titles match, and artists either match or either is generic/empty
+      if (
+        !normArtist || !tArtist ||
+        normArtist === tArtist ||
+        normArtist === "local" || tArtist === "local" ||
+        normArtist === "unknown" || tArtist === "unknown"
+      ) {
+        return { duplicate: true, track, reason: "title" };
+      }
+    }
+
+    // Full name match (artist + title or title + artist)
+    if (normFull && tFull && (normFull === tFull || normFullRev === tFull)) {
+      return { duplicate: true, track, reason: "name" };
+    }
+
+    // 6. Close duration (<0.4s) + significant title similarity
+    if (durDiff <= 0.4 && normTitle && tTitle) {
+      if (normTitle.length >= 4 && tTitle.length >= 4) {
+        if (normTitle.includes(tTitle) || tTitle.includes(normTitle)) {
+          return { duplicate: true, track, reason: "duration_title" };
+        }
+      }
+    }
+
+    // 7. Close duration (<0.4s) + filename contains existing title or vice versa
+    if (durDiff <= 0.4 && normFileName && tTitle) {
+      if (tTitle.length >= 4 && (normFileName.includes(tTitle) || tTitle.includes(normFileName))) {
+        return { duplicate: true, track, reason: "duration_file" };
+      }
+    }
+  }
+
+  return { duplicate: false, track: null, reason: "" };
 }
 
 /**
@@ -116,23 +291,32 @@ export async function uploadTrack({ file, title, artist, duration, onProgress = 
   if (!artist?.trim()) throw new Error(i18n.t("adminSpecifyArtist") || "Вкажіть автора / виконавця.");
 
   // Check for duplicates in Firestore before upload
+  const fileHash = await calculateFileHash(file);
+  const fileSize = file.size || 0;
+
   const tracksCol = collection(db, "tracks");
   const existingTracksSnap = await getDocs(tracksCol);
-  const cleanTitle = title.trim().toLowerCase();
-  const cleanArtist = artist.trim().toLowerCase();
+  const existingTracks = existingTracksSnap.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
 
-  for (const docSnap of existingTracksSnap.docs) {
-    const d = docSnap.data();
-    if (!d) continue;
-    const dTitle = (d.title || "").trim().toLowerCase();
-    const dArtist = (d.artist || "").trim().toLowerCase();
-    if (dTitle === cleanTitle && dArtist === cleanArtist) {
-      const fullTrackName = `${d.artist ? d.artist + ' - ' : ''}${d.title}`;
-      throw new Error(
-        (i18n.t("trackAlreadyExistsName") || "Трек «{title}» уже є у фонотеці!")
-          .replace("{title}", fullTrackName)
-      );
-    }
+  const dupCheck = findDuplicateTrack(existingTracks, {
+    file,
+    fileHash,
+    fileSize,
+    title,
+    artist,
+    duration
+  });
+
+  if (dupCheck.duplicate && dupCheck.track) {
+    const d = dupCheck.track;
+    const fullTrackName = `${d.artist ? d.artist + ' - ' : ''}${d.title}`;
+    throw new Error(
+      (i18n.t("trackAlreadyExistsName") || "Трек «{title}» уже є у фонотеці!")
+        .replace("{title}", fullTrackName)
+    );
   }
 
   const trackLocalId = `track_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -168,6 +352,8 @@ export async function uploadTrack({ file, title, artist, duration, onProgress = 
     duration: Number(duration) || 0,
     audioUrl: downloadUrl,
     storagePath: usedStorage ? storagePath : null,
+    fileHash: fileHash || null,
+    fileSize: fileSize || null,
     isLocalFallback: !usedStorage,
     uploadedBy: admin.username,
     uploadedById: admin.id,
@@ -309,36 +495,25 @@ export async function addTrackByUrl({ url, title, artist, duration }) {
   // Check for duplicate track in Firestore
   const tracksCol = collection(db, "tracks");
   const existingTracksSnap = await getDocs(tracksCol);
-  const cleanTitle = title.trim().toLowerCase();
-  const cleanArtist = artist.trim().toLowerCase();
-  const normalizedUrl = cleanUrl.toLowerCase().replace(/\/$/, '');
+  const existingTracks = existingTracksSnap.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
 
-  for (const docSnap of existingTracksSnap.docs) {
-    const d = docSnap.data();
-    if (!d) continue;
+  const dupCheck = findDuplicateTrack(existingTracks, {
+    url: cleanUrl,
+    title,
+    artist,
+    duration: trackDuration
+  });
 
-    // Check by audio URL
-    if (d.audioUrl) {
-      const existingUrl = d.audioUrl.trim().toLowerCase().replace(/\/$/, '');
-      if (existingUrl === normalizedUrl) {
-        const fullTrackName = `${d.artist ? d.artist + ' - ' : ''}${d.title}`;
-        throw new Error(
-          (i18n.t("trackAlreadyExistsUrl") || "Трек з таким аудіо-посиланням уже є у фонотеці ({title})!")
-            .replace("{title}", fullTrackName)
-        );
-      }
-    }
-
-    // Check by Title + Artist
-    const dTitle = (d.title || "").trim().toLowerCase();
-    const dArtist = (d.artist || "").trim().toLowerCase();
-    if (dTitle === cleanTitle && dArtist === cleanArtist) {
-      const fullTrackName = `${d.artist ? d.artist + ' - ' : ''}${d.title}`;
-      throw new Error(
-        (i18n.t("trackAlreadyExistsName") || "Трек «{title}» уже є у фонотеці!")
-          .replace("{title}", fullTrackName)
-      );
-    }
+  if (dupCheck.duplicate && dupCheck.track) {
+    const d = dupCheck.track;
+    const fullTrackName = `${d.artist ? d.artist + ' - ' : ''}${d.title}`;
+    throw new Error(
+      (i18n.t("trackAlreadyExistsName") || "Трек «{title}» уже є у фонотеці!")
+        .replace("{title}", fullTrackName)
+    );
   }
 
   const trackData = {
@@ -485,6 +660,11 @@ export async function updateTrackAdmin({
     if (calcDuration > 0) {
       updateData.duration = calcDuration;
     }
+
+    const fileHash = await calculateFileHash(file);
+    const fileSize = file.size || 0;
+    if (fileHash) updateData.fileHash = fileHash;
+    if (fileSize > 0) updateData.fileSize = fileSize;
 
     // Save to local IndexedDB for instant offline/cache availability
     const trackLocalId = `track_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
