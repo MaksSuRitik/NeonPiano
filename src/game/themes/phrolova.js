@@ -234,7 +234,10 @@ export const PHROLOVA_THEME = {
     const tier = style?.tier || 0;
     const pal = this._getPalette(tier, false);
     const cx = tailW / 2;
+    const hw = Math.round(tailW * 0.46);
+    const isGold = (tier >= 800);
 
+    // 1. Semi-transparent Obsidian-Crimson Track (matches standard tail width)
     const bg = ctx.createLinearGradient(0, 0, 0, tailH);
     bg.addColorStop(0, pal.bgTop);
     bg.addColorStop(0.5, pal.bgMid);
@@ -242,18 +245,80 @@ export const PHROLOVA_THEME = {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, tailW, tailH);
 
+    // Edge guideline borders
     ctx.strokeStyle = pal.border;
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.0;
     ctx.beginPath();
-    ctx.moveTo(1, 0); ctx.lineTo(1, tailH);
-    ctx.moveTo(tailW - 1, 0); ctx.lineTo(tailW - 1, tailH);
+    ctx.moveTo(0.5, 0); ctx.lineTo(0.5, tailH);
+    ctx.moveTo(tailW - 0.5, 0); ctx.lineTo(tailW - 0.5, tailH);
     ctx.stroke();
 
-    ctx.strokeStyle = pal.stringCol;
+    // 2. Central "Кровавый след" (Blood Slash / Luminous Razor Axis)
+    ctx.strokeStyle = pal.ribbonGlow;
+    ctx.lineWidth = Math.min(18, hw);
+    ctx.beginPath();
+    ctx.moveTo(cx, 0); ctx.lineTo(cx, tailH);
+    ctx.stroke();
+
+    ctx.strokeStyle = pal.border;
+    ctx.lineWidth = 3.0;
+    ctx.beginPath();
+    ctx.moveTo(cx, 0); ctx.lineTo(cx, tailH);
+    ctx.stroke();
+
+    ctx.strokeStyle = isGold ? '#fef08a' : (pal.core || '#ffffff');
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(cx, 0); ctx.lineTo(cx, tailH);
     ctx.stroke();
+
+    // 3. Segmented Blade Links / Raptor Thorns
+    const linkSpacing = 28;
+    const numLinks = Math.max(1, Math.floor(tailH / linkSpacing));
+    const effectiveSpacing = tailH / numLinks;
+
+    ctx.beginPath();
+    for (let i = 0; i <= numLinks; i++) {
+      const ly = i * effectiveSpacing;
+      const topY = ly - 7;
+      const botY = ly + 8;
+      const midY = ly;
+
+      // Left curved blade
+      ctx.moveTo(cx - 3, topY);
+      ctx.quadraticCurveTo(cx - hw * 0.45, topY + 2, cx - hw, midY + 4);
+      ctx.quadraticCurveTo(cx - hw * 0.65, botY - 2, cx - hw * 0.4, botY);
+      ctx.lineTo(cx - 2, botY - 3);
+      ctx.lineTo(cx - 2, midY);
+      ctx.closePath();
+
+      // Right curved blade
+      ctx.moveTo(cx + 3, topY);
+      ctx.quadraticCurveTo(cx + hw * 0.45, topY + 2, cx + hw, midY + 4);
+      ctx.quadraticCurveTo(cx + hw * 0.65, botY - 2, cx + hw * 0.4, botY);
+      ctx.lineTo(cx + 2, botY - 3);
+      ctx.lineTo(cx + 2, midY);
+      ctx.closePath();
+    }
+    ctx.fillStyle = '#0d0106';
+    ctx.fill();
+    ctx.strokeStyle = pal.border;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+
+    // Central ruby diamond cores
+    ctx.beginPath();
+    for (let i = 0; i <= numLinks; i++) {
+      const ly = i * effectiveSpacing;
+      ctx.moveTo(cx, ly - 6);
+      ctx.lineTo(cx + 4, ly);
+      ctx.lineTo(cx, ly + 6);
+      ctx.lineTo(cx - 4, ly);
+      ctx.closePath();
+    }
+    ctx.fillStyle = pal.beadCol || '#f43f5e';
+    ctx.fill();
+
     return true;
   },
 
@@ -262,11 +327,12 @@ export const PHROLOVA_THEME = {
   },
 
   // ==========================================================================
-  // PROCEDURAL HOLD BODY (Извивающееся зазубренное тело ноты с нитями судьбы)
-  // - Step size stepY=16 for solid 60fps performance
-  // - Jagged razor barbs on lateral borders (Wuthering Waves Phrolova slash silhouette)
-  // - Longitudinal glowing violin strings undulating with acoustic wave
-  // - Central spinal ruby pulse beads
+  // PROCEDURAL HOLD BODY — THORNED WHIP / SEGMENTED BLADES / BLOOD SLASH
+  // - Straight, taut razor energy string (NO snaking/undulation)
+  // - Standard tail width: bodyLaneW = Math.max(10, Math.round(w - 16))
+  // - Central glowing scarlet/crimson energy incision ("Кровавый след")
+  // - Repeating segmented obsidian blade arrowheads / chitinous raptor thorns
+  // - Audio/holding energetic pulse along the axis
   // ==========================================================================
   drawHoldBody(ctx, x, yTail, w, headH, tile, isLight, now, tailH, currentCombo = 0, actualYHeadTop = null, isReleased = false) {
     if (tailH <= 2) return true;
@@ -282,175 +348,140 @@ export const PHROLOVA_THEME = {
     const isGold = (tier >= 800);
 
     const bodyLaneW = Math.max(10, Math.round(w - 16));
-    const bodyCenterX = Math.round(x + 8) + bodyLaneW / 2;
+    const bodyX = Math.round(x + 8);
+    const cx = bodyX + bodyLaneW / 2;
     const headTopY = (actualYHeadTop !== null && actualYHeadTop !== undefined) ? actualYHeadTop : (yTail + tailH);
+    const hw = Math.round(bodyLaneW * 0.46); // outer blade tip reach, perfectly matches standard tail width!
 
     ctx.save();
 
-    const ribbonHW = Math.max(7, Math.round(bodyLaneW * 0.22));
-    const maxAmpBase = Math.max(4, (bodyLaneW / 2) - ribbonHW - 2);
-    const ampScale = Math.min(1.0, tailH / 80);
-    const maxAmp = maxAmpBase * ampScale;
-    const coilWavelength = 180;
-    const numCoils = Math.max(1.0, tailH / coilWavelength);
+    // 1. Semi-transparent Obsidian/Crimson Track (defines standard tail body width)
+    const trackGrad = ctx.createLinearGradient(0, yTail, 0, headTopY);
+    trackGrad.addColorStop(0, dead ? 'rgba(30, 30, 30, 0.35)' : 'rgba(26, 3, 10, 0.45)');
+    trackGrad.addColorStop(0.5, dead ? 'rgba(20, 20, 20, 0.30)' : 'rgba(40, 5, 16, 0.40)');
+    trackGrad.addColorStop(1, dead ? 'rgba(10, 10, 10, 0.35)' : 'rgba(18, 2, 8, 0.45)');
+    ctx.fillStyle = trackGrad;
+    ctx.fillRect(bodyX, yTail, bodyLaneW, tailH);
 
-    const waveSpeed = (holding && !dead) ? 0.0075 : 0.0040;
-    const waveAnim = (now || 0) * waveSpeed;
-
-    const getCenterX = (y) => {
-      const prog = Math.max(0, Math.min(1, (headTopY - y) / tailH));
-      const sinE = Math.sin(prog * Math.PI);
-      const env = sinE * sinE;
-      const phase = prog * numCoils * Math.PI * 2 - waveAnim;
-      return bodyCenterX + Math.sin(phase) * (maxAmp * env);
-    };
-
-    const stepY = 16;
-    const numSteps = Math.ceil(tailH / stepY);
-
-    // 1. Soft Crimson Soundweave Resonance Glow hugging the body
-    const auraWidth = ribbonHW + 6;
-    ctx.strokeStyle = pal.ribbonGlow;
-    ctx.lineWidth = auraWidth * 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      if (i === 0) ctx.moveTo(cx, y);
-      else ctx.lineTo(cx, y);
-      if (y <= yTail) break;
-    }
-    ctx.stroke();
-
-    // 2. Solid Faceted Ribbon Body with Dark Ruby Gradient
-    ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      const lx = cx - ribbonHW;
-      if (i === 0) ctx.moveTo(lx, y);
-      else ctx.lineTo(lx, y);
-      if (y <= yTail) break;
-    }
-    const topCX = getCenterX(yTail);
-    ctx.lineTo(topCX + ribbonHW, yTail);
-    for (let i = numSteps; i >= 0; i--) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      const rx = cx + ribbonHW;
-      ctx.lineTo(rx, y);
-      if (y >= headTopY) break;
-    }
-    ctx.closePath();
-
-    const bgGrad = ctx.createLinearGradient(0, yTail, 0, headTopY);
-    bgGrad.addColorStop(0, pal.bgTop);
-    bgGrad.addColorStop(0.5, pal.bgMid);
-    bgGrad.addColorStop(1, pal.bgBot);
-    ctx.fillStyle = bgGrad;
-    ctx.fill();
-
-    // Outer edge border
-    ctx.strokeStyle = pal.border;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // 3. Lateral Razor Barbs / Thorn Serrations along the curves (per skill screenshot)
-    if (!dead) {
-      ctx.fillStyle = pal.border;
-      const barbInterval = 32;
-      for (let y = headTopY - 18; y > yTail + 14; y -= barbInterval) {
-        const cx = getCenterX(y);
-        const barbSpan = 6;
-        // Left barb
-        ctx.beginPath();
-        ctx.moveTo(cx - ribbonHW + 1, y - 4);
-        ctx.lineTo(cx - ribbonHW - barbSpan, y - 1);
-        ctx.lineTo(cx - ribbonHW + 1, y + 4);
-        ctx.closePath();
-        ctx.fill();
-        // Right barb
-        ctx.beginPath();
-        ctx.moveTo(cx + ribbonHW - 1, y - 4);
-        ctx.lineTo(cx + ribbonHW + barbSpan, y - 1);
-        ctx.lineTo(cx + ribbonHW - 1, y + 4);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-
-    // 4. Longitudinal Resonant Violin Strings (Soundweave threads) running down the body
+    // Subtle edge guideline borders
+    ctx.strokeStyle = dead ? 'rgba(100, 100, 100, 0.2)' : (pal.border + '33');
     ctx.lineWidth = 1.0;
-    // Left string
-    ctx.strokeStyle = pal.stringCol;
     ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y) - ribbonHW * 0.42;
-      if (i === 0) ctx.moveTo(cx, y);
-      else ctx.lineTo(cx, y);
-      if (y <= yTail) break;
-    }
+    ctx.moveTo(bodyX + 0.5, yTail);
+    ctx.lineTo(bodyX + 0.5, headTopY);
+    ctx.moveTo(bodyX + bodyLaneW - 0.5, yTail);
+    ctx.lineTo(bodyX + bodyLaneW - 0.5, headTopY);
     ctx.stroke();
 
-    // Right string
-    ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y) + ribbonHW * 0.42;
-      if (i === 0) ctx.moveTo(cx, y);
-      else ctx.lineTo(cx, y);
-      if (y <= yTail) break;
-    }
-    ctx.stroke();
-
-    // 5. Central Soundwave Spine & Pulsing Ruby Beads
-    ctx.strokeStyle = isGold ? '#fef08a' : (pal.core || '#ffffff');
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      if (i === 0) ctx.moveTo(cx, y);
-      else ctx.lineTo(cx, y);
-      if (y <= yTail) break;
-    }
-    ctx.stroke();
-
-    // Pulsing ruby beads (batched for performance)
-    const beadInterval = 28;
-    const beads = [];
-    let bIdx = 0;
-    for (let y = headTopY - 14; y > yTail + 10; y -= beadInterval) {
-      const cx = getCenterX(y);
-      const wave = Math.sin(now * 0.008 - bIdx * 0.6) * 0.5 + 0.5;
-      const bRad = 2.2 + wave * 0.6;
-      beads.push({ cx, y, bRad });
-      bIdx++;
-    }
-
-    if (beads.length > 0) {
-      // Glow batch
-      ctx.fillStyle = pal.ribbonGlow;
+    // 2. Central "Кровавый след" (Blood Slash / Luminous Razor Axis)
+    // 2a. Soft Outer Crimson Aura Bloom
+    if (!dead) {
+      const auraW = Math.min(22, hw * 1.1);
+      ctx.strokeStyle = pal.ribbonGlow;
+      ctx.lineWidth = auraW;
       ctx.beginPath();
-      for (let b = 0; b < beads.length; b++) {
-        const item = beads[b];
-        ctx.moveTo(item.cx + item.bRad * 1.7, item.y);
-        ctx.arc(item.cx, item.y, item.bRad * 1.7, 0, Math.PI * 2);
+      ctx.moveTo(cx, yTail);
+      ctx.lineTo(cx, headTopY);
+      ctx.stroke();
+    }
+
+    // 2b. Razor Crimson Energy Beam
+    ctx.strokeStyle = dead ? '#666666' : pal.border;
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(cx, yTail);
+    ctx.lineTo(cx, headTopY);
+    ctx.stroke();
+
+    // 2c. Incandescent White/Gold Laser Cord
+    ctx.strokeStyle = dead ? '#999999' : (isGold ? '#fef08a' : (pal.core || '#ffffff'));
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx, yTail);
+    ctx.lineTo(cx, headTopY);
+    ctx.stroke();
+
+    // 3. Repeating Segmented Blades / Chitinous Raptor Thorns ("Сегментированные лезвия")
+    // Each link is composed of crossed obsidian blades + glowing ruby diamond core
+    const linkSpacing = 28;
+    const startY = headTopY - 14;
+    const endY = yTail + 12;
+
+    if (startY > endY) {
+      const numLinks = Math.max(1, Math.floor((startY - endY) / linkSpacing));
+      const effectiveSpacing = (startY - endY) / numLinks;
+
+      // Pass 3a: All Outer Obsidian Razor Blades (batched path for 60fps)
+      ctx.beginPath();
+      for (let i = 0; i <= numLinks; i++) {
+        const ly = startY - i * effectiveSpacing;
+        const topY = ly - 7;
+        const botY = ly + 8;
+        const midY = ly;
+
+        // Left curved razor blade / claw
+        ctx.moveTo(cx - 3, topY);
+        ctx.quadraticCurveTo(cx - hw * 0.45, topY + 2, cx - hw, midY + 4);
+        ctx.quadraticCurveTo(cx - hw * 0.65, botY - 2, cx - hw * 0.4, botY);
+        ctx.lineTo(cx - 2, botY - 3);
+        ctx.lineTo(cx - 2, midY);
+        ctx.closePath();
+
+        // Right curved razor blade / claw (symmetrical)
+        ctx.moveTo(cx + 3, topY);
+        ctx.quadraticCurveTo(cx + hw * 0.45, topY + 2, cx + hw, midY + 4);
+        ctx.quadraticCurveTo(cx + hw * 0.65, botY - 2, cx + hw * 0.4, botY);
+        ctx.lineTo(cx + 2, botY - 3);
+        ctx.lineTo(cx + 2, midY);
+        ctx.closePath();
       }
+      ctx.fillStyle = dead ? '#222222' : '#0d0106';
       ctx.fill();
 
-      // Core batch
-      ctx.fillStyle = pal.beadCol || '#ffffff';
+      // Sharp razor edge outlines on the obsidian blades
+      ctx.strokeStyle = dead ? '#555555' : pal.border;
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+
+      // Pass 3b: Central Glowing Diamond Jewel Cores (threaded on the axis)
       ctx.beginPath();
-      for (let b = 0; b < beads.length; b++) {
-        const item = beads[b];
-        ctx.moveTo(item.cx + item.bRad, item.y);
-        ctx.arc(item.cx, item.y, item.bRad, 0, Math.PI * 2);
+      for (let i = 0; i <= numLinks; i++) {
+        const ly = startY - i * effectiveSpacing;
+        const rY = 6;
+        const rX = 4;
+        ctx.moveTo(cx, ly - rY);
+        ctx.lineTo(cx + rX, ly);
+        ctx.lineTo(cx, ly + rY);
+        ctx.lineTo(cx - rX, ly);
+        ctx.closePath();
       }
+      ctx.fillStyle = dead ? '#444444' : (pal.beadCol || '#f43f5e');
       ctx.fill();
+
+      // Diamond core sparkling highlight dots
+      ctx.beginPath();
+      for (let i = 0; i <= numLinks; i++) {
+        const ly = startY - i * effectiveSpacing;
+        ctx.moveTo(cx + 1.2, ly);
+        ctx.arc(cx, ly, 1.2, 0, Math.PI * 2);
+      }
+      ctx.fillStyle = isGold ? '#ffffff' : '#ffe4e6';
+      ctx.fill();
+
+      // 4. Holding/Audio energetic pulse: glowing blood particles rushing down the cord
+      if (holding && !dead) {
+        const pulseOffset = ((now || 0) * 0.12) % effectiveSpacing;
+        ctx.fillStyle = isGold ? '#fef08a' : '#ffffff';
+        ctx.beginPath();
+        for (let i = 0; i <= numLinks; i++) {
+          const py = startY - i * effectiveSpacing - pulseOffset;
+          if (py >= yTail && py <= headTopY) {
+            ctx.moveTo(cx + 2.2, py);
+            ctx.arc(cx, py, 2.2, 0, Math.PI * 2);
+          }
+        }
+        ctx.fill();
+      }
     }
 
     ctx.restore();
@@ -458,14 +489,14 @@ export const PHROLOVA_THEME = {
   },
 
   // ==========================================================================
-  // HOLD TAIL TIP (Кристальний шипастий наконечник-полумісяць з алмазною зіркою)
-  // - Prevents any overlap with following notes via nextTileDist
+  // HOLD TAIL TIP (Кристальний шипастий наконечник-шпиль плети)
+  // - Dynamic anti-overlap safety clamping: guarantee tail tip never breaches the next incoming note
   // ==========================================================================
   drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0, currentCombo = 0, actualYHeadTop = null, nextTileDist = 9999) {
     const bodyW = Math.max(10, Math.round(w - 16));
     const bodyX = Math.round(x + 8);
     const cx = bodyX + bodyW / 2;
-    const hw = Math.max(7, Math.round(bodyW * 0.22));
+    const hw = Math.round(bodyW * 0.46);
 
     const dead = tile && tile.failed;
     const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
@@ -478,58 +509,49 @@ export const PHROLOVA_THEME = {
 
     // Dynamic anti-overlap safety clamping: guarantee tail tip never breaches the next incoming note
     const availableGap = (typeof nextTileDist === 'number' && nextTileDist > 0) ? nextTileDist : 9999;
-    const maxSafeTailLen = Math.max(10, Math.round(availableGap - 20));
-    const baseTailLen = Math.min(56, Math.round(headH * 0.52));
+    const maxSafeTailLen = Math.max(8, Math.round(availableGap - 16));
+    const baseTailLen = Math.min(36, Math.round(headH * 0.42));
     const tailLen = Math.min(baseTailLen, maxSafeTailLen);
 
-    if (tailLen <= 8) return;
+    if (tailLen <= 6) return;
 
     const tipY = yTail - tailLen;
-    const finialW = Math.min(18, hw * 0.65);
+    const finialW = Math.min(16, hw * 0.65);
 
     ctx.save();
 
-    // 1. Tapering Tail Finial Shaft
-    const tg = ctx.createLinearGradient(cx, tipY, cx, yTail);
-    tg.addColorStop(0, pal.bgTop);
-    tg.addColorStop(0.6, pal.bgMid);
-    tg.addColorStop(1, pal.bgBot);
-    ctx.fillStyle = tg;
-    ctx.strokeStyle = pal.border;
-    ctx.lineWidth = 1.4;
-
+    // Terminal Razor Arrowhead / Needle Spear Finial
+    // Tapers to a razor-sharp needle point at tipY
     ctx.beginPath();
-    ctx.moveTo(cx - hw * 0.6, yTail);
-    ctx.lineTo(cx - finialW * 0.35, tipY + tailLen * 0.45);
-    ctx.lineTo(cx, tipY);
-    ctx.lineTo(cx + finialW * 0.35, tipY + tailLen * 0.45);
-    ctx.lineTo(cx + hw * 0.6, yTail);
+    ctx.moveTo(cx - finialW * 0.5, yTail);
+    ctx.lineTo(cx - finialW * 0.8, tipY + tailLen * 0.45); // Left flare barb
+    ctx.lineTo(cx, tipY);                                  // Sharp needle apex
+    ctx.lineTo(cx + finialW * 0.8, tipY + tailLen * 0.45); // Right flare barb
+    ctx.lineTo(cx + finialW * 0.5, yTail);
     ctx.closePath();
+
+    ctx.fillStyle = dead ? '#1a1a1a' : '#0d0106';
     ctx.fill();
+    ctx.strokeStyle = dead ? '#555555' : pal.border;
+    ctx.lineWidth = 1.4;
     ctx.stroke();
 
-    // 2. Lycoris Crescent Wings flanking the tip
-    ctx.fillStyle = pal.border;
+    // Central ruby laser filament tapering to the point
+    ctx.strokeStyle = dead ? '#888888' : (isGold ? '#fef08a' : (pal.core || '#ffffff'));
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
-    // Left wing
-    ctx.moveTo(cx, tipY + tailLen * 0.35);
-    ctx.quadraticCurveTo(cx - finialW * 1.3, tipY + tailLen * 0.45, cx - finialW * 1.5, tipY + tailLen * 0.15);
-    ctx.quadraticCurveTo(cx - finialW * 0.8, tipY + tailLen * 0.25, cx, tipY + tailLen * 0.20);
-    // Right wing
-    ctx.moveTo(cx, tipY + tailLen * 0.35);
-    ctx.quadraticCurveTo(cx + finialW * 1.3, tipY + tailLen * 0.45, cx + finialW * 1.5, tipY + tailLen * 0.15);
-    ctx.quadraticCurveTo(cx + finialW * 0.8, tipY + tailLen * 0.25, cx, tipY + tailLen * 0.20);
-    ctx.fill();
+    ctx.moveTo(cx, yTail);
+    ctx.lineTo(cx, tipY + 1);
+    ctx.stroke();
 
-    // 3. Central Radiant Diamond Star Finial Tip (✦)
-    const starR = Math.max(3, Math.min(6, tailLen * 0.15));
-    ctx.fillStyle = isGold ? '#ffffff' : pal.core;
+    // Terminal diamond star at apex
+    const starR = Math.max(2.5, Math.min(5, tailLen * 0.16));
+    ctx.fillStyle = isGold ? '#ffffff' : (pal.beadCol || '#f43f5e');
     ctx.beginPath();
-    ctx.moveTo(cx, tipY - starR);
-    ctx.quadraticCurveTo(cx, tipY, cx + starR * 0.65, tipY);
-    ctx.quadraticCurveTo(cx, tipY, cx, tipY + starR);
-    ctx.quadraticCurveTo(cx, tipY, cx - starR * 0.65, tipY);
-    ctx.quadraticCurveTo(cx, tipY, cx, tipY - starR);
+    ctx.moveTo(cx, tipY - starR * 0.5);
+    ctx.lineTo(cx + starR * 0.5, tipY);
+    ctx.lineTo(cx, tipY + starR * 0.5);
+    ctx.lineTo(cx - starR * 0.5, tipY);
     ctx.closePath();
     ctx.fill();
 
@@ -537,14 +559,14 @@ export const PHROLOVA_THEME = {
   },
 
   // ==========================================================================
-  // NECK JUNCTION COLLAR (Zero-gap connection between note head and body)
+  // NECK JUNCTION COLLAR (Zero-gap connection between note head and whip body)
   // ==========================================================================
   drawNeck(ctx, x, junctionY, w, headH, tile, isReleased = false, currentCombo = 0) {
     const bodyW = Math.max(10, Math.round(w - 16));
     const bodyX = Math.round(x + 8);
     const cx = bodyX + bodyW / 2;
-    const hw = Math.max(7, Math.round(bodyW * 0.22));
-    const neckH = Math.round(headH * 0.38);
+    const hw = Math.round(bodyW * 0.46);
+    const neckH = Math.min(10, Math.round(headH * 0.25));
 
     const dead = isReleased || Boolean(tile && tile.failed);
     const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
@@ -553,17 +575,26 @@ export const PHROLOVA_THEME = {
     const pal = this._getPalette(dead ? 0 : liveCombo, dead);
 
     ctx.save();
-    ctx.fillStyle = pal.bgBot;
-    ctx.strokeStyle = pal.border;
-    ctx.lineWidth = 1.4;
+    // Straight obsidian coupling collar connecting straight into head
+    ctx.fillStyle = dead ? '#222222' : '#0d0106';
+    ctx.strokeStyle = dead ? '#555555' : pal.border;
+    ctx.lineWidth = 1.3;
 
     ctx.beginPath();
-    ctx.moveTo(cx - hw, junctionY);
-    ctx.lineTo(cx - hw, junctionY + neckH);
-    ctx.lineTo(cx + hw, junctionY + neckH);
-    ctx.lineTo(cx + hw, junctionY);
+    ctx.moveTo(cx - hw * 0.6, junctionY);
+    ctx.lineTo(cx - hw * 0.4, junctionY + neckH);
+    ctx.lineTo(cx + hw * 0.4, junctionY + neckH);
+    ctx.lineTo(cx + hw * 0.6, junctionY);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
+
+    // Continuous scarlet laser through the collar
+    ctx.strokeStyle = dead ? '#888888' : pal.border;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(cx, junctionY);
+    ctx.lineTo(cx, junctionY + neckH);
     ctx.stroke();
 
     ctx.restore();
