@@ -839,6 +839,112 @@ export async function deletePlayerAdmin(userId, username = null) {
 }
 
 /**
+ * Updates a player's display name across all Firestore collections:
+ * - users/{userId}
+ * - user_progress/{userId}
+ * - global_leaderboard/{userId}
+ * - secret_leaderboard (userId == userId)
+ * - game_stats (userId == userId)
+ * 
+ * Requires admin privileges.
+ * 
+ * @param {string} userId
+ * @param {string} newName
+ * @returns {Promise<boolean>}
+ */
+export async function updatePlayerNameAdmin(userId, newName) {
+  requireAdmin();
+  if (!userId) throw new Error("ID гравця не вказано.");
+  const cleanName = (newName || "").trim();
+  if (!cleanName) {
+    throw new Error(i18n.t("adminPlayerNameEmptyError") || "Ім'я гравця не може бути порожнім.");
+  }
+  if (cleanName.length > 32) {
+    throw new Error("Ім'я гравця занадто довге (макс. 32 символи).");
+  }
+
+  // 1. Update in users
+  try {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      await updateDoc(userRef, {
+        name: cleanName,
+        username: cleanName,
+        displayName: cleanName,
+        updatedAt: new Date()
+      });
+    }
+  } catch (e) {
+    console.warn("Failed to update user doc:", e);
+  }
+
+  // 2. Update in user_progress
+  try {
+    const progRef = doc(db, "user_progress", userId);
+    const progSnap = await getDoc(progRef);
+    if (progSnap.exists()) {
+      await updateDoc(progRef, {
+        name: cleanName,
+        playerName: cleanName,
+        updatedAt: new Date()
+      });
+    }
+  } catch (e) {
+    console.warn("Failed to update user_progress doc:", e);
+  }
+
+  // 3. Update in global_leaderboard
+  try {
+    const lbRef = doc(db, "global_leaderboard", userId);
+    const lbSnap = await getDoc(lbRef);
+    if (lbSnap.exists()) {
+      await updateDoc(lbRef, {
+        name: cleanName,
+        playerName: cleanName,
+        updatedAt: new Date()
+      });
+    }
+  } catch (e) {
+    console.warn("Failed to update global_leaderboard doc:", e);
+  }
+
+  // 4. Update in secret_leaderboard
+  try {
+    const secQ = query(collection(db, "secret_leaderboard"), where("userId", "==", userId));
+    const secSnap = await getDocs(secQ);
+    for (const d of secSnap.docs) {
+      try {
+        await updateDoc(doc(db, "secret_leaderboard", d.id), {
+          name: cleanName,
+          playerName: cleanName
+        });
+      } catch (err) {}
+    }
+  } catch (e) {
+    console.warn("Failed to update secret_leaderboard records:", e);
+  }
+
+  // 5. Update in game_stats
+  try {
+    const statsQ = query(collection(db, "game_stats"), where("userId", "==", userId));
+    const statsSnap = await getDocs(statsQ);
+    for (const d of statsSnap.docs) {
+      try {
+        await updateDoc(doc(db, "game_stats", d.id), {
+          name: cleanName,
+          playerName: cleanName
+        });
+      } catch (err) {}
+    }
+  } catch (e) {
+    console.warn("Failed to update game_stats records:", e);
+  }
+
+  return true;
+}
+
+/**
  * Fetches track metadata (title, artist, duration in seconds) from a Spotify track URL.
  * Uses multi-tier strategy (Microlink embed __NEXT_DATA__, Spotify oEmbed, iTunes search fallback)
  * to ensure 100% browser CORS compatibility without requiring Spotify API keys.

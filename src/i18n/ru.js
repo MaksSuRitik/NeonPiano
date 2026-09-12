@@ -505,6 +505,13 @@ export default {
   adminThemeSavedSuccess: "Настройки тем успешно сохранены!",
   adminThemeResetConfirm: "Сбросить настройки этой темы к исходным?",
   adminThemeDiscountPreview: "Цена в магазине:",
-  shopSaleTag: "АКЦИЯ"
+  shopSaleTag: "АКЦИЯ",
+
+  // Admin Player Rename
+  adminEditPlayerNameBtn: "Изменить имя",
+  adminEditPlayerNameTooltip: "Изменить имя игрока",
+  adminPromptNewPlayerName: "Введите новое имя для игрока \"{name}\":",
+  adminPlayerNameSavedSuccess: "Имя игрока успешно изменено на \"{name}\"!",
+  adminPlayerNameEmptyError: "Имя игрока не может быть пустым."
 };
 

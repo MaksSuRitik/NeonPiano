@@ -20,13 +20,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=72.6';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=72.6';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=72.6';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=72.6';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=72.6';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=72.6';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=72.6';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=72.7';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=72.7';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=72.7';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=72.7';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=72.7';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=72.7';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=72.7';
 
 // Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
 const dragon5HeadsSprites = {
@@ -38,13 +38,13 @@ const dragon5HeadsSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=72.6';
-if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=72.6';
-if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=72.6';
-if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=72.6';
-if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=72.6';
-if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=72.6';
-if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=72.6';
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=72.7';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=72.7';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=72.7';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=72.7';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=72.7';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=72.7';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=72.7';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -874,7 +874,7 @@ export const HADO99_THEME = {
       return bodyCenterX + Math.sin(phase) * (maxAmp * env);
     };
 
-    const stepY = 8;
+    const stepY = 16;
     const numSteps = Math.ceil(tailH / stepY);
 
     // Path 1: Dark ethereal smoky aura hugging the winding body
@@ -934,7 +934,7 @@ export const HADO99_THEME = {
     // 5. Chevron armor scales along the winding centerline
     ctx.strokeStyle = pal.chevronCol;
     ctx.lineWidth   = 1.3;
-    const chevronStep = 22;
+    const chevronStep = 24;
     for (let y = headTopY - 14; y > yTail + 10; y -= chevronStep) {
       const cx = getCenterX(y);
       const cw = ribbonHW * 0.75;
@@ -958,25 +958,38 @@ export const HADO99_THEME = {
     }
     ctx.stroke();
 
-    // Glowing vertebrae beads following the undulating S-curve
-    const beadStep = 22;
+    // Glowing vertebrae beads following the undulating S-curve (batched in 2 passes for 60fps)
+    const beadStep = 24;
     let beadIdx = 0;
+    const beads = [];
     for (let y = headTopY - 12; y > yTail + 8; y -= beadStep) {
       const cx = getCenterX(y);
       const wave = Math.sin(now * 0.008 - beadIdx * 0.6) * 0.5 + 0.5;
-      const bRad = 2.5 + wave * 0.7;
+      const bRad = 2.4 + wave * 0.7;
+      beads.push({ cx, y, bRad });
+      beadIdx++;
+    }
 
-      ctx.fillStyle = isGold ? 'rgba(254, 240, 138, 0.45)' : (pal.auraCol || 'rgba(192, 132, 252, 0.40)');
+    if (beads.length > 0) {
+      // Outer glow batch
+      ctx.fillStyle = isGold ? 'rgba(254, 240, 138, 0.40)' : (pal.auraCol || 'rgba(192, 132, 252, 0.35)');
       ctx.beginPath();
-      ctx.arc(cx, y, bRad * 1.8, 0, Math.PI * 2);
+      for (let b = 0; b < beads.length; b++) {
+        const item = beads[b];
+        ctx.moveTo(item.cx + item.bRad * 1.8, item.y);
+        ctx.arc(item.cx, item.y, item.bRad * 1.8, 0, Math.PI * 2);
+      }
       ctx.fill();
 
+      // Inner solid core batch
       ctx.fillStyle = pal.beadCol || '#ffffff';
       ctx.beginPath();
-      ctx.arc(cx, y, bRad, 0, Math.PI * 2);
+      for (let b = 0; b < beads.length; b++) {
+        const item = beads[b];
+        ctx.moveTo(item.cx + item.bRad, item.y);
+        ctx.arc(item.cx, item.y, item.bRad, 0, Math.PI * 2);
+      }
       ctx.fill();
-
-      beadIdx++;
     }
 
     ctx.restore();
@@ -1062,7 +1075,7 @@ export const HADO99_THEME = {
   // - Reishi Disintegration & Falling Ash (Option 2): fiery burning edge + floating ash/embers
   // - Live combo adaptation across all tiers
   // ==========================================================================
-  drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0, currentCombo = 0, actualYHeadTop = null) {
+  drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0, currentCombo = 0, actualYHeadTop = null, nextTileDist = 9999) {
     const isMob   = typeof window !== 'undefined' && (window.innerWidth <= 768 || navigator.maxTouchPoints > 1);
     const bodyW   = Math.max(10, Math.round(w - 16));
     const bodyX   = Math.round(x + 8);
@@ -1082,13 +1095,16 @@ export const HADO99_THEME = {
 
     const isGold  = (pal.borderCol === '#ffd700');
 
-    // Dimensions
-    const tailLen      = Math.min(105, Math.round(headH * 0.58));
-    const bladeH       = Math.min(28, tailLen * 0.28);
-    const shaftLen     = tailLen - bladeH;
-    const tipY         = yTail - tailLen;
-    const bladeRootY   = tipY + bladeH;
-    const shaftNeckHW  = Math.max(4, Math.round(hw * 0.35));
+    // Dimensions: dynamic safety clamping against upcoming note on same lane
+    const availableGap = (typeof nextTileDist === 'number' && nextTileDist > 0) ? nextTileDist : 9999;
+    const maxSafeTailLen = Math.max(12, Math.round(availableGap - 22));
+    const baseTailLen    = Math.min(105, Math.round(headH * 0.58));
+    const tailLen        = Math.min(baseTailLen, maxSafeTailLen);
+    const bladeH         = Math.min(28, tailLen * 0.28);
+    const shaftLen       = tailLen - bladeH;
+    const tipY           = yTail - tailLen;
+    const bladeRootY     = tipY + bladeH;
+    const shaftNeckHW    = Math.max(4, Math.round(hw * 0.35));
 
     ctx.save();
 
@@ -1243,15 +1259,33 @@ export const HADO99_THEME = {
 
     // 6. CROWN OF 5 DRAGON HEADS (Goryūtenmetsu per user sketch)
     // Adapts sprite, aura, glowing eyes and golden halo directly to combo tier (tier0 to tier5 gold)
-    const crownW = Math.round(w * 0.96);
-    const crownH = Math.round(crownW * (255 / 198));
+    let crownW = Math.round(w * 0.96);
+    let crownH = Math.round(crownW * (255 / 198));
+
+    // Dynamic anti-overlap scaling: guarantee the crown never breaches the next incoming note
+    let showCrown = true;
+    if (availableGap < 9999) {
+      const allowedCrownTop = (yTail - availableGap) + 15;
+      const nominalCrownTop = bladeRootY - crownH + 28;
+      if (nominalCrownTop < allowedCrownTop) {
+        const availableCrownH = bladeRootY + 28 - allowedCrownTop;
+        if (availableCrownH < 36) {
+          showCrown = false;
+        } else {
+          const cScale = Math.max(0.30, Math.min(1.0, availableCrownH / crownH));
+          crownW = Math.round(crownW * cScale);
+          crownH = Math.round(crownH * cScale);
+        }
+      }
+    }
+
     const tremor = (holding && !isMob) ? Math.sin(now * 0.055) * 1.5 : 0;
     const crownX = cx - crownW / 2 + tremor;
     const crownY = bladeRootY - crownH + 28;
 
     const dissolveAlpha = (holding && tailH < 120) ? Math.max(0, tailH / 120) : 1.0;
 
-    if (dissolveAlpha > 0.01) {
+    if (showCrown && dissolveAlpha > 0.01) {
       ctx.save();
       ctx.globalAlpha = dissolveAlpha;
 
@@ -1271,13 +1305,10 @@ export const HADO99_THEME = {
         ctx.drawImage(headsSprite, crownX, crownY, crownW, crownH);
       }
 
-      // Glowing dragon eye accents on the 5 heads matching combo
+      // Glowing dragon eye accents on the 5 heads matching combo (Zero shadowBlur for 60fps)
       if (!dead) {
         const eyeColor = isGold ? '#fef08a' : (pal.eyeGlow || pal.borderCol);
         const eyeGlowAlpha = Math.sin(now * 0.009) * 0.15 + 0.85;
-        ctx.fillStyle = eyeColor;
-        ctx.shadowColor = eyeColor;
-        ctx.shadowBlur = 4;
         ctx.globalAlpha = dissolveAlpha * eyeGlowAlpha;
 
         // Coordinates for eyes of 5 heads relative to crown box
@@ -1288,12 +1319,28 @@ export const HADO99_THEME = {
           [0.15, 0.48],  [0.175, 0.48], // Far-left head
           [0.825, 0.48], [0.85, 0.48]   // Far-right head
         ];
-        for (const [ex, ey] of eyePositions) {
-          ctx.beginPath();
-          ctx.arc(crownX + crownW * ex, crownY + crownH * ey, 1.3, 0, Math.PI * 2);
-          ctx.fill();
+
+        // Pass 1: Soft outer eye aura (batched)
+        ctx.fillStyle = isGold ? 'rgba(254, 240, 138, 0.40)' : (pal.auraCol || 'rgba(232, 121, 249, 0.40)');
+        ctx.beginPath();
+        for (let e = 0; e < eyePositions.length; e++) {
+          const ex = eyePositions[e][0], ey = eyePositions[e][1];
+          const px = crownX + crownW * ex, py = crownY + crownH * ey;
+          ctx.moveTo(px + 2.6, py);
+          ctx.arc(px, py, 2.5, 0, Math.PI * 2);
         }
-        ctx.shadowBlur = 0;
+        ctx.fill();
+
+        // Pass 2: Sharp luminous pupil core (batched)
+        ctx.fillStyle = eyeColor;
+        ctx.beginPath();
+        for (let e = 0; e < eyePositions.length; e++) {
+          const ex = eyePositions[e][0], ey = eyePositions[e][1];
+          const px = crownX + crownW * ex, py = crownY + crownH * ey;
+          ctx.moveTo(px + 1.3, py);
+          ctx.arc(px, py, 1.2, 0, Math.PI * 2);
+        }
+        ctx.fill();
 
         // Radiant Gold spiritual crown flare at 800+ combo
         if (isGold) {

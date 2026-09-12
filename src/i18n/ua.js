@@ -505,6 +505,13 @@ export default {
   adminThemeSavedSuccess: "Налаштування тем успішно збережено!",
   adminThemeResetConfirm: "Скинути налаштування цієї теми до стандартних?",
   adminThemeDiscountPreview: "Ціна в магазині:",
-  shopSaleTag: "АКЦІЯ"
+  shopSaleTag: "АКЦІЯ",
+
+  // Admin Player Rename
+  adminEditPlayerNameBtn: "Змінити ім'я",
+  adminEditPlayerNameTooltip: "Змінити ім'я гравця",
+  adminPromptNewPlayerName: "Введіть нове ім'я для гравця \"{name}\":",
+  adminPlayerNameSavedSuccess: "Ім'я гравця успішно змінено на \"{name}\"!",
+  adminPlayerNameEmptyError: "Ім'я гравця не може бути порожнім."
 };
 

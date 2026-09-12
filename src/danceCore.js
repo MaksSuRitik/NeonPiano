@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=72.6";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=72.7";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=72.6";
+import * as FieldThemes from "./game/fieldThemes.js?v=72.7";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -2426,12 +2426,12 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
                             hitAnimStart: 0, lastValidHoldTime: 0
                         });
 
-                        laneFreeTime[lane] = exactTime + (dur > 0 ? dur + 0.05 : minNoteGap);
+                        laneFreeTime[lane] = exactTime + (dur > 0 ? dur + 0.40 : minNoteGap);
                         if (dur > 0) {
-                            laneHoldUntil[lane] = exactTime + dur + 0.05;
-                            // Блокуємо партнерську доріжку тієї ж руки (0<->1, 2<->3) на час затискання + 0.05с буфер
+                            laneHoldUntil[lane] = exactTime + dur + 0.40;
+                            // Блокуємо партнерську доріжку тієї ж руки (0<->1, 2<->3) на час затискання + 0.20с буфер
                             const partnerLane = lane ^ 1;
-                            laneFreeTime[partnerLane] = Math.max(laneFreeTime[partnerLane], exactTime + dur + 0.05);
+                            laneFreeTime[partnerLane] = Math.max(laneFreeTime[partnerLane], exactTime + dur + 0.20);
                         }
 
                         lastPitch = pitch;
@@ -3253,9 +3253,25 @@ function update(songTime) {
                 }
 
                 // Тематичний завершальний хвіст довгої ноти + neck junction collar
-                // Pass tailH and actualYHeadTop so the theme can anchor the neck to the head with zero gap
+                // Pass tailH, actualYHeadTop, and nextTileDist so themes can prevent overlapping with following notes
                 if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
-                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH, State.combo, actualYHeadTop);
+                    let nextTileDist = 9999;
+                    if (Array.isArray(State.activeTiles)) {
+                        for (let at = 0; at < State.activeTiles.length; at++) {
+                            const other = State.activeTiles[at];
+                            if (other !== tile && other.lane === tile.lane && !other.completed && !other.failed) {
+                                if (other.time >= (tile.endTime || tile.time)) {
+                                    const otherProg = 1 - (other.time - songTime) / State.currentSpeed;
+                                    const otherYHead = otherProg * hitY;
+                                    const gap = yTail - otherYHead;
+                                    if (gap > 0 && gap < nextTileDist) {
+                                        nextTileDist = gap;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH, State.combo, actualYHeadTop, nextTileDist);
                 }
 
                 // Відмальовування шиї довгої ноти перед головою (синхронізовано з головою)
@@ -6890,6 +6906,7 @@ function updateRipples(dt) {
         const adminStarTypesSelector = document.getElementById('admin-star-types-selector');
         const adminBtnSaveScore = document.getElementById('admin-btn-save-score');
         const adminBtnResetScore = document.getElementById('admin-btn-reset-score');
+        const adminBtnRenamePlayer = document.getElementById('admin-btn-rename-player');
         const adminBtnDeletePlayer = document.getElementById('admin-btn-delete-player');
         const adminRefreshScoresBtn = document.getElementById('admin-refresh-scores-btn');
         const adminLevelPlayersTbody = document.getElementById('admin-level-players-tbody');
@@ -7675,6 +7692,87 @@ function updateRipples(dt) {
             }
         }
 
+        // Зміна імені гравця через адмінку
+        async function renamePlayerPrompt(userId, currentName = null) {
+            if (!userId) {
+                alert(getText('adminChoosePlayerFirst') || 'Будь ласка, оберіть гравця.');
+                return;
+            }
+            const playerObj = adminCachedPlayers.find(p => p.id === userId);
+            const resolvedOldName = currentName || (playerObj ? playerObj.name : userId);
+
+            const promptText = (getText('adminPromptNewPlayerName') || 'Введіть нове ім\'я для гравця "{name}":')
+                .replace('{name}', resolvedOldName);
+
+            const newNameInput = prompt(promptText, resolvedOldName);
+            if (newNameInput === null) return; // Скасовано користувачем
+            const cleanNewName = newNameInput.trim();
+            if (!cleanNewName) {
+                alert(getText('adminPlayerNameEmptyError') || 'Ім\'я гравця не може бути порожнім.');
+                return;
+            }
+            if (cleanNewName === resolvedOldName) return;
+
+            playClick();
+            if (adminBtnRenamePlayer) {
+                adminBtnRenamePlayer.disabled = true;
+            }
+
+            try {
+                await updatePlayerNameAdmin(userId, cleanNewName);
+
+                // Оновлюємо закешований список гравців
+                if (playerObj) {
+                    playerObj.name = cleanNewName;
+                    playerObj.username = cleanNewName;
+                }
+
+                // Якщо перейменовано свій власний акаунт — оновлюємо сесію і UI
+                const curU = getCurrentUser();
+                const localPlayerId = curU?.id || localStorage.getItem('playerId');
+                if (userId === localPlayerId) {
+                    localStorage.setItem('playerName', cleanNewName);
+                    if (curU) {
+                        curU.name = cleanNewName;
+                        curU.username = cleanNewName;
+                        curU.displayName = cleanNewName;
+                    }
+                    updateHeaderUserBadge();
+                    if (typeof renderMenu === 'function') renderMenu();
+                }
+
+                // Оновлюємо селектор гравців
+                if (adminSelectPlayer) {
+                    renderAdminPlayerOptions(adminPlayerSearch?.value || '');
+                    adminSelectPlayer.value = userId;
+                }
+
+                // Оновлюємо картку редагування
+                await loadSelectedPlayerScore();
+
+                // Оновлюємо таблицю результатів рівня
+                await renderAdminLevelLeaderboard(adminSelectLevel?.value);
+
+                const successMsg = (getText('adminPlayerNameSavedSuccess') || 'Ім\'я гравця успішно змінено на "{name}"!')
+                    .replace('{name}', cleanNewName);
+                showNotification(successMsg);
+            } catch (err) {
+                console.error("Помилка зміни імені гравця:", err);
+                alert("Помилка при зміні імені: " + (err.message || err));
+            } finally {
+                if (adminBtnRenamePlayer) {
+                    adminBtnRenamePlayer.disabled = false;
+                }
+            }
+        }
+
+        if (adminBtnRenamePlayer) {
+            adminBtnRenamePlayer.onclick = async () => {
+                const userId = adminSelectPlayer?.value;
+                await renamePlayerPrompt(userId);
+            };
+        }
+
         if (adminBtnDeletePlayer) {
             adminBtnDeletePlayer.onclick = async () => {
                 const userId = adminSelectPlayer?.value;
@@ -7762,9 +7860,16 @@ function updateRipples(dt) {
                         }
                     }
 
-                    const actionCellHtml = res.isAdmin
+                    const deleteBtnHtml = res.isAdmin
                         ? `<span style="opacity: 0.7; display:inline-flex; align-items:center; justify-content:center; gap:3px; padding: 4px; font-size: 0.72rem; color: #38bdf8;" title="${getText('adminCannotBeDeleted') || 'Акаунт адміністратора захищено від видалення.'}">🛡️ <span class="hidden-xs">${getText('adminProtectedBadge') || 'Захищено'}</span></span>`
                         : `<button type="button" class="admin-row-delete-btn" title="${getText('adminDeletePlayerTooltip') || 'Видалити гравця та всі його дані'}">${icons.trash(13)}</button>`;
+
+                    const actionCellHtml = `
+                        <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px;">
+                            <button type="button" class="admin-row-edit-name-btn" title="${getText('adminEditPlayerNameTooltip') || 'Змінити ім\'я гравця'}" style="background: rgba(255,255,255,0.06); border: 1px solid var(--surface-border); border-radius: 4px; color: var(--text-color); cursor: pointer; padding: 3px 6px; font-size: 0.78rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease;">✏️</button>
+                            ${deleteBtnHtml}
+                        </div>
+                    `;
 
                     tr.innerHTML = `
                         <td><b>#${idx + 1}</b></td>
@@ -7779,6 +7884,14 @@ function updateRipples(dt) {
                             ${actionCellHtml}
                         </td>
                     `;
+
+                    const rowEditBtn = tr.querySelector('.admin-row-edit-name-btn');
+                    if (rowEditBtn) {
+                        rowEditBtn.onclick = async (e) => {
+                            e.stopPropagation();
+                            await renamePlayerPrompt(res.userId, res.name);
+                        };
+                    }
 
                     const rowDelBtn = tr.querySelector('.admin-row-delete-btn');
                     if (rowDelBtn) {

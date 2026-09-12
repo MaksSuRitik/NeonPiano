@@ -505,5 +505,12 @@ export default {
   adminThemeSavedSuccess: "Theme settings saved successfully!",
   adminThemeResetConfirm: "Reset this theme to default values?",
   adminThemeDiscountPreview: "Shop Price Preview:",
-  shopSaleTag: "SALE"
+  shopSaleTag: "SALE",
+
+  // Admin Player Rename
+  adminEditPlayerNameBtn: "Rename",
+  adminEditPlayerNameTooltip: "Change player name",
+  adminPromptNewPlayerName: "Enter new name for player \"{name}\":",
+  adminPlayerNameSavedSuccess: "Player name successfully changed to \"{name}\"!",
+  adminPlayerNameEmptyError: "Player name cannot be empty."
 };
