@@ -20,13 +20,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=72.2';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=72.2';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=72.2';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=72.2';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=72.2';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=72.2';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=72.2';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=72.3';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=72.3';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=72.3';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=72.3';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=72.3';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=72.3';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=72.3';
 
 // Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
 const dragon5HeadsSprites = {
@@ -38,13 +38,13 @@ const dragon5HeadsSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=72.2';
-if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=72.2';
-if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=72.2';
-if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=72.2';
-if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=72.2';
-if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=72.2';
-if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=72.2';
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=72.3';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=72.3';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=72.3';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=72.3';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=72.3';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=72.3';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=72.3';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -238,30 +238,6 @@ export const HADO99_THEME = {
     }
   },
 
-  // Explosive burst of Reishi ash & glowing embers on note hit
-  _spawnReishiAshBurst(cx, cy, w, pal, now, count = 16) {
-    for (let c = 0; c < count; c++) {
-      const p = this._ashPool[this._ashIdx];
-      this._ashIdx = (this._ashIdx + 1) % this._ashPool.length;
-      p.active = true;
-      p.x = cx + (Math.random() - 0.5) * (w * 0.7);
-      p.y = cy + (Math.random() - 0.5) * 10;
-      p.isSpark = Math.random() < 0.65; // 65% glowing Reishi sparks
-      if (p.isSpark) {
-        const angle = (Math.random() * Math.PI) + Math.PI; // upward arc
-        const spd = 2.2 + Math.random() * 4.2;
-        p.vx = Math.cos(angle) * spd * 0.8;
-        p.vy = Math.sin(angle) * spd;
-        p.life = 0.70 + Math.random() * 0.30;
-        p.size = 2.0 + Math.random() * 2.5;
-      } else {
-        p.vx = (Math.random() - 0.5) * 3.0;
-        p.vy = -(Math.random() * 2.8 + 1.2);
-        p.life = 0.80 + Math.random() * 0.20;
-        p.size = 2.8 + Math.random() * 3.2;
-      }
-    }
-  },
 
   _updateAndDrawReishiAsh(ctx, pal) {
     let hasAsh = false;
@@ -317,41 +293,6 @@ export const HADO99_THEME = {
     ctx.restore();
   },
 
-  // ==========================================================================
-  // FLYING REIATSU AURA (Компактная аура Рейацу без хвоста, в 10 раз меньше)
-  // ==========================================================================
-  _drawFlyingReiatsuAura(ctx, cx, yTop, w, h, pal, now, seed = 0) {
-    const isGold = (pal.borderCol === '#ffd700');
-    const cy = yTop + h * 0.38;
-
-    ctx.save();
-
-    // 1. Subtle compact spiritual pressure dome hugging dragon head (10x smaller, no tail)
-    const pulse = Math.sin(now * 0.007 + seed) * 0.08 + 0.92;
-    const auraR = (w * 0.28) * pulse;
-    const auraGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, auraR);
-    auraGrad.addColorStop(0,    isGold ? 'rgba(251, 191, 36, 0.22)' : (pal.auraCol || 'rgba(192, 132, 252, 0.20)'));
-    auraGrad.addColorStop(0.65, isGold ? 'rgba(251, 191, 36, 0.06)' : 'rgba(147, 51, 234, 0.05)');
-    auraGrad.addColorStop(1,    'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = auraGrad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, auraR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. Two tiny subtle spiritual wisps hovering right atop horns
-    for (let i = 0; i < 2; i++) {
-      const p = ((now * 0.0010 + (seed * 0.3 + i * 0.5)) % 1.0);
-      const py = yTop - p * 10;
-      const px = cx + (i === 0 ? -1 : 1) * (w * 0.16) + Math.sin(now * 0.006 + i) * 2;
-      const pa = (1.0 - p) * 0.40;
-      ctx.fillStyle = isGold ? `rgba(254, 240, 138, ${pa})` : `rgba(216, 180, 254, ${pa})`;
-      ctx.beginPath();
-      ctx.arc(px, py, 1.0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
-  },
 
   // Helper for drawing serrated dorsal fins on the outer curves of the serpent body
   _drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, ribbonHW, pal, waveAnim = 0) {
@@ -553,7 +494,132 @@ export const HADO99_THEME = {
   // SPRITE BAKING HOOKS
   // ==========================================================================
   bakeTapNote(ctx, x, yTop, w, h, isLight, style) {
-    this._drawDragonHead(ctx, x + w / 2, yTop + h / 2, w, h, style?.tier || 0, false);
+    const tier   = style?.tier || 0;
+    const pal    = this._getTierPalette(tier, false, false);
+    const isGold = (pal.borderCol === '#ffd700');
+    const radius = 6;
+    const cx     = x + w / 2;
+    const cy     = yTop + h / 2;
+
+    ctx.save();
+
+    // 1. Multi-tonal Obsidian / Void Glass Body Gradient
+    const bgGrad = ctx.createLinearGradient(x, yTop, x, yTop + h);
+    bgGrad.addColorStop(0,    pal.bgTop);
+    bgGrad.addColorStop(0.55, pal.bgBot);
+    bgGrad.addColorStop(1,    pal.darkShade || '#0a0114');
+
+    // Outer soft spiritual aura glow
+    ctx.shadowColor = isGold ? '#ffd700' : (pal.borderCol || '#c084fc');
+    ctx.shadowBlur  = isGold ? 8 : (tier >= 200 ? 5 : 3);
+
+    ctx.fillStyle = bgGrad;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, yTop, w, h, radius);
+    else ctx.rect(x, yTop, w, h);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    // 2. High-precision neon perimeter border
+    ctx.strokeStyle = pal.borderCol;
+    ctx.lineWidth   = isGold ? 1.8 : 1.4;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, yTop, w, h, radius);
+    else ctx.rect(x, yTop, w, h);
+    ctx.stroke();
+
+    // 3. Sleek top glass gloss reflection highlight
+    const glossGrad = ctx.createLinearGradient(x, yTop, x, yTop + h * 0.42);
+    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
+    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+    ctx.fillStyle = glossGrad;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x + 3, yTop + 2, w - 6, Math.max(3, Math.round(h * 0.38)), 4);
+    else ctx.rect(x + 3, yTop + 2, w - 6, Math.max(3, Math.round(h * 0.38)));
+    ctx.fill();
+
+    // Subtle dark bevel lip on bottom edge
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.fillRect(x + 2, yTop + h - 3, w - 4, 2);
+
+    // 4. Hadō #99 Kido Corner Seals (Corner Brackets)
+    const bracketSize = 5;
+    ctx.strokeStyle = isGold ? '#fef08a' : (pal.spineCol || '#ffffff');
+    ctx.lineWidth   = 1.1;
+
+    // Top-left
+    ctx.beginPath();
+    ctx.moveTo(x + 4, yTop + 4 + bracketSize);
+    ctx.lineTo(x + 4, yTop + 4);
+    ctx.lineTo(x + 4 + bracketSize, yTop + 4);
+    ctx.stroke();
+
+    // Top-right
+    ctx.beginPath();
+    ctx.moveTo(x + w - 4 - bracketSize, yTop + 4);
+    ctx.lineTo(x + w - 4, yTop + 4);
+    ctx.lineTo(x + w - 4, yTop + 4 + bracketSize);
+    ctx.stroke();
+
+    // Bottom-left
+    ctx.beginPath();
+    ctx.moveTo(x + 4, yTop + h - 4 - bracketSize);
+    ctx.lineTo(x + 4, yTop + h - 4);
+    ctx.lineTo(x + 4 + bracketSize, yTop + h - 4);
+    ctx.stroke();
+
+    // Bottom-right
+    ctx.beginPath();
+    ctx.moveTo(x + w - 4 - bracketSize, yTop + h - 4);
+    ctx.lineTo(x + w - 4, yTop + h - 4);
+    ctx.lineTo(x + w - 4, yTop + h - 4 - bracketSize);
+    ctx.stroke();
+
+    // 5. Central Hadō #99 Bleach Spiritual Crest (Reishi Diamond Core)
+    const lineSpan = Math.round(w * 0.22);
+    ctx.strokeStyle = pal.chevronCol || 'rgba(255, 255, 255, 0.40)';
+    ctx.lineWidth   = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(cx - lineSpan, cy);
+    ctx.lineTo(cx - 10, cy);
+    ctx.moveTo(cx + 10, cy);
+    ctx.lineTo(cx + lineSpan, cy);
+    ctx.stroke();
+
+    // Central diamond crest
+    const diaHW = 8;
+    const diaHH = 6;
+    ctx.fillStyle   = pal.darkShade || '#150328';
+    ctx.strokeStyle = pal.borderCol;
+    ctx.lineWidth   = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - diaHH);
+    ctx.lineTo(cx + diaHW, cy);
+    ctx.lineTo(cx, cy + diaHH);
+    ctx.lineTo(cx - diaHW, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // White-hot spiritual center jewel
+    ctx.fillStyle = isGold ? '#ffffff' : (pal.coreHighlight || '#ffffff');
+    ctx.beginPath();
+    ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // For Tier 5 (800+ Gold) or Tier 4 (400+): 4-point radiant lens sparkle in center
+    if (tier >= 400) {
+      const starR = isGold ? 6.5 : 4.5;
+      ctx.strokeStyle = isGold ? '#fef08a' : '#ffffff';
+      ctx.lineWidth   = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(cx - starR, cy); ctx.lineTo(cx + starR, cy);
+      ctx.moveTo(cx, cy - starR); ctx.lineTo(cx, cy + starR);
+      ctx.stroke();
+    }
+
+    ctx.restore();
     return true;
   },
 
@@ -620,33 +686,23 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // DYNAMIC TAP NOTE OVERLAY (Live crackling Reiatsu lightning on flying notes)
+  // DYNAMIC TAP NOTE OVERLAY (Zero Reiatsu for flying tap notes per user request)
   // ==========================================================================
   drawTapOverlay(ctx, x, yTop, w, h, tile, isLight, now, combo = 0) {
-    this.drawHeadOverlay(ctx, x, yTop, w, h, tile, isLight, now, combo);
+    // Regular tap notes fly cleanly without Reiatsu aura per user request
+    return;
   },
 
   drawHeadOverlay(ctx, x, yTop, w, h, tile, isLight, now, combo = 0) {
     if (tile.failed || tile.released) return;
-    if (!tile.tailLen && tile.hit) return;
-    const cx = x + w / 2;
-    const cy = yTop + h / 2;
-    const liveCombo = (combo !== undefined && combo !== null && combo > 0)
-      ? combo
-      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
-    const isHolding = Boolean(tile.holding && tile.hit);
     const isTapNote = (tile.type === 'tap') || !tile.tailLen;
-    const pal = this._getTierPalette(liveCombo, false, isHolding);
-    const seed = ((tile.lane ?? 0) * 13 + (tile.id ? (tile.id & 31) : 0));
-
-    // For flying tap notes: draw animated Reiatsu spiritual pressure trail and aura
-    if (isTapNote) {
-      this._drawFlyingReiatsuAura(ctx, cx, yTop, w, h, pal, now, seed);
-    }
+    // Flying tap notes have zero Reiatsu effect; long notes use dragon head baked sprite
+    if (isTapNote) return;
+    return;
   },
 
   // ==========================================================================
-  // HIT ANIMATION (Компактное испепеление Рейацу: 3 искры, аккуратная мини-вспышка)
+  // HIT ANIMATION (Snappy Hadō #99 Kido Barrier Prism & Reishi Flash Hit Animation)
   // ==========================================================================
   drawHitAnimation(ctx, cx, cy, w, h, p, isPerfect, isLight, now, combo = 0) {
     const liveCombo = (combo !== undefined && combo !== null && combo > 0)
@@ -655,62 +711,119 @@ export const HADO99_THEME = {
     const pal = this._getTierPalette(liveCombo, false, true);
     const isGold = (pal.borderCol === '#ffd700');
 
-    // Subtle burst of 3 Reishi ash sparks (10x smaller, non-intrusive)
-    if (p < 0.22 && (!this._lastHitBurstTime || now - this._lastHitBurstTime > 30)) {
-      this._lastHitBurstTime = now;
-      this._spawnReishiAshBurst(cx, cy, w * 0.30, pal, now, 3);
-    }
+    const easeOut = 1 - Math.pow(1 - p, 3);
+    const alpha = Math.max(0, 1.0 - Math.pow(p, 1.2));
+    if (alpha <= 0.01) return;
 
     ctx.save();
+    ctx.globalCompositeOperation = 'screen';
 
-    // 1. Compact spiritual ring (~10x smaller)
-    const ringR = (w * 0.15) + p * (w * 0.30);
-    const ringAlpha = Math.max(0, (1 - p) * 0.70);
-    ctx.strokeStyle = isGold ? `rgba(254, 240, 138, ${ringAlpha})` : `rgba(216, 180, 254, ${ringAlpha})`;
-    ctx.lineWidth = 1.2 * (1 - p * 0.5);
+    const mainCol = isGold ? '#ffd700' : pal.borderCol;
+    const coreCol = isGold ? '#fef08a' : (pal.spineCol || '#ffffff');
+
+    // 1. Expanding Rectangular Kido Barrier Frame
+    const expandScale = 1.0 + easeOut * 0.28;
+    const boxW = w * expandScale;
+    const boxH = h * expandScale;
+    const boxX = cx - boxW / 2;
+    const boxY = cy - boxH / 2;
+    const boxR = 6 * expandScale;
+
+    ctx.strokeStyle = mainCol;
+    ctx.globalAlpha = alpha * 0.85;
+    ctx.lineWidth = Math.max(1, 1.8 * (1 - p * 0.6));
     ctx.beginPath();
-    ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+    if (ctx.roundRect) ctx.roundRect(boxX, boxY, boxW, boxH, boxR);
+    else ctx.strokeRect(boxX, boxY, boxW, boxH);
     ctx.stroke();
 
-    // 2. Compact fiery burning horizon edge (~10x smaller)
-    const flameAlpha = Math.max(0, (1 - p) * 0.85);
-    const flameW = (w * 0.28) * (1 + p * 0.30);
-    const flameSteps = 8;
+    // 2. Corner Kido Bracket Seals bursting outward
+    const bracketLen = 6 * (1 + easeOut * 0.2);
+    ctx.strokeStyle = coreCol;
+    ctx.globalAlpha = alpha * 0.95;
+    ctx.lineWidth = 1.4;
 
-    // Outer colored burning edge
-    ctx.strokeStyle = isGold ? `rgba(251, 191, 36, ${flameAlpha})` : (pal.burnCol || `rgba(240, 171, 252, ${flameAlpha})`);
-    ctx.lineWidth = 1.3 * (1 - p * 0.4);
+    // Top-Left
     ctx.beginPath();
-    for (let s = 0; s <= flameSteps; s++) {
-      const fx = cx - flameW / 2 + (s / flameSteps) * flameW;
-      const fy = cy + Math.sin(now * 0.03 + s * 2.1) * (1.5 * (1 - p));
-      if (s === 0) ctx.moveTo(fx, fy);
-      else ctx.lineTo(fx, fy);
+    ctx.moveTo(boxX + 2, boxY + 2 + bracketLen);
+    ctx.lineTo(boxX + 2, boxY + 2);
+    ctx.lineTo(boxX + 2 + bracketLen, boxY + 2);
+    // Top-Right
+    ctx.moveTo(boxX + boxW - 2 - bracketLen, boxY + 2);
+    ctx.lineTo(boxX + boxW - 2, boxY + 2);
+    ctx.lineTo(boxX + boxW - 2, boxY + 2 + bracketLen);
+    // Bottom-Left
+    ctx.moveTo(boxX + 2, boxY + boxH - 2 - bracketLen);
+    ctx.lineTo(boxX + 2, boxY + boxH - 2);
+    ctx.lineTo(boxX + 2 + bracketLen, boxY + boxH - 2);
+    // Bottom-Right
+    ctx.moveTo(boxX + boxW - 2 - bracketLen, boxY + boxH - 2);
+    ctx.lineTo(boxX + boxW - 2, boxY + boxH - 2);
+    ctx.lineTo(boxX + boxW - 2, boxY + boxH - 2 - bracketLen);
+    ctx.stroke();
+
+    // 3. Hadō Reishi Cross Slash (Horizontal & Vertical energy beam)
+    const hSlashLen = (w * 0.35) + easeOut * (w * 0.65);
+    const vSlashLen = (h * 0.30) + easeOut * (h * 0.55);
+    const slashAlpha = Math.max(0, (1 - p * 1.5) * 0.9);
+
+    if (slashAlpha > 0.02) {
+      ctx.globalAlpha = slashAlpha;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8 * (1 - p);
+      ctx.beginPath();
+      ctx.moveTo(cx - hSlashLen, cy);
+      ctx.lineTo(cx + hSlashLen, cy);
+      ctx.moveTo(cx, cy - vSlashLen);
+      ctx.lineTo(cx, cy + vSlashLen);
+      ctx.stroke();
+
+      // Outer color halo on cross
+      ctx.strokeStyle = mainCol;
+      ctx.lineWidth = 3.5 * (1 - p);
+      ctx.globalAlpha = slashAlpha * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(cx - hSlashLen, cy);
+      ctx.lineTo(cx + hSlashLen, cy);
+      ctx.moveTo(cx, cy - vSlashLen);
+      ctx.lineTo(cx, cy + vSlashLen);
+      ctx.stroke();
     }
-    ctx.stroke();
 
-    // Inner pure white-hot core line
-    ctx.strokeStyle = `rgba(255, 255, 255, ${flameAlpha})`;
-    ctx.lineWidth = 0.7;
-    ctx.beginPath();
-    for (let s = 0; s <= flameSteps; s++) {
-      const fx = cx - flameW / 2 + (s / flameSteps) * flameW;
-      const fy = cy + Math.sin(now * 0.03 + s * 2.1) * (0.8 * (1 - p));
-      if (s === 0) ctx.moveTo(fx, fy);
-      else ctx.lineTo(fx, fy);
+    // 4. Expanding Hadō Spiritual Diamond Core
+    const diaScale = 1.0 + easeOut * 1.2;
+    const diaHW = 9 * diaScale;
+    const diaHH = 7 * diaScale;
+    const diaAlpha = Math.max(0, (1 - p * 1.3) * 0.9);
+
+    if (diaAlpha > 0.02) {
+      ctx.globalAlpha = diaAlpha;
+      ctx.strokeStyle = mainCol;
+      ctx.lineWidth = 1.3 * (1 - p * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - diaHH);
+      ctx.lineTo(cx + diaHW, cy);
+      ctx.lineTo(cx, cy + diaHH);
+      ctx.lineTo(cx - diaHW, cy);
+      ctx.closePath();
+      ctx.stroke();
     }
-    ctx.stroke();
 
-    // 3. Compact central flash (~10x smaller)
-    const flashR = (w * 0.18) * (1 - p * 0.3);
-    const flashGrad = ctx.createRadialGradient(cx, cy, 1, cx, cy, flashR);
-    flashGrad.addColorStop(0,    `rgba(255, 255, 255, ${Math.max(0, (1 - p * 1.4) * 0.85)})`);
-    flashGrad.addColorStop(0.35, isGold ? `rgba(251, 191, 36, ${flameAlpha * 0.6})` : `rgba(217, 70, 239, ${flameAlpha * 0.5})`);
-    flashGrad.addColorStop(1,    'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = flashGrad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, flashR, 0, Math.PI * 2);
-    ctx.fill();
+    // 5. White-Hot Center Focal Flash (instant tactile punch)
+    if (p < 0.4) {
+      const flashP = p / 0.4;
+      const flashR = (w * 0.20) * (1 - flashP * 0.4);
+      const flashAlpha = (1 - flashP) * 0.95;
+      const flashGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, flashR);
+      flashGrad.addColorStop(0,   `rgba(255, 255, 255, ${flashAlpha})`);
+      flashGrad.addColorStop(0.3, isGold ? `rgba(254, 240, 138, ${flashAlpha * 0.8})` : `rgba(232, 121, 249, ${flashAlpha * 0.8})`);
+      flashGrad.addColorStop(1,   'rgba(0, 0, 0, 0)');
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = flashGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, flashR, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
   },
