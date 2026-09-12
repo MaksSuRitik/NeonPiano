@@ -451,7 +451,7 @@ export default {
   previewThemeModalTitle: "Theme Test Drive",
   previewThemeSelectSong: "Select a track to preview:",
   previewStartBtn: "Start Test Drive (20 sec)",
-  previewBannerText: "Theme Test Drive • Auto-Bot Playing",
+  previewBannerText: "Test Drive • Auto-Bot",
   previewExitBtn: "Exit",
   previewCompletedToast: "Theme test drive completed",
   allThemesOwnedMsg: "All themes have been purchased! Select them in the Customization tab.",

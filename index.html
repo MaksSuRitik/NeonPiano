@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Neon Rhythm — Neon Piano</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="css/style.css?v=70.3">
+  <link rel="stylesheet" href="css/style.css?v=70.4">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
 </head>
 <body data-theme="dark">
@@ -405,7 +405,7 @@
       </div>
 
       <!-- Tab 1: Tracks Management -->
-      <div id="admin-tab-tracks-view" class="admin-grid" style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 24px;">
+      <div id="admin-tab-tracks-view" class="admin-grid-tracks">
         
         <!-- Column 1: Add Track via URL -->
         <div class="admin-card">
@@ -486,30 +486,43 @@
 
       <!-- Tab 2: Player Level Results Editor -->
       <div id="admin-tab-scores-view" class="admin-scores-view hidden">
-        <!-- Top Selection Bar: Choose Level & Choose Player -->
+        <!-- Step 1: Select Level & Player -->
         <div class="admin-card" style="margin-bottom: 16px;">
-          <div class="admin-grid-2col">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--surface-border); padding-bottom: 8px;">
+            <span style="font-size: 1.2rem;">🎯</span>
             <div>
-              <label data-i18n="adminSelectLevel" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
-                1. Оберіть рівень (пісню):
+              <h4 class="admin-card-title" style="margin: 0; font-size: 0.96rem;">1. Вибір рівня та гравця</h4>
+              <div style="font-size: 0.78rem; color: var(--text-secondary);">Оберіть трек та користувача для налаштування результатів або балансу монет</div>
+            </div>
+          </div>
+
+          <div class="admin-grid-2col" style="gap: 14px;">
+            <!-- Select Level -->
+            <div>
+              <label data-i18n="adminSelectLevel" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 6px;">
+                Рівень (пісня):
               </label>
               <select id="admin-select-level" class="modern-select" style="width: 100%;">
                 <option value="">(Завантаження рівнів...)</option>
               </select>
             </div>
+
+            <!-- Select Player -->
             <div>
-              <label data-i18n="adminSelectPlayer" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
-                2. Оберіть гравця:
-              </label>
-              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                <input type="text" id="admin-player-search" class="modern-input" data-i18n-placeholder="adminSearchPlayerPlaceholder" placeholder="Швидкий пошук гравця за ім'ям..." style="margin: 0 !important; flex: 1;">
-                <button type="button" id="admin-btn-select-self" class="modern-btn modern-btn-secondary" style="font-size: 0.78rem; padding: 6px 10px; white-space: nowrap;" title="Обрати свій акаунт для налаштування" data-i18n-title="adminSelectMyAccountTooltip" data-i18n="adminSelectMyAccount">★ Мій акаунт (Адмін)</button>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label data-i18n="adminSelectPlayer" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; margin: 0;">
+                  Гравець:
+                </label>
+                <button type="button" id="admin-btn-select-self" class="modern-btn modern-btn-secondary" style="font-size: 0.76rem; padding: 4px 10px; white-space: nowrap;" title="Обрати свій акаунт для налаштування" data-i18n-title="adminSelectMyAccountTooltip" data-i18n="adminSelectMyAccount">★ Мій акаунт (Адмін)</button>
               </div>
-              <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                <input type="text" id="admin-player-search" class="modern-input" data-i18n-placeholder="adminSearchPlayerPlaceholder" placeholder="Швидкий пошук гравця за ім'ям..." style="margin: 0 !important; flex: 1;">
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
                 <select id="admin-select-player" class="modern-select" style="flex: 1; margin: 0 !important;">
                   <option value="">(Оберіть гравця...)</option>
                 </select>
-                <button type="button" id="admin-btn-delete-player" class="modern-btn modern-btn-danger" title="Видалити гравця та всі його дані" data-i18n-title="adminDeletePlayerTooltip">
+                <button type="button" id="admin-btn-delete-player" class="modern-btn modern-btn-danger" title="Видалити гравця та всі його дані" data-i18n-title="adminDeletePlayerTooltip" style="white-space: nowrap;">
                   <span class="btn-icon-trash-player"></span>
                   <span data-i18n="adminDeletePlayerBtn">Видалити</span>
                 </button>
@@ -518,13 +531,113 @@
           </div>
         </div>
 
-        <!-- Player Coins Balance Management Card -->
+        <!-- Step 2: Score, Stars & Difficulty Editor -->
+        <div id="admin-score-editor-card" class="admin-card" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--surface-border); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.2rem;">🏆</span>
+              <div>
+                <h4 id="admin-edit-player-title" data-i18n="adminEditScoreTitle" class="admin-card-title" style="margin: 0; font-size: 0.96rem;">
+                  2. Редагування результату
+                </h4>
+                <div id="admin-edit-player-subtitle" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                  Оберіть рівень та гравця для налаштування результату
+                </div>
+              </div>
+            </div>
+            <div id="admin-edit-status-badge"></div>
+          </div>
+
+          <!-- Edit Form Fields: 3 columns (Score, Stars, Difficulty) -->
+          <div class="admin-grid-3col" style="margin-bottom: 14px; gap: 12px;">
+            <!-- Score -->
+            <div>
+              <label style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
+                <span data-i18n="score">Рахунок</span>:
+              </label>
+              <input type="number" id="admin-input-score" class="modern-input" min="0" max="10000000" placeholder="0">
+            </div>
+
+            <!-- Stars Count (0 - 5) -->
+            <div>
+              <label data-i18n="adminStarsCount" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
+                Кількість зірок:
+              </label>
+              <select id="admin-input-stars" class="modern-select">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+
+            <!-- Difficulty -->
+            <div>
+              <label data-i18n="adminDifficulty" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
+                Складність:
+              </label>
+              <select id="admin-input-difficulty" class="modern-select">
+                <option value="">(Не вказано)</option>
+                <option value="easy">Easy (Легко)</option>
+                <option value="normal">Normal (Нормально)</option>
+                <option value="hard">Hard (Складно)</option>
+                <option value="hardcore">Hardcore (Хардкор)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Star Types Selector Row -->
+          <div style="margin-bottom: 14px; background: rgba(0, 0, 0, 0.2); padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06);">
+            <label data-i18n="adminStarTypes" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 6px;">
+              Типи зірок (клік для перемикання: Пуста / Золото / Діамант):
+            </label>
+            <div id="admin-star-types-selector" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <!-- 5 interactive star buttons -->
+            </div>
+          </div>
+
+          <!-- Dedicated Hardcore Mode Card: Full width, never cut off -->
+          <div class="admin-hardcore-toggle-card" style="margin-bottom: 16px;">
+            <label for="admin-input-is-hardcore" class="admin-hardcore-label-wrapper">
+              <div class="admin-hardcore-info">
+                <span class="admin-hardcore-icon">💀</span>
+                <div>
+                  <div class="admin-hardcore-title">
+                    <span data-i18n="adminHardcorePassed">Пройдено в Hardcore</span>
+                  </div>
+                  <div class="admin-hardcore-desc">
+                    Позначає, що рівень було пройдено без права на помилку (1 промах = програш)
+                  </div>
+                </div>
+              </div>
+              <div class="admin-hardcore-checkbox-wrap">
+                <input type="checkbox" id="admin-input-is-hardcore" class="admin-hardcore-checkbox">
+              </div>
+            </label>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+            <button type="button" id="admin-btn-reset-score" class="modern-btn modern-btn-warning">
+              <span class="btn-icon-reset"></span>
+              <span data-i18n="adminResetScore">Скинути до 0</span>
+            </button>
+            <button type="button" id="admin-btn-save-score" class="modern-btn modern-btn-primary">
+              <span class="btn-icon-save"></span>
+              <span data-i18n="adminSaveScore">Зберегти результат</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Player Coins Balance Management Card -->
         <div id="admin-coins-editor-card" class="admin-card" style="margin-bottom: 16px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.07), rgba(15, 23, 42, 0.6)); border: 1px solid rgba(245, 158, 11, 0.3);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 1.25rem;">🪙</span>
               <div>
-                <h4 data-i18n="adminCoinsManagement" class="admin-card-title" style="margin: 0; color: #fde047; font-size: 0.96rem;">Керування монетами гравця</h4>
+                <h4 data-i18n="adminCoinsManagement" class="admin-card-title" style="margin: 0; color: #fde047; font-size: 0.96rem;">3. Керування монетами гравця</h4>
                 <div id="admin-coins-player-name" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 1px;">(Оберіть гравця вище)</div>
               </div>
             </div>
@@ -557,100 +670,12 @@
           </div>
         </div>
 
-        <!-- Editor Card for Selected Player & Level -->
-        <div id="admin-score-editor-card" class="admin-card" style="margin-bottom: 18px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--surface-border); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-            <div>
-              <h4 id="admin-edit-player-title" data-i18n="adminEditScoreTitle" class="admin-card-title">
-                Редагування результату
-              </h4>
-              <div id="admin-edit-player-subtitle" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
-                Оберіть рівень та гравця для налаштування результату
-              </div>
-            </div>
-            <div id="admin-edit-status-badge"></div>
-          </div>
-
-          <!-- Edit Form Fields -->
-          <div class="admin-grid-3col" style="margin-bottom: 14px;">
-            <!-- Score -->
-            <div>
-              <label style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">
-                <span data-i18n="score">Рахунок</span>:
-              </label>
-              <input type="number" id="admin-input-score" class="modern-input" min="0" max="10000000" placeholder="0">
-            </div>
-
-            <!-- Stars Count (0 - 5) -->
-            <div>
-              <label data-i18n="adminStarsCount" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">
-                Зірки:
-              </label>
-              <select id="admin-input-stars" class="modern-select">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-
-            <!-- Difficulty -->
-            <div>
-              <label data-i18n="adminDifficulty" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;">
-                Складність:
-              </label>
-              <select id="admin-input-difficulty" class="modern-select">
-                <option value="">(Не вказано)</option>
-                <option value="easy">Easy (Легко)</option>
-                <option value="normal">Normal (Нормально)</option>
-                <option value="hard">Hard (Складно)</option>
-                <option value="hardcore">Hardcore (Хардкор)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Row 2: Star Types (Gold vs Diamond) & Hardcore switch -->
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 16px; align-items: center;">
-            <div>
-              <label data-i18n="adminStarTypes" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
-                Типи зірок (клік для перемикання: Пуста / Золото / Діамант):
-              </label>
-              <div id="admin-star-types-selector" style="display: flex; gap: 6px;">
-                <!-- 5 interactive star buttons -->
-              </div>
-            </div>
-            <div>
-              <label style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 4px;">
-                Hardcore:
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
-                <input type="checkbox" id="admin-input-is-hardcore" style="width: 16px; height: 16px; accent-color: #f43f5e; cursor: pointer;">
-                <span data-i18n="adminHardcorePassed" style="font-size: 0.82rem; color: #f43f5e; font-weight: 600;">Пройдено в Hardcore</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-            <button type="button" id="admin-btn-reset-score" class="modern-btn modern-btn-warning">
-              <span class="btn-icon-reset"></span>
-              <span data-i18n="adminResetScore">Скинути до 0</span>
-            </button>
-            <button type="button" id="admin-btn-save-score" class="modern-btn modern-btn-primary">
-              <span class="btn-icon-save"></span>
-              <span data-i18n="adminSaveScore">Зберегти результат</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Level Player Leaderboard Table (Live view of all players on this level) -->
+        <!-- Step 4: Level Player Leaderboard Table (Live view of all players on this level) -->
         <div class="admin-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h3 data-i18n="adminLevelPlayersTitle" class="admin-card-title">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <h3 data-i18n="adminLevelPlayersTitle" class="admin-card-title" style="margin: 0; font-size: 0.96rem; display: flex; align-items: center; gap: 8px;">
               <span class="admin-lb-icon"></span>
-              <span>Результати всіх гравців на цьому рівні</span>
+              <span>4. Результати всіх гравців на цьому рівні</span>
             </h3>
             <button type="button" id="admin-refresh-scores-btn" class="modern-btn modern-btn-secondary">
               <span class="refresh-icon-container"></span>
@@ -658,8 +683,8 @@
             </button>
           </div>
 
-          <div style="max-height: 280px; overflow-y: auto; border-radius: 8px;">
-            <table class="lb-table" style="width: 100%; border-collapse: collapse;">
+          <div class="admin-table-scroll-wrapper" style="max-height: 280px; overflow-y: auto; overflow-x: auto; border-radius: 8px; width: 100%;">
+            <table class="lb-table" style="width: 100%; min-width: 520px; border-collapse: collapse;">
               <thead>
                 <tr>
                   <th width="8%">#</th>
@@ -1124,7 +1149,7 @@
   <div id="theme-preview-hud" class="theme-preview-hud hidden">
     <div class="preview-hud-content">
       <span class="preview-hud-pulse"></span>
-      <span class="preview-hud-title" data-i18n="previewBannerText">Тест-драйв теми • Грає Авто-бот</span>
+      <span class="preview-hud-title" data-i18n="previewBannerText">Тест-драйв • Авто-бот</span>
       <span id="preview-hud-timer" class="preview-hud-timer">20s</span>
     </div>
     <button type="button" id="btn-exit-theme-preview" class="preview-hud-exit-btn" data-i18n="previewExitBtn">Вийти</button>
@@ -1197,6 +1222,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=70.2"></script>
+  <script type="module" src="src/main.js?v=70.4"></script>
 </body>
 </html>

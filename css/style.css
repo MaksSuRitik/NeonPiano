@@ -7435,6 +7435,12 @@ body[data-theme=light] .admin-card-title {
   color: #0f172a;
 }
 
+.admin-grid-tracks {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 24px;
+}
+
 .admin-grid-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -7445,6 +7451,81 @@ body[data-theme=light] .admin-card-title {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
+}
+
+.admin-hardcore-toggle-card {
+  display: block;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.admin-hardcore-toggle-card:hover {
+  background: rgba(244, 63, 94, 0.14);
+  border-color: rgba(244, 63, 94, 0.55);
+}
+
+.admin-hardcore-label-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  margin: 0;
+}
+
+.admin-hardcore-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-hardcore-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.5));
+}
+
+.admin-hardcore-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f43f5e;
+  line-height: 1.2;
+}
+
+.admin-hardcore-desc {
+  font-size: 0.74rem;
+  color: var(--text-secondary, #94a3b8);
+  margin-top: 2px;
+  line-height: 1.25;
+}
+
+.admin-hardcore-checkbox-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.admin-hardcore-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #f43f5e;
+  cursor: pointer;
+}
+
+.admin-table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-action-btn,
@@ -7625,22 +7706,42 @@ body[data-theme=light] .admin-track-item-title {
 /* Mobile Responsiveness for Admin & Settings */
 @media (max-width: 768px) {
   .admin-modal-content {
-    width: 96vw !important;
+    width: 95vw !important;
+    max-width: 95vw !important;
     padding: 0 !important;
     max-height: 92vh !important;
     border-radius: 16px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
   .admin-modal-scroll-area {
-    padding: 16px 14px !important;
+    padding: 14px 12px 24px 12px !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
-  .admin-grid {
+  .admin-grid,
+  .admin-grid-tracks {
     grid-template-columns: 1fr !important;
-    gap: 16px !important;
+    gap: 14px !important;
   }
   .admin-grid-2col,
   .admin-grid-3col {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
+  }
+  .user-profile-admin-bar {
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+  .user-profile-admin-bar button {
+    width: 100% !important;
+    justify-content: center !important;
+    white-space: normal !important;
+    text-align: center !important;
+    min-height: 42px !important;
   }
   .settings-modal-card {
     width: 95vw !important;
@@ -8142,6 +8243,7 @@ body[data-theme=light] .profile-stat-box .stat-box-val {
   padding-top: 16px;
   border-top: 1px solid var(--surface-border);
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 /* =======================================================
@@ -9555,6 +9657,19 @@ body[data-theme=light] .filter-chip.active {
   .stat-box-lbl {
     font-size: 0.7rem !important;
   }
+  .user-profile-admin-bar {
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+  .user-profile-admin-bar button {
+    width: 100% !important;
+    justify-content: center !important;
+    white-space: normal !important;
+    text-align: center !important;
+    min-height: 42px !important;
+  }
 
   /* Friends Modal on Mobile */
   .friends-modal-card {
@@ -9601,27 +9716,50 @@ body[data-theme=light] .filter-chip.active {
 
   /* Admin Modal on Mobile */
   .admin-modal-content {
-    width: 96vw !important;
-    padding: 14px 10px !important;
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 0 !important;
     max-height: 92vh !important;
     border-radius: 16px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .admin-modal-scroll-area {
+    padding: 12px 10px 24px 10px !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .admin-sticky-header {
+    padding: 12px 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .admin-tabs {
     flex-direction: row !important;
     gap: 6px !important;
     overflow-x: auto !important;
     scrollbar-width: none !important;
+    width: 100% !important;
   }
   .admin-tab-btn {
     padding: 8px 12px !important;
     font-size: 0.82rem !important;
     white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
   .admin-grid,
+  .admin-grid-tracks,
   .admin-grid-2col,
   .admin-grid-3col {
     grid-template-columns: 1fr !important;
-    gap: 10px !important;
+    gap: 12px !important;
+  }
+  .admin-card {
+    padding: 14px 10px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   /* Settings Modal on Mobile - Fixed Scrolling & Safe Area for Android Bottom Bar */
@@ -11392,6 +11530,7 @@ body[data-theme="light"] .cust-main-tab.active {
   font-weight: 700;
   color: #f8fafc;
   letter-spacing: 0.3px;
+  white-space: nowrap !important;
 }
 
 .preview-hud-timer {

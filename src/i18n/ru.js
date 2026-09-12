@@ -451,7 +451,7 @@ export default {
   previewThemeModalTitle: "Тест-драйв темы",
   previewThemeSelectSong: "Выберите трек для просмотра:",
   previewStartBtn: "Начать тест-драйв (20 сек)",
-  previewBannerText: "Тест-драйв темы • Играет Авто-бот",
+  previewBannerText: "Тест-драйв • Авто-бот",
   previewExitBtn: "Выйти",
   previewCompletedToast: "Тест-драйв темы завершён",
   allThemesOwnedMsg: "Все темы уже куплены! Вы можете выбрать их во вкладке «Кастомизация».",

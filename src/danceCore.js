@@ -52,7 +52,7 @@ import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB }
 import { addTrackByUrl, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata } from "./services/admin.js?v=39.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=70.2";
+import * as FieldThemes from "./game/fieldThemes.js?v=70.4";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -368,6 +368,7 @@ let renderShop = () => {};
 let renderCustomizationModal = () => {};
 let openThemePreviewChooser = () => {};
 let startThemePreview = () => {};
+let startPreviewCountdown = () => {};
 let exitThemePreview = () => {};
 let openCustomizationModal = () => {};
 let closeCustomizationModal = () => {};
@@ -4160,6 +4161,9 @@ function updateRipples(dt) {
             State.animationFrameId = null;
         }
         State.animationFrameId = requestAnimationFrame(gameLoop);
+        if (State.isPreviewMode && typeof startPreviewCountdown === 'function') {
+            startPreviewCountdown();
+        }
     }
 
     function cleanLevelRemnants() {
@@ -4447,6 +4451,16 @@ function updateRipples(dt) {
         const botIndicator = document.getElementById('game-bot-indicator');
         if (botIndicator) botIndicator.classList.add('hidden');
         hideModBadges();
+
+        if (State.isPreviewMode) {
+            State.isPreviewMode = false;
+            FieldThemes.setPreviewThemeOverride(null);
+            applyActiveThemeVisuals();
+            if (State.previewTimerId) { clearTimeout(State.previewTimerId); State.previewTimerId = null; }
+            if (State.previewIntervalId) { clearInterval(State.previewIntervalId); State.previewIntervalId = null; }
+            const hudBanner = document.getElementById('theme-preview-hud');
+            if (hudBanner) hudBanner.classList.add('hidden');
+        }
 
         flushPlaytimeToCloud();
         if (bgMusicEl && !State.isMuted) bgMusicEl.play().catch(() => {});
@@ -9269,9 +9283,48 @@ function updateRipples(dt) {
             modal.classList.remove('hidden');
         };
 
-        startThemePreview = function(themeId, songIdx) {
+        startPreviewCountdown = function() {
+            if (!State.isPreviewMode) return;
             if (State.previewTimerId) clearTimeout(State.previewTimerId);
             if (State.previewIntervalId) clearInterval(State.previewIntervalId);
+
+            const hudBanner = document.getElementById('theme-preview-hud');
+            const timerEl = document.getElementById('preview-hud-timer');
+            if (hudBanner) hudBanner.classList.remove('hidden');
+
+            let secondsLeft = 20;
+            if (timerEl) timerEl.textContent = `${secondsLeft}s`;
+
+            State.previewIntervalId = setInterval(() => {
+                if (!State.isPreviewMode) {
+                    clearInterval(State.previewIntervalId);
+                    State.previewIntervalId = null;
+                    return;
+                }
+                secondsLeft--;
+                if (timerEl) timerEl.textContent = `${Math.max(0, secondsLeft)}s`;
+                if (secondsLeft <= 0) {
+                    clearInterval(State.previewIntervalId);
+                    State.previewIntervalId = null;
+                }
+            }, 1000);
+
+            State.previewTimerId = setTimeout(() => {
+                if (State.isPreviewMode) {
+                    exitThemePreview();
+                }
+            }, 20000);
+        };
+
+        startThemePreview = function(themeId, songIdx) {
+            if (State.previewTimerId) {
+                clearTimeout(State.previewTimerId);
+                State.previewTimerId = null;
+            }
+            if (State.previewIntervalId) {
+                clearInterval(State.previewIntervalId);
+                State.previewIntervalId = null;
+            }
 
             const previewModal = document.getElementById('theme-preview-modal');
             if (previewModal) previewModal.classList.add('hidden');
@@ -9286,28 +9339,11 @@ function updateRipples(dt) {
             applyActiveThemeVisuals();
             State.isBotEnabled = true;
 
+            const hudBanner = document.getElementById('theme-preview-hud');
+            if (hudBanner) hudBanner.classList.add('hidden');
+
             const sIdx = (typeof songIdx === 'number' && songIdx >= 0 && songIdx < songsDB.length) ? songIdx : 0;
             startGame(sIdx);
-
-            const hudBanner = document.getElementById('theme-preview-hud');
-            const timerEl = document.getElementById('preview-hud-timer');
-            if (hudBanner) hudBanner.classList.remove('hidden');
-
-            let secondsLeft = 20;
-            if (timerEl) timerEl.textContent = `${secondsLeft}s`;
-
-            State.previewIntervalId = setInterval(() => {
-                secondsLeft--;
-                if (timerEl) timerEl.textContent = `${Math.max(0, secondsLeft)}s`;
-                if (secondsLeft <= 0) {
-                    clearInterval(State.previewIntervalId);
-                    State.previewIntervalId = null;
-                }
-            }, 1000);
-
-            State.previewTimerId = setTimeout(() => {
-                exitThemePreview();
-            }, 20000);
         };
 
         exitThemePreview = function() {
@@ -9345,7 +9381,10 @@ function updateRipples(dt) {
                     openCustomizationModal();
                 }
             }
-        }
+        };
+
+        window.startThemePreview = startThemePreview;
+        window.exitThemePreview = exitThemePreview;
 
         const btnStartThemePreview = document.getElementById('btn-start-theme-preview');
         if (btnStartThemePreview) {
