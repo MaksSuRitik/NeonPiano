@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Neon Rhythm — Neon Piano</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="css/style.css?v=72.3">
+  <link rel="stylesheet" href="css/style.css?v=72.4">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
 </head>
 <body data-theme="dark">
@@ -393,7 +393,7 @@
       </div>
 
       <!-- Admin Navigation Tabs -->
-      <div class="admin-tabs" style="display: flex; gap: 10px; margin: 18px 0; border-bottom: 1px solid var(--surface-border); padding-bottom: 12px;">
+      <div class="admin-tabs" style="display: flex; gap: 10px; margin: 18px 0; border-bottom: 1px solid var(--surface-border); padding-bottom: 12px; flex-wrap: wrap;">
         <button type="button" id="admin-tab-btn-tracks" class="admin-tab-btn active">
           <span class="admin-tab-icon-tracks"></span>
           <span data-i18n="adminTabTracks">Фонотека треків</span>
@@ -401,6 +401,10 @@
         <button type="button" id="admin-tab-btn-scores" class="admin-tab-btn">
           <span class="admin-tab-icon-scores"></span>
           <span data-i18n="adminTabScores">Результати гравців</span>
+        </button>
+        <button type="button" id="admin-tab-btn-themes" class="admin-tab-btn">
+          <span class="admin-tab-icon-themes"></span>
+          <span data-i18n="adminTabThemes">Керування темами</span>
         </button>
       </div>
 
@@ -716,6 +720,33 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Theme Customization & Discounts Editor -->
+      <div id="admin-tab-themes-view" class="admin-themes-view hidden">
+        <div class="admin-card" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--surface-border); padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.25rem;">🎨</span>
+              <div>
+                <h4 data-i18n="adminThemesTitle" class="admin-card-title" style="margin: 0; font-size: 0.96rem;">Керування темами оформлення</h4>
+                <div data-i18n="adminThemesSubtitle" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                  Редагування назв, цін, описів та налаштування знижок для магазину
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="admin-btn-save-all-themes" class="modern-btn modern-btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; padding: 8px 16px;">
+                <span class="btn-icon-save-all-themes">💾</span>
+                <span data-i18n="adminThemeSaveAllBtn">Зберегти всі теми</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-themes-list" class="admin-themes-grid">
+          <!-- Populated dynamically -->
         </div>
       </div>
 
@@ -1346,6 +1377,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=72.3"></script>
+  <script type="module" src="src/main.js?v=72.4"></script>
 </body>
 </html>

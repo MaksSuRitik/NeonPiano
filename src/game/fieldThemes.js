@@ -11,7 +11,7 @@ import {
   IUNO_THEME,
   HADO99_THEME,
   getThemeById 
-} from "./themes/index.js?v=72.3";
+} from "./themes/index.js?v=72.4";
 
 export { 
   FIELD_THEMES, 
@@ -23,6 +23,84 @@ export {
   HADO99_THEME,
   getThemeById 
 };
+
+export const THEME_DEFAULTS = new Map();
+FIELD_THEMES.forEach(t => {
+  THEME_DEFAULTS.set(t.id, {
+    price: t.price,
+    nameKey: t.nameKey,
+    descKey: t.descKey,
+    badgeKey: t.badgeKey
+  });
+});
+
+/**
+ * Applies admin overrides (custom titles, prices, descriptions, discounts) to in-memory FIELD_THEMES.
+ */
+export function applyThemeOverrides(overrides = {}) {
+  if (!overrides || typeof overrides !== 'object') return;
+  FIELD_THEMES.forEach(theme => {
+    const ov = overrides[theme.id];
+    const def = THEME_DEFAULTS.get(theme.id) || { price: theme.price };
+
+    if (ov && typeof ov === 'object') {
+      theme.customName = (typeof ov.customName === 'string' && ov.customName.trim()) ? ov.customName.trim() : null;
+      theme.customDesc = (typeof ov.customDesc === 'string' && ov.customDesc.trim()) ? ov.customDesc.trim() : null;
+      
+      const parsedPrice = parseInt(ov.price, 10);
+      theme.price = (!isNaN(parsedPrice) && parsedPrice >= 0) ? parsedPrice : def.price;
+      
+      const discActive = Boolean(ov.isDiscountActive);
+      const discPct = Math.max(0, Math.min(99, parseInt(ov.discountPercent, 10) || 0));
+      const parsedDiscPrice = parseInt(ov.discountPrice, 10);
+      const discPrice = (!isNaN(parsedDiscPrice) && parsedDiscPrice >= 0 && parsedDiscPrice < theme.price)
+        ? parsedDiscPrice
+        : (discPct > 0 ? Math.max(0, Math.round(theme.price * (1 - discPct / 100))) : null);
+
+      theme.isDiscountActive = discActive && (discPct > 0 || discPrice !== null);
+      theme.discountPercent = discPct || (discPrice !== null && theme.price > 0 ? Math.round((1 - discPrice / theme.price) * 100) : 0);
+      theme.discountPrice = discPrice;
+      theme.effectivePrice = theme.isDiscountActive && discPrice !== null ? discPrice : theme.price;
+    } else {
+      theme.customName = null;
+      theme.customDesc = null;
+      theme.price = def.price;
+      theme.isDiscountActive = false;
+      theme.discountPercent = 0;
+      theme.discountPrice = null;
+      theme.effectivePrice = def.price;
+    }
+  });
+}
+
+/**
+ * Gets effective price of a theme (accounting for active discounts).
+ */
+export function getThemeEffectivePrice(theme) {
+  if (!theme) return 0;
+  if (theme.isDiscountActive && typeof theme.effectivePrice === 'number') {
+    return theme.effectivePrice;
+  }
+  return typeof theme.price === 'number' ? theme.price : 0;
+}
+
+/**
+ * Loads cached theme overrides from localStorage immediately on startup.
+ */
+export function loadCachedThemeOverrides() {
+  try {
+    const raw = localStorage.getItem('neon_theme_overrides');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      applyThemeOverrides(parsed);
+    }
+  } catch (e) {
+    console.warn("Error loading cached theme overrides:", e);
+  }
+}
+
+// Immediately load cached overrides on script evaluation
+loadCachedThemeOverrides();
 
 /**
  * Calculates total coins earned from all levels in songsDB.
@@ -188,12 +266,14 @@ export function purchaseTheme(themeId, songsDB = []) {
   const unlocked = getUnlockedThemes();
   if (unlocked.includes(themeId)) return { success: true, alreadyOwned: true };
 
+  const finalPrice = getThemeEffectivePrice(theme);
+
   const { balance, spent } = getCoinsData(songsDB);
-  if (balance < theme.price) {
+  if (balance < finalPrice) {
     throw new Error("Недостатньо монет");
   }
 
-  const newSpent = spent + theme.price;
+  const newSpent = spent + finalPrice;
   localStorage.setItem('neon_spent_coins', String(newSpent));
 
   const newUnlocked = [...unlocked, themeId];
@@ -203,8 +283,9 @@ export function purchaseTheme(themeId, songsDB = []) {
   return { 
     success: true, 
     alreadyOwned: false, 
-    newBalance: Math.max(0, balance - theme.price),
-    unlockedThemes: newUnlocked
+    newBalance: Math.max(0, balance - finalPrice),
+    unlockedThemes: newUnlocked,
+    paidPrice: finalPrice
   };
 }
 

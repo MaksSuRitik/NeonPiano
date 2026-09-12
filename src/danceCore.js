@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=72.3";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=72.4";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=72.3";
+import * as FieldThemes from "./game/fieldThemes.js?v=72.4";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -6525,15 +6525,15 @@ function updateRipples(dt) {
                     }
 
                     item.innerHTML = `
-                        <div class="admin-track-item-info" style="flex: 1; min-width: 0; padding-right: 10px; cursor: pointer;" title="${getText('adminEditTrack') || 'Редагувати / Замінити аудіо'}">
-                            <div class="admin-track-item-title">
+                        <div class="admin-track-item-info" style="flex: 1 1 0; min-width: 0; padding-right: 8px; cursor: pointer; overflow: hidden;" title="${getText('adminEditTrack') || 'Редагувати / Замінити аудіо'}">
+                            <div class="admin-track-item-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
                                 ${escapeHtml(track.title)} ${badge}
                             </div>
-                            <div class="admin-track-item-meta">
+                            <div class="admin-track-item-meta" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
                                 ${escapeHtml(track.artist)} • ${track.duration || 0} ${getText('secondsShort') || 'сек.'}
                             </div>
                         </div>
-                        <div style="display: flex; gap: 6px; align-items: center;">
+                        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
                             <button class="nav-btn admin-btn-secondary admin-btn-sm btn-edit-track" title="${getText('adminEditTrack') || 'Редагувати / Замінити аудіо'}">
                                 ${icons.edit(14)}
                             </button>
@@ -6839,8 +6839,12 @@ function updateRipples(dt) {
         // ==========================================
         const adminTabBtnTracks = document.getElementById('admin-tab-btn-tracks');
         const adminTabBtnScores = document.getElementById('admin-tab-btn-scores');
+        const adminTabBtnThemes = document.getElementById('admin-tab-btn-themes');
         const adminTabTracksView = document.getElementById('admin-tab-tracks-view');
         const adminTabScoresView = document.getElementById('admin-tab-scores-view');
+        const adminTabThemesView = document.getElementById('admin-tab-themes-view');
+        const adminThemesList = document.getElementById('admin-themes-list');
+        const adminBtnSaveAllThemes = document.getElementById('admin-btn-save-all-themes');
 
         const adminSelectLevel = document.getElementById('admin-select-level');
         const adminPlayerSearch = document.getElementById('admin-player-search');
@@ -6873,6 +6877,8 @@ function updateRipples(dt) {
         if (tabIconTracks) tabIconTracks.innerHTML = icons.music(16);
         const tabIconScores = document.querySelector('.admin-tab-icon-scores');
         if (tabIconScores) tabIconScores.innerHTML = icons.users(16);
+        const tabIconThemes = document.querySelector('.admin-tab-icon-themes');
+        if (tabIconThemes) tabIconThemes.innerHTML = icons.palette ? icons.palette(16) : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>`;
         const btnIconTrash = document.querySelector('.btn-icon-trash');
         if (btnIconTrash) btnIconTrash.innerHTML = icons.trash(14);
         const btnIconTrashPlayer = document.querySelector('.btn-icon-trash-player');
@@ -6890,22 +6896,24 @@ function updateRipples(dt) {
         // Перемикання вкладок в адмінці
         function switchAdminTab(tab) {
             playClick();
-            if (tab === 'tracks') {
-                adminTabBtnTracks?.classList.add('active');
-                adminTabBtnScores?.classList.remove('active');
-                adminTabTracksView?.classList.remove('hidden');
-                adminTabScoresView?.classList.add('hidden');
-            } else {
-                adminTabBtnScores?.classList.add('active');
-                adminTabBtnTracks?.classList.remove('active');
-                adminTabScoresView?.classList.remove('hidden');
-                adminTabTracksView?.classList.add('hidden');
+            adminTabBtnTracks?.classList.toggle('active', tab === 'tracks');
+            adminTabBtnScores?.classList.toggle('active', tab === 'scores');
+            adminTabBtnThemes?.classList.toggle('active', tab === 'themes');
+
+            adminTabTracksView?.classList.toggle('hidden', tab !== 'tracks');
+            adminTabScoresView?.classList.toggle('hidden', tab !== 'scores');
+            adminTabThemesView?.classList.toggle('hidden', tab !== 'themes');
+
+            if (tab === 'scores') {
                 initAdminScoresView();
+            } else if (tab === 'themes') {
+                initAdminThemesView();
             }
         }
 
         if (adminTabBtnTracks) adminTabBtnTracks.onclick = () => switchAdminTab('tracks');
         if (adminTabBtnScores) adminTabBtnScores.onclick = () => switchAdminTab('scores');
+        if (adminTabBtnThemes) adminTabBtnThemes.onclick = () => switchAdminTab('themes');
 
         // Отримання повного списку гравців з Firestore
         async function fetchAllAdminPlayers() {
@@ -7773,6 +7781,293 @@ function updateRipples(dt) {
                     row.classList.remove('selected');
                 }
             });
+        }
+
+        // ==========================================
+        // Керування темами оформлення (Theme Management Admin Editor)
+        // ==========================================
+        async function initAdminThemesView() {
+            if (!adminThemesList) return;
+            adminThemesList.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 25px; color: var(--text-color); opacity: 0.7;">${getText('lbLoading') || 'Завантаження тем...'}</div>`;
+
+            let currentSettings = {};
+            try {
+                currentSettings = await getThemeSettings();
+                if (currentSettings && typeof currentSettings === 'object') {
+                    FieldThemes.applyThemeOverrides(currentSettings);
+                }
+            } catch (e) {
+                console.warn("Error fetching theme settings:", e);
+            }
+
+            adminThemesList.innerHTML = '';
+
+            FieldThemes.FIELD_THEMES.forEach(theme => {
+                const def = FieldThemes.THEME_DEFAULTS.get(theme.id) || {
+                    price: theme.price,
+                    nameKey: theme.nameKey,
+                    descKey: theme.descKey,
+                    badgeKey: theme.badgeKey
+                };
+
+                const defaultName = getText(def.nameKey) || theme.id;
+                const defaultDesc = getText(def.descKey) || '';
+                const currentName = theme.customName || '';
+                const currentPrice = (typeof theme.price === 'number') ? theme.price : def.price;
+                const currentDesc = theme.customDesc || '';
+                const isDiscount = Boolean(theme.isDiscountActive);
+                const discountPct = theme.discountPercent || 0;
+                const discountPrice = (typeof theme.discountPrice === 'number') ? theme.discountPrice : (discountPct > 0 ? Math.max(0, Math.round(currentPrice * (1 - discountPct / 100))) : '');
+
+                const card = document.createElement('div');
+                card.className = 'admin-theme-card';
+                card.dataset.themeId = theme.id;
+
+                const accentColor = theme.accentColor || '#38bdf8';
+
+                card.innerHTML = `
+                    <div class="admin-theme-accent-strip" style="background: ${accentColor}; box-shadow: 0 0 8px ${accentColor};"></div>
+                    <div class="admin-theme-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${accentColor};"></span>
+                            <strong style="font-size: 0.98rem; color: var(--text-primary);">${escapeHtml(defaultName)}</strong>
+                        </div>
+                        <span class="admin-theme-id-tag">id: ${escapeHtml(theme.id)}</span>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--highlight); display: block; margin-bottom: 4px;">
+                            ${getText('adminThemeName') || 'Назва теми:'}
+                        </label>
+                        <input type="text" class="modern-input theme-input-name" placeholder="${escapeHtml(defaultName)}" value="${escapeHtml(currentName)}" style="margin: 0 !important; width: 100%;">
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--highlight); display: block; margin-bottom: 4px;">
+                            ${getText('adminThemePrice') || 'Ціна (🪙):'}
+                        </label>
+                        <input type="number" class="modern-input theme-input-price" min="0" max="99999" placeholder="${def.price}" value="${currentPrice}" style="margin: 0 !important; width: 100%;">
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--highlight); display: block; margin-bottom: 4px;">
+                            ${getText('adminThemeDesc') || 'Опис теми:'}
+                        </label>
+                        <textarea class="modern-input theme-input-desc" rows="3" placeholder="${escapeHtml(defaultDesc)}" style="margin: 0 !important; width: 100%; resize: vertical; min-height: 60px;">${escapeHtml(currentDesc)}</textarea>
+                    </div>
+
+                    <!-- Discount Section -->
+                    <div class="admin-theme-discount-box">
+                        <label class="admin-discount-toggle-label">
+                            <input type="checkbox" class="theme-check-discount" ${isDiscount ? 'checked' : ''} style="width: 17px; height: 17px; accent-color: #f59e0b; cursor: pointer;">
+                            <span>${getText('adminThemeDiscountActive') || 'Активувати знижку'}</span>
+                        </label>
+
+                        <div class="discount-inputs-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; ${isDiscount ? '' : 'opacity: 0.45; pointer-events: none;'}">
+                            <div>
+                                <label style="font-size: 0.74rem; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 2px;">
+                                    ${getText('adminThemeDiscountPercent') || 'Знижка (%):'}
+                                </label>
+                                <input type="number" class="modern-input theme-input-disc-pct" min="1" max="99" placeholder="0" value="${discountPct || ''}" style="margin: 0 !important; padding: 6px 8px; font-size: 0.82rem;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.74rem; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 2px;">
+                                    ${getText('adminThemeDiscountPrice') || 'Ціна зі знижкою (🪙):'}
+                                </label>
+                                <input type="number" class="modern-input theme-input-disc-price" min="0" max="99999" placeholder="0" value="${discountPrice !== '' ? discountPrice : ''}" style="margin: 0 !important; padding: 6px 8px; font-size: 0.82rem;">
+                            </div>
+                        </div>
+
+                        <div class="theme-discount-preview-row" style="margin-top: 4px;">
+                            <span class="admin-discount-preview-tag">
+                                <span style="color: #94a3b8; font-size: 0.76rem;">${getText('adminThemeDiscountPreview') || 'Ціна в магазині:'}</span>
+                                <span class="theme-preview-price-display" style="font-weight: 700;"></span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Card Action Buttons -->
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                        <button type="button" class="modern-btn modern-btn-secondary btn-reset-single-theme" style="padding: 6px 12px; font-size: 0.78rem;">
+                            ${getText('adminThemeResetBtn') || 'Скинути'}
+                        </button>
+                        <button type="button" class="modern-btn modern-btn-primary btn-save-single-theme" style="padding: 6px 14px; font-size: 0.78rem;">
+                            ${getText('adminThemeSaveBtn') || 'Зберегти'}
+                        </button>
+                    </div>
+                `;
+
+                // Wire up auto-calculation and preview
+                const inputName = card.querySelector('.theme-input-name');
+                const inputPrice = card.querySelector('.theme-input-price');
+                const inputDesc = card.querySelector('.theme-input-desc');
+                const checkDisc = card.querySelector('.theme-check-discount');
+                const discInputsRow = card.querySelector('.discount-inputs-row');
+                const inputDiscPct = card.querySelector('.theme-input-disc-pct');
+                const inputDiscPrice = card.querySelector('.theme-input-disc-price');
+                const previewDisplay = card.querySelector('.theme-preview-price-display');
+
+                function updatePreview() {
+                    const basePrice = Math.max(0, parseInt(inputPrice.value, 10) || 0);
+                    const isDiscActive = checkDisc.checked;
+                    const pctVal = Math.max(0, Math.min(99, parseInt(inputDiscPct.value, 10) || 0));
+                    const priceVal = parseInt(inputDiscPrice.value, 10);
+
+                    if (isDiscActive) {
+                        discInputsRow.style.opacity = '1';
+                        discInputsRow.style.pointerEvents = 'auto';
+                        let finalDiscPrice = basePrice;
+                        if (!isNaN(priceVal) && priceVal >= 0 && priceVal < basePrice) {
+                            finalDiscPrice = priceVal;
+                        } else if (pctVal > 0) {
+                            finalDiscPrice = Math.max(0, Math.round(basePrice * (1 - pctVal / 100)));
+                        }
+                        const calcPct = basePrice > 0 ? Math.round((1 - finalDiscPrice / basePrice) * 100) : 0;
+                        previewDisplay.innerHTML = `<span style="text-decoration:line-through; opacity:0.5; margin-right:4px;">${basePrice}</span> <span style="color:#4ade80;">${finalDiscPrice} 🪙</span> <span style="color:#ef4444; font-size:0.75rem;">(-${calcPct}%)</span>`;
+                    } else {
+                        discInputsRow.style.opacity = '0.45';
+                        discInputsRow.style.pointerEvents = 'none';
+                        previewDisplay.innerHTML = `<span style="color:#fde047;">${basePrice} 🪙</span>`;
+                    }
+                }
+
+                checkDisc.onchange = () => {
+                    playClick();
+                    if (checkDisc.checked && !inputDiscPct.value && !inputDiscPrice.value) {
+                        inputDiscPct.value = '20';
+                        const p = parseInt(inputPrice.value, 10) || def.price;
+                        inputDiscPrice.value = Math.max(0, Math.round(p * 0.8));
+                    }
+                    updatePreview();
+                };
+
+                inputPrice.oninput = () => {
+                    if (checkDisc.checked && inputDiscPct.value) {
+                        const p = parseInt(inputPrice.value, 10) || 0;
+                        const pct = parseInt(inputDiscPct.value, 10) || 0;
+                        inputDiscPrice.value = Math.max(0, Math.round(p * (1 - pct / 100)));
+                    }
+                    updatePreview();
+                };
+
+                inputDiscPct.oninput = () => {
+                    const p = parseInt(inputPrice.value, 10) || 0;
+                    const pct = Math.max(0, Math.min(99, parseInt(inputDiscPct.value, 10) || 0));
+                    if (p > 0 && pct > 0) {
+                        inputDiscPrice.value = Math.max(0, Math.round(p * (1 - pct / 100)));
+                    }
+                    updatePreview();
+                };
+
+                inputDiscPrice.oninput = () => {
+                    const p = parseInt(inputPrice.value, 10) || 0;
+                    const dp = parseInt(inputDiscPrice.value, 10);
+                    if (p > 0 && !isNaN(dp) && dp >= 0 && dp <= p) {
+                        inputDiscPct.value = Math.max(0, Math.min(99, Math.round((1 - dp / p) * 100)));
+                    }
+                    updatePreview();
+                };
+
+                updatePreview();
+
+                // Reset button
+                const btnReset = card.querySelector('.btn-reset-single-theme');
+                btnReset.onclick = async () => {
+                    playClick();
+                    inputName.value = '';
+                    inputPrice.value = def.price;
+                    inputDesc.value = '';
+                    checkDisc.checked = false;
+                    inputDiscPct.value = '';
+                    inputDiscPrice.value = '';
+                    updatePreview();
+
+                    const allOverrides = collectAllThemeOverridesFromDOM();
+                    await saveThemeSettings(allOverrides);
+                    FieldThemes.applyThemeOverrides(allOverrides);
+                    showNotification(getText('adminThemeSavedSuccess') || 'Налаштування теми скинуто до стандартних!');
+                    if (typeof renderShop === 'function') renderShop();
+                    if (typeof renderCustomizationModal === 'function') renderCustomizationModal();
+                };
+
+                // Save single theme button
+                const btnSave = card.querySelector('.btn-save-single-theme');
+                btnSave.onclick = async () => {
+                    playClick();
+                    btnSave.disabled = true;
+                    btnSave.innerText = '...';
+                    try {
+                        const allOverrides = collectAllThemeOverridesFromDOM();
+                        await saveThemeSettings(allOverrides);
+                        FieldThemes.applyThemeOverrides(allOverrides);
+                        showNotification(getText('adminThemeSavedSuccess') || 'Налаштування теми збережено!');
+                        if (typeof renderShop === 'function') renderShop();
+                        if (typeof renderCustomizationModal === 'function') renderCustomizationModal();
+                    } catch (err) {
+                        alert("Помилка збереження: " + err.message);
+                    } finally {
+                        btnSave.disabled = false;
+                        btnSave.innerText = getText('adminThemeSaveBtn') || 'Зберегти';
+                    }
+                };
+
+                adminThemesList.appendChild(card);
+            });
+        }
+
+        function collectAllThemeOverridesFromDOM() {
+            const overrides = {};
+            if (!adminThemesList) return overrides;
+            adminThemesList.querySelectorAll('.admin-theme-card').forEach(card => {
+                const themeId = card.dataset.themeId;
+                if (!themeId) return;
+
+                const inputName = card.querySelector('.theme-input-name');
+                const inputPrice = card.querySelector('.theme-input-price');
+                const inputDesc = card.querySelector('.theme-input-desc');
+                const checkDisc = card.querySelector('.theme-check-discount');
+                const inputDiscPct = card.querySelector('.theme-input-disc-pct');
+                const inputDiscPrice = card.querySelector('.theme-input-disc-price');
+
+                const customName = inputName?.value.trim() || null;
+                const price = parseInt(inputPrice?.value, 10);
+                const customDesc = inputDesc?.value.trim() || null;
+                const isDiscountActive = Boolean(checkDisc?.checked);
+                const discountPercent = Math.max(0, Math.min(99, parseInt(inputDiscPct?.value, 10) || 0));
+                const parsedDiscPrice = parseInt(inputDiscPrice?.value, 10);
+                const discountPrice = (!isNaN(parsedDiscPrice) && parsedDiscPrice >= 0) ? parsedDiscPrice : null;
+
+                overrides[themeId] = {
+                    customName,
+                    price: (!isNaN(price) && price >= 0) ? price : 0,
+                    customDesc,
+                    isDiscountActive,
+                    discountPercent,
+                    discountPrice
+                };
+            });
+            return overrides;
+        }
+
+        if (adminBtnSaveAllThemes) {
+            adminBtnSaveAllThemes.onclick = async () => {
+                playClick();
+                adminBtnSaveAllThemes.disabled = true;
+                adminBtnSaveAllThemes.innerHTML = '<span>💾</span> <span>Збереження...</span>';
+                try {
+                    const allOverrides = collectAllThemeOverridesFromDOM();
+                    await saveThemeSettings(allOverrides);
+                    FieldThemes.applyThemeOverrides(allOverrides);
+                    showNotification(getText('adminThemeSavedSuccess') || 'Всі теми успішно збережено!');
+                    if (typeof renderShop === 'function') renderShop();
+                    if (typeof renderCustomizationModal === 'function') renderCustomizationModal();
+                } catch (err) {
+                    alert("Помилка збереження тем: " + err.message);
+                } finally {
+                    adminBtnSaveAllThemes.disabled = false;
+                    adminBtnSaveAllThemes.innerHTML = `<span>💾</span> <span data-i18n="adminThemeSaveAllBtn">${getText('adminThemeSaveAllBtn') || 'Зберегти всі теми'}</span>`;
+                }
+            };
         }
 
         // ==========================================
@@ -9409,18 +9704,18 @@ function updateRipples(dt) {
             // 1. Фільтрація за пошуковим запитом
             if (shopSearchQuery) {
                 themes = themes.filter(theme => {
-                    const name = (getText(theme.nameKey) || theme.id).toLowerCase();
-                    const desc = (getText(theme.descKey) || '').toLowerCase();
+                    const name = (theme.customName || getText(theme.nameKey) || theme.id).toLowerCase();
+                    const desc = (theme.customDesc || getText(theme.descKey) || '').toLowerCase();
                     const badge = (getText(theme.badgeKey) || '').toLowerCase();
                     return name.includes(shopSearchQuery) || desc.includes(shopSearchQuery) || badge.includes(shopSearchQuery);
                 });
             }
 
-            // 2. Сортування за ціною
+            // 2. Сортування за ціною (з урахуванням діючих знижок)
             if (shopSortMode === 'priceAsc') {
-                themes.sort((a, b) => a.price - b.price);
+                themes.sort((a, b) => FieldThemes.getThemeEffectivePrice(a) - FieldThemes.getThemeEffectivePrice(b));
             } else if (shopSortMode === 'priceDesc') {
-                themes.sort((a, b) => b.price - a.price);
+                themes.sort((a, b) => FieldThemes.getThemeEffectivePrice(b) - FieldThemes.getThemeEffectivePrice(a));
             }
 
             // 3. Показ сповіщення, якщо за пошуком нічого не знайдено
@@ -9429,8 +9724,8 @@ function updateRipples(dt) {
             }
 
             grid.innerHTML = themes.map(theme => {
-                const name = getText(theme.nameKey) || theme.id;
-                const desc = getText(theme.descKey) || '';
+                const name = theme.customName || getText(theme.nameKey) || theme.id;
+                const desc = theme.customDesc || getText(theme.descKey) || '';
                 const badge = getText(theme.badgeKey) || '';
 
                 let previewContent = '';
@@ -9449,14 +9744,30 @@ function updateRipples(dt) {
                     `;
                 }
 
-                const buyText = (getText('shopBuy') || 'Купити за {price} 🪙').replace('{price}', theme.price);
-                const priceDisplay = `<span class="theme-card-price">${icons.coin(16)} ${theme.price}</span>`;
+                const isDiscount = Boolean(theme.isDiscountActive && typeof theme.effectivePrice === 'number' && theme.effectivePrice < theme.price);
+                const finalPrice = isDiscount ? theme.effectivePrice : theme.price;
+
+                let priceDisplay = '';
+                let discountBadge = '';
+                if (isDiscount) {
+                    priceDisplay = `
+                        <span class="theme-card-price theme-price-discounted">
+                            <span class="theme-price-original"><s>${theme.price}</s></span>
+                            ${icons.coin(16)} ${finalPrice}
+                        </span>
+                    `;
+                    discountBadge = `<div class="theme-card-badge theme-badge-sale">🔥 -${theme.discountPercent}%</div>`;
+                } else {
+                    priceDisplay = `<span class="theme-card-price">${icons.coin(16)} ${finalPrice}</span>`;
+                }
+
+                const buyText = (getText('shopBuy') || 'Купити за {price} 🪙').replace('{price}', finalPrice);
 
                 return `
                     <div class="shop-theme-card" data-card-theme-id="${theme.id}">
                         <div class="theme-card-preview">
                             ${previewContent}
-                            ${badge ? `<div class="theme-card-badge">${badge}</div>` : ''}
+                            ${discountBadge ? discountBadge : (badge ? `<div class="theme-card-badge">${badge}</div>` : '')}
                         </div>
                         <div class="theme-card-body">
                             <div class="theme-card-title">
@@ -9469,7 +9780,7 @@ function updateRipples(dt) {
                                     <button type="button" class="theme-action-btn btn-theme-preview" data-preview-theme="${theme.id}">
                                         ${getText('previewThemeBtn') || 'Опробувати'}
                                     </button>
-                                    <button type="button" class="theme-action-btn btn-theme-buy" data-buy-theme="${theme.id}" data-price="${theme.price}">
+                                    <button type="button" class="theme-action-btn btn-theme-buy" data-buy-theme="${theme.id}" data-price="${finalPrice}">
                                         ${buyText}
                                     </button>
                                 </div>
@@ -9589,8 +9900,8 @@ function updateRipples(dt) {
 
             grid.innerHTML = themes.map(theme => {
                 const isActive = (theme.id === activeId);
-                const name = getText(theme.nameKey) || theme.id;
-                const desc = getText(theme.descKey) || '';
+                const name = theme.customName || getText(theme.nameKey) || theme.id;
+                const desc = theme.customDesc || getText(theme.descKey) || '';
                 const badge = getText(theme.badgeKey) || '';
 
                 let previewContent = '';
@@ -9801,7 +10112,7 @@ function updateRipples(dt) {
             if (!modal) return;
 
             const theme = FieldThemes.getThemeById(themeId);
-            const localizedThemeName = theme ? (getText(theme.nameKey) || theme.id) : themeId;
+            const localizedThemeName = theme ? (theme.customName || getText(theme.nameKey) || theme.id) : themeId;
             if (themeNameEl) {
                 themeNameEl.textContent = `${getText('themeLabel') || 'Тема'}: ${localizedThemeName}`;
             }
@@ -10067,9 +10378,27 @@ function updateRipples(dt) {
     }
     window.addEventListener('resize', resizeCanvas);
 
+    async function syncThemeSettingsFromCloud() {
+        try {
+            const settings = await getThemeSettings();
+            if (settings && typeof settings === 'object') {
+                FieldThemes.applyThemeOverrides(settings);
+                if (typeof renderShop === 'function' && shopModal && !shopModal.classList.contains('hidden')) {
+                    renderShop();
+                }
+                if (typeof renderCustomizationThemes === 'function' && customizationModal && !customizationModal.classList.contains('hidden')) {
+                    renderCustomizationThemes();
+                }
+            }
+        } catch (e) {
+            console.warn("syncThemeSettingsFromCloud error:", e);
+        }
+    }
+
     // Initial Start
     initControls();
     loadCloudSongs();
+    syncThemeSettingsFromCloud();
     setTimeout(resizeCanvas, 100);
 
     window.__gameDebug = { 

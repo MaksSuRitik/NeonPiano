@@ -483,9 +483,27 @@ export default {
   adminSaveCoins: "Сохранить монеты",
   adminCoinsSavedSuccess: "Баланс монет успешно обновлён!",
   adminSelectMyAccount: "Мой аккаунт (Админ)",
-  adminSelectMyAccountTooltip: "Выбрать свой аккаунт для редактирования",
   shopCloseBtn: "Закрыть магазин",
   logoutBtn: "Выйти из аккаунта",
-  themeLabel: "Тема"
+  themeLabel: "Тема",
+
+  // Admin Theme Management
+  adminTabThemes: "Управление темами",
+  adminThemesTitle: "Управление темами оформления",
+  adminThemesSubtitle: "Редактирование названий, цен, описаний и настройка скидок для магазина",
+  adminThemeName: "Название темы:",
+  adminThemePrice: "Цена (🪙):",
+  adminThemeDesc: "Описание темы:",
+  adminThemeDiscount: "Скидка на тему",
+  adminThemeDiscountActive: "Активировать скидку",
+  adminThemeDiscountPercent: "Скидка (%):",
+  adminThemeDiscountPrice: "Цена со скидкой (🪙):",
+  adminThemeResetBtn: "Сбросить к исходным",
+  adminThemeSaveBtn: "Сохранить тему",
+  adminThemeSaveAllBtn: "Сохранить все темы",
+  adminThemeSavedSuccess: "Настройки тем успешно сохранены!",
+  adminThemeResetConfirm: "Сбросить настройки этой темы к исходным?",
+  adminThemeDiscountPreview: "Цена в магазине:",
+  shopSaleTag: "АКЦИЯ"
 };
 

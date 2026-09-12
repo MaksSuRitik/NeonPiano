@@ -5804,7 +5804,11 @@ body[data-theme="light"] .admin-sticky-header {
 .admin-modal-scroll-area {
   flex: 1 1 auto;
   overflow-y: auto !important;
-  padding: 20px 28px !important;
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 18px 22px !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
@@ -7448,8 +7452,24 @@ body[data-theme=light] .admin-card-title {
 
 .admin-grid-tracks {
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-grid-tracks > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 992px) {
+  .admin-grid-tracks {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
 }
 
 .admin-grid-2col {
@@ -7627,17 +7647,29 @@ body[data-theme=light] .admin-btn-secondary {
   border-radius: 8px;
 }
 
+#admin-track-list {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+}
+
 /* Admin Track List Item */
 .admin-track-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 14px;
   margin-bottom: 8px;
   background: var(--surface-color);
   border-radius: 12px;
   border: 1px solid var(--surface-border);
   transition: all 0.2s ease;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
 }
 
 .admin-track-item:hover {
@@ -11646,4 +11678,134 @@ body[data-theme="light"] .cust-main-tab.active {
     font-size: 0.78rem !important;
     justify-content: center !important;
   }
+}
+
+/* =======================================================
+   🎨 ADMIN THEME MANAGEMENT & SHOP DISCOUNTS
+   ======================================================= */
+.admin-themes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .admin-themes-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.admin-theme-card {
+  background: var(--surface-color);
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.admin-theme-card:hover {
+  border-color: var(--surface-border-hover);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+body[data-theme="light"] .admin-theme-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.admin-theme-accent-strip {
+  height: 4px;
+  width: 100%;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+
+.admin-theme-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-theme-id-tag {
+  font-size: 0.72rem;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.admin-theme-discount-box {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+body[data-theme="light"] .admin-theme-discount-box {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.admin-discount-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.admin-discount-preview-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+}
+
+/* Shop Discount Badges & Strike-through Price */
+.theme-price-original {
+  text-decoration: line-through;
+  opacity: 0.5;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-right: 6px;
+}
+
+.theme-price-discounted {
+  color: #4ade80 !important;
+  font-weight: 800;
+}
+
+.theme-card-badge.theme-badge-sale {
+  background: linear-gradient(135deg, #ef4444, #f97316) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
+  animation: pulseSaleBadge 2s infinite ease-in-out;
+}
+
+@keyframes pulseSaleBadge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }

@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  setDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -959,5 +960,55 @@ export async function fetchSpotifyTrackMetadata(spotifyUrl) {
     duration: duration > 0 ? duration : 0,
     coverUrl
   };
+}
+
+/**
+ * Fetches theme customization & discount settings from Firestore (with localStorage fallback).
+ * 
+ * @returns {Promise<object>}
+ */
+export async function getThemeSettings() {
+  let cached = {};
+  try {
+    const raw = localStorage.getItem('neon_theme_overrides');
+    if (raw) cached = JSON.parse(raw);
+  } catch (e) {}
+
+  try {
+    const docRef = doc(db, "system_configs", "theme_settings");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      localStorage.setItem('neon_theme_overrides', JSON.stringify(data));
+      return data;
+    }
+  } catch (err) {
+    console.warn("getThemeSettings firestore warning:", err);
+  }
+
+  return cached;
+}
+
+/**
+ * Saves theme customization & discount settings to Firestore and local storage.
+ * Requires admin privileges.
+ * 
+ * @param {object} settings
+ * @returns {Promise<boolean>}
+ */
+export async function saveThemeSettings(settings = {}) {
+  requireAdmin();
+  if (!settings || typeof settings !== 'object') {
+    throw new Error("Invalid settings object");
+  }
+
+  // 1. Save to local storage
+  localStorage.setItem('neon_theme_overrides', JSON.stringify(settings));
+
+  // 2. Save to Firestore
+  const docRef = doc(db, "system_configs", "theme_settings");
+  await setDoc(docRef, settings, { merge: true });
+
+  return true;
 }
 

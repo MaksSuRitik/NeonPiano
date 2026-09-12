@@ -483,8 +483,26 @@ export default {
   adminSaveCoins: "Save Coins",
   adminCoinsSavedSuccess: "Coins balance updated successfully!",
   adminSelectMyAccount: "My Account (Admin)",
-  adminSelectMyAccountTooltip: "Select your own account for editing",
   shopCloseBtn: "Close Shop",
   logoutBtn: "Log Out",
-  themeLabel: "Theme"
+  themeLabel: "Theme",
+
+  // Admin Theme Management
+  adminTabThemes: "Theme Management",
+  adminThemesTitle: "Visual Themes Management",
+  adminThemesSubtitle: "Edit names, prices, descriptions, and configure shop discounts",
+  adminThemeName: "Theme Name:",
+  adminThemePrice: "Price (🪙):",
+  adminThemeDesc: "Description:",
+  adminThemeDiscount: "Theme Discount",
+  adminThemeDiscountActive: "Enable Discount",
+  adminThemeDiscountPercent: "Discount (%):",
+  adminThemeDiscountPrice: "Discounted Price (🪙):",
+  adminThemeResetBtn: "Reset to Defaults",
+  adminThemeSaveBtn: "Save Theme",
+  adminThemeSaveAllBtn: "Save All Themes",
+  adminThemeSavedSuccess: "Theme settings saved successfully!",
+  adminThemeResetConfirm: "Reset this theme to default values?",
+  adminThemeDiscountPreview: "Shop Price Preview:",
+  shopSaleTag: "SALE"
 };
