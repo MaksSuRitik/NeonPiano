@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=72.0";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=72.1";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=72.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=72.1";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -3256,6 +3256,11 @@ function update(songTime) {
                 // Pass tailH and actualYHeadTop so the theme can anchor the neck to the head with zero gap
                 if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
                     activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH, State.combo, actualYHeadTop);
+                }
+
+                // Відмальовування шиї довгої ноти перед головою (синхронізовано з головою)
+                if (activeTheme && typeof activeTheme.drawNeck === 'function' && actualYHeadTop > -headH + 4 && actualYHeadTop < State.gameHeight + 40) {
+                    activeTheme.drawNeck(ctx, x, actualYHeadTop, w, headH, tile, Boolean(tile.failed), State.combo);
                 }
 
                 // Відмальовування "голови" довгої ноти через кешований спрайт (усі деталі теми вже запечені)
