@@ -11797,6 +11797,8 @@ body[data-theme="light"] .admin-theme-discount-box {
 }
 
 .theme-card-badge.theme-badge-sale {
+  left: 8px;
+  right: auto;
   background: linear-gradient(135deg, #ef4444, #f97316) !important;
   color: #ffffff !important;
   font-weight: 800 !important;

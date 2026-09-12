@@ -492,6 +492,7 @@ export default {
   adminThemesTitle: "Управление темами оформления",
   adminThemesSubtitle: "Редактирование названий, цен, описаний и настройка скидок для магазина",
   adminThemeName: "Название темы:",
+  adminThemeBadge: "Классификация / Бейдж:",
   adminThemePrice: "Цена (🪙):",
   adminThemeDesc: "Описание темы:",
   adminThemeDiscount: "Скидка на тему",

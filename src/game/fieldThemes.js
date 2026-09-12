@@ -11,7 +11,7 @@ import {
   IUNO_THEME,
   HADO99_THEME,
   getThemeById 
-} from "./themes/index.js?v=72.4";
+} from "./themes/index.js?v=72.5";
 
 export { 
   FIELD_THEMES, 
@@ -44,8 +44,14 @@ export function applyThemeOverrides(overrides = {}) {
     const def = THEME_DEFAULTS.get(theme.id) || { price: theme.price };
 
     if (ov && typeof ov === 'object') {
-      theme.customName = (typeof ov.customName === 'string' && ov.customName.trim()) ? ov.customName.trim() : null;
-      theme.customDesc = (typeof ov.customDesc === 'string' && ov.customDesc.trim()) ? ov.customDesc.trim() : null;
+      const nameVal = (typeof ov.customName === 'string' && ov.customName.trim() && ov.customName.trim() !== 'Unknown') ? ov.customName.trim() : null;
+      theme.customName = nameVal;
+
+      const badgeVal = (typeof ov.customBadge === 'string' && ov.customBadge.trim() && ov.customBadge.trim() !== 'Unknown') ? ov.customBadge.trim() : null;
+      theme.customBadge = badgeVal;
+
+      const descVal = (typeof ov.customDesc === 'string' && ov.customDesc.trim() && ov.customDesc.trim() !== 'Unknown') ? ov.customDesc.trim() : null;
+      theme.customDesc = descVal;
       
       const parsedPrice = parseInt(ov.price, 10);
       theme.price = (!isNaN(parsedPrice) && parsedPrice >= 0) ? parsedPrice : def.price;
@@ -63,6 +69,7 @@ export function applyThemeOverrides(overrides = {}) {
       theme.effectivePrice = theme.isDiscountActive && discPrice !== null ? discPrice : theme.price;
     } else {
       theme.customName = null;
+      theme.customBadge = null;
       theme.customDesc = null;
       theme.price = def.price;
       theme.isDiscountActive = false;

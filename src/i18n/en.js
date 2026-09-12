@@ -492,6 +492,7 @@ export default {
   adminThemesTitle: "Visual Themes Management",
   adminThemesSubtitle: "Edit names, prices, descriptions, and configure shop discounts",
   adminThemeName: "Theme Name:",
+  adminThemeBadge: "Classification / Badge:",
   adminThemePrice: "Price (🪙):",
   adminThemeDesc: "Description:",
   adminThemeDiscount: "Theme Discount",

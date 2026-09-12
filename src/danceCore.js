@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=72.4";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=72.5";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=72.4";
+import * as FieldThemes from "./game/fieldThemes.js?v=72.5";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -5338,7 +5338,7 @@ function updateRipples(dt) {
                         <div class="podium-card podium-rank-2" data-podium-idx="1" title="${getText('clickToViewProfile')}">
                             <div class="podium-crown-icon" style="color: #cbd5e1;">${icons.medal(20)}</div>
                             <div class="podium-avatar ${p2FrameClass}">${p2AvatarHtml}</div>
-                            <div class="podium-name">${escapeHtml(p2.name)}</div>
+                            <div class="podium-name">${escapeHtml(p2.name || 'Unknown')}</div>
                             ${getPodiumTitleHtml(p2)}
                             <div class="podium-score">${(p2.totalScore || 0).toLocaleString()}</div>
                             <div class="podium-levels">${p2.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
@@ -5354,7 +5354,7 @@ function updateRipples(dt) {
                         <div class="podium-card podium-rank-1" data-podium-idx="0" title="${getText('clickToViewProfile')}">
                             <div class="podium-crown-icon" style="color: #fbbf24;">${icons.crown(24)}</div>
                             <div class="podium-avatar ${p1FrameClass}">${p1AvatarHtml}</div>
-                            <div class="podium-name">${escapeHtml(p1.name)}</div>
+                            <div class="podium-name">${escapeHtml(p1.name || 'Unknown')}</div>
                             ${getPodiumTitleHtml(p1)}
                             <div class="podium-score">${(p1.totalScore || 0).toLocaleString()}</div>
                             <div class="podium-levels">${p1.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
@@ -5370,7 +5370,7 @@ function updateRipples(dt) {
                         <div class="podium-card podium-rank-3" data-podium-idx="2" title="${getText('clickToViewProfile')}">
                             <div class="podium-crown-icon" style="color: #d97706;">${icons.medal(20)}</div>
                             <div class="podium-avatar ${p3FrameClass}">${p3AvatarHtml}</div>
-                            <div class="podium-name">${escapeHtml(p3.name)}</div>
+                            <div class="podium-name">${escapeHtml(p3.name || 'Unknown')}</div>
                             ${getPodiumTitleHtml(p3)}
                             <div class="podium-score">${(p3.totalScore || 0).toLocaleString()}</div>
                             <div class="podium-levels">${p3.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
@@ -5415,7 +5415,7 @@ function updateRipples(dt) {
                         <td width="45%">
                             <div class="lb-player-cell">
                                 <div class="lb-avatar-mini ${pFrameClass}">${pAvatarHtml}</div>
-                                <span class="lb-player-name">${escapeHtml(p.name)}${titleHtml}</span>
+                                <span class="lb-player-name">${escapeHtml(p.name || 'Unknown')}${titleHtml}</span>
                             </div>
                         </td>
                         <td width="20%">${p.levelsCompleted || 0}</td>
@@ -5438,7 +5438,7 @@ function updateRipples(dt) {
     }
 
     function escapeHtml(text) {
-        if (!text) return 'Unknown';
+        if (text === null || text === undefined || text === '') return '';
         return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
@@ -7735,7 +7735,7 @@ function updateRipples(dt) {
                     tr.innerHTML = `
                         <td><b>#${idx + 1}</b></td>
                         <td>
-                            <span style="font-weight: 600; color: #fff;">${escapeHtml(res.name)}</span>
+                            <span style="font-weight: 600; color: #fff;">${escapeHtml(res.name || 'Unknown')}</span>
                             <span style="font-size: 0.72rem; color: var(--text-secondary); margin-left: 4px;">(${res.userId.slice(0, 5)})</span>
                         </td>
                         <td><b style="color: var(--highlight);">${res.score.toLocaleString()}</b></td>
@@ -7811,10 +7811,13 @@ function updateRipples(dt) {
                 };
 
                 const defaultName = getText(def.nameKey) || theme.id;
+                const defaultBadge = getText(def.badgeKey) || '';
                 const defaultDesc = getText(def.descKey) || '';
-                const currentName = theme.customName || '';
+
+                const currentName = (theme.customName && theme.customName !== 'Unknown') ? theme.customName : '';
+                const currentBadge = (theme.customBadge && theme.customBadge !== 'Unknown') ? theme.customBadge : '';
                 const currentPrice = (typeof theme.price === 'number') ? theme.price : def.price;
-                const currentDesc = theme.customDesc || '';
+                const currentDesc = (theme.customDesc && theme.customDesc !== 'Unknown') ? theme.customDesc : '';
                 const isDiscount = Boolean(theme.isDiscountActive);
                 const discountPct = theme.discountPercent || 0;
                 const discountPrice = (typeof theme.discountPrice === 'number') ? theme.discountPrice : (discountPct > 0 ? Math.max(0, Math.round(currentPrice * (1 - discountPct / 100))) : '');
@@ -7835,11 +7838,19 @@ function updateRipples(dt) {
                         <span class="admin-theme-id-tag">id: ${escapeHtml(theme.id)}</span>
                     </div>
 
-                    <div>
-                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--highlight); display: block; margin-bottom: 4px;">
-                            ${getText('adminThemeName') || 'Назва теми:'}
-                        </label>
-                        <input type="text" class="modern-input theme-input-name" placeholder="${escapeHtml(defaultName)}" value="${escapeHtml(currentName)}" style="margin: 0 !important; width: 100%;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--highlight); display: block; margin-bottom: 4px;">
+                                ${getText('adminThemeName') || 'Назва теми:'}
+                            </label>
+                            <input type="text" class="modern-input theme-input-name" placeholder="${escapeHtml(defaultName)}" value="${escapeHtml(currentName)}" style="margin: 0 !important; width: 100%;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--highlight); display: block; margin-bottom: 4px;">
+                                ${getText('adminThemeBadge') || 'Класифікація / Бейдж:'}
+                            </label>
+                            <input type="text" class="modern-input theme-input-badge" placeholder="${escapeHtml(defaultBadge)}" value="${escapeHtml(currentBadge)}" style="margin: 0 !important; width: 100%;">
+                        </div>
                     </div>
 
                     <div>
@@ -7899,6 +7910,7 @@ function updateRipples(dt) {
 
                 // Wire up auto-calculation and preview
                 const inputName = card.querySelector('.theme-input-name');
+                const inputBadge = card.querySelector('.theme-input-badge');
                 const inputPrice = card.querySelector('.theme-input-price');
                 const inputDesc = card.querySelector('.theme-input-desc');
                 const checkDisc = card.querySelector('.theme-check-discount');
@@ -7975,6 +7987,7 @@ function updateRipples(dt) {
                 btnReset.onclick = async () => {
                     playClick();
                     inputName.value = '';
+                    inputBadge.value = '';
                     inputPrice.value = def.price;
                     inputDesc.value = '';
                     checkDisc.checked = false;
@@ -8023,15 +8036,23 @@ function updateRipples(dt) {
                 if (!themeId) return;
 
                 const inputName = card.querySelector('.theme-input-name');
+                const inputBadge = card.querySelector('.theme-input-badge');
                 const inputPrice = card.querySelector('.theme-input-price');
                 const inputDesc = card.querySelector('.theme-input-desc');
                 const checkDisc = card.querySelector('.theme-check-discount');
                 const inputDiscPct = card.querySelector('.theme-input-disc-pct');
                 const inputDiscPrice = card.querySelector('.theme-input-disc-price');
 
-                const customName = inputName?.value.trim() || null;
+                const rawName = inputName?.value.trim() || '';
+                const customName = (rawName && rawName !== 'Unknown') ? rawName : null;
+
+                const rawBadge = inputBadge?.value.trim() || '';
+                const customBadge = (rawBadge && rawBadge !== 'Unknown') ? rawBadge : null;
+
+                const rawDesc = inputDesc?.value.trim() || '';
+                const customDesc = (rawDesc && rawDesc !== 'Unknown') ? rawDesc : null;
+
                 const price = parseInt(inputPrice?.value, 10);
-                const customDesc = inputDesc?.value.trim() || null;
                 const isDiscountActive = Boolean(checkDisc?.checked);
                 const discountPercent = Math.max(0, Math.min(99, parseInt(inputDiscPct?.value, 10) || 0));
                 const parsedDiscPrice = parseInt(inputDiscPrice?.value, 10);
@@ -8039,6 +8060,7 @@ function updateRipples(dt) {
 
                 overrides[themeId] = {
                     customName,
+                    customBadge,
                     price: (!isNaN(price) && price >= 0) ? price : 0,
                     customDesc,
                     isDiscountActive,
@@ -9706,7 +9728,7 @@ function updateRipples(dt) {
                 themes = themes.filter(theme => {
                     const name = (theme.customName || getText(theme.nameKey) || theme.id).toLowerCase();
                     const desc = (theme.customDesc || getText(theme.descKey) || '').toLowerCase();
-                    const badge = (getText(theme.badgeKey) || '').toLowerCase();
+                    const badge = (theme.customBadge || getText(theme.badgeKey) || '').toLowerCase();
                     return name.includes(shopSearchQuery) || desc.includes(shopSearchQuery) || badge.includes(shopSearchQuery);
                 });
             }
@@ -9726,7 +9748,7 @@ function updateRipples(dt) {
             grid.innerHTML = themes.map(theme => {
                 const name = theme.customName || getText(theme.nameKey) || theme.id;
                 const desc = theme.customDesc || getText(theme.descKey) || '';
-                const badge = getText(theme.badgeKey) || '';
+                const badge = theme.customBadge || getText(theme.badgeKey) || '';
 
                 let previewContent = '';
                 if (theme.image) {
@@ -9767,7 +9789,8 @@ function updateRipples(dt) {
                     <div class="shop-theme-card" data-card-theme-id="${theme.id}">
                         <div class="theme-card-preview">
                             ${previewContent}
-                            ${discountBadge ? discountBadge : (badge ? `<div class="theme-card-badge">${badge}</div>` : '')}
+                            ${discountBadge ? discountBadge : ''}
+                            ${badge ? `<div class="theme-card-badge">${badge}</div>` : ''}
                         </div>
                         <div class="theme-card-body">
                             <div class="theme-card-title">
@@ -9902,7 +9925,7 @@ function updateRipples(dt) {
                 const isActive = (theme.id === activeId);
                 const name = theme.customName || getText(theme.nameKey) || theme.id;
                 const desc = theme.customDesc || getText(theme.descKey) || '';
-                const badge = getText(theme.badgeKey) || '';
+                const badge = theme.customBadge || getText(theme.badgeKey) || '';
 
                 let previewContent = '';
                 if (theme.image) {
