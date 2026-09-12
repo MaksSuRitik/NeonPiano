@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.4";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.5";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=71.4";
+import * as FieldThemes from "./game/fieldThemes.js?v=71.5";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -3211,12 +3211,11 @@ function update(songTime) {
                     // Попелясто-сірий хвіст, що летить далі вниз
                     if (tailH > 1 && relTailSprite) {
                         ctx.drawImage(relTailSprite, 0, 0, relTailSprite.width, relTailSprite.height,
-                            Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
+                            Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + Math.round(headH * 0.4)));
                     }
 
-                    if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
-                        activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now);
-                    }
+                    // NOTE: drawHoldTail is intentionally NOT called for released tiles —
+                    // the arrow tip and neck collar should not show during the fade-out animation.
 
                     // Попелясто-сіра голова, що летить далі вниз
                     if (relHeadSprite && actualYHeadTop > -headH - 20 && actualYHeadTop < State.gameHeight + 40) {
@@ -3231,15 +3230,16 @@ function update(songTime) {
                 const curHeadSprite = tile.failed ? deadHeadSprite : longHeadSprite;
 
                 // Відмальовування "хвоста" довгої ноти через розтягування кешованого спрайту.
-                // Math.round() усуває субпіксельне мерехтіння на мобільних GPU (Redmi Note 9, тощо).
+                // Extend height by headH*0.4 so the body sprite overlaps the head area and leaves no gap.
                 if (tailH > 1 && curTailSprite) {
                     ctx.drawImage(curTailSprite, 0, 0, curTailSprite.width, curTailSprite.height,
-                        Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
+                        Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + Math.round(headH * 0.4)));
                 }
 
-                // Тематичний завершальний хвіст довгої ноти (наприклад, кристалічний хвіст дракона)
+                // Тематичний завершальний хвіст довгої ноти + neck junction collar
+                // Pass tailH so the theme can place the neck collar at the correct position (bottom of body)
                 if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
-                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now);
+                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH);
                 }
 
                 // Відмальовування "голови" довгої ноти через кешований спрайт (усі деталі теми вже запечені)

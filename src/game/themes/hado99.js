@@ -17,13 +17,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.4';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.4';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.4';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.4';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.4';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.4';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.4';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=71.5';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=71.5';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=71.5';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=71.5';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=71.5';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=71.5';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=71.5';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -339,7 +339,7 @@ export const HADO99_THEME = {
   // - Arrowhead / crescent spade dragon blade at the tip
   // - Multi-tonal shading by combo tier (800+ Gold)
   // ==========================================================================
-  drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now) {
+  drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0) {
     const isMob   = typeof window !== 'undefined' && (window.innerWidth <= 768 || navigator.maxTouchPoints > 1);
     const bodyW   = Math.max(10, Math.round(w - 16));
     const bodyX   = Math.round(x + 8);
@@ -361,42 +361,43 @@ export const HADO99_THEME = {
 
     // ── NECK/SHOULDER JUNCTION ─────────────────────────────────────────────
     // Fills the gap between the baked tail body sprite and the dragon head sprite.
-    // Drawn BELOW yTail (toward the head), fanning from bodyW → headW.
+    // Placed at the BOTTOM of the body (yTail + tailH), fanning from bodyW → headW.
+    // When tailH = 0 (note being held at receptor), junctionY = yTail = actualYHeadTop.
     {
-      const neckH   = Math.round(headH * 0.55);  // how far down the collar extends
-      const headHW  = Math.round(w * 0.52);       // half-width of the head sprite area (w + 16px padding / 2)
-      const neckBot = yTail + neckH;
+      const junctionY = yTail + tailH;           // bottom edge of body = where head starts
+      const neckH     = Math.round(headH * 0.50);// how far down the collar extends into head area
+      const headHW    = Math.round(w * 0.52);    // half-width matching the head sprite (w + 16px padding / 2)
+      const neckBot   = junctionY + neckH;
 
-      // Filled trapezoid collar matching body color
-      const ng = ctx.createLinearGradient(cx, yTail, cx, neckBot);
+      const ng = ctx.createLinearGradient(cx, junctionY, cx, neckBot);
       ng.addColorStop(0,    pal.bgBot);
-      ng.addColorStop(0.55, pal.bgTop);
+      ng.addColorStop(0.50, pal.bgTop);
       ng.addColorStop(1,    'rgba(0,0,0,0)');
       ctx.save();
       ctx.fillStyle = ng;
       ctx.beginPath();
-      ctx.moveTo(cx - hw,     yTail);
-      ctx.bezierCurveTo(cx - hw,     yTail + neckH * 0.4,
-                        cx - headHW, yTail + neckH * 0.7,
+      ctx.moveTo(cx - hw,     junctionY);
+      ctx.bezierCurveTo(cx - hw,     junctionY + neckH * 0.4,
+                        cx - headHW, junctionY + neckH * 0.7,
                         cx - headHW, neckBot);
       ctx.lineTo(cx + headHW, neckBot);
-      ctx.bezierCurveTo(cx + headHW, yTail + neckH * 0.7,
-                        cx + hw,     yTail + neckH * 0.4,
-                        cx + hw,     yTail);
+      ctx.bezierCurveTo(cx + headHW, junctionY + neckH * 0.7,
+                        cx + hw,     junctionY + neckH * 0.4,
+                        cx + hw,     junctionY);
       ctx.closePath();
       ctx.fill();
 
-      // Side border lines continuing from tail body edges
+      // Side border lines continuing from the tail body edges
       ctx.strokeStyle = pal.borderCol;
       ctx.lineWidth   = 1.4;
       ctx.beginPath();
-      ctx.moveTo(cx - hw, yTail);
-      ctx.bezierCurveTo(cx - hw,     yTail + neckH * 0.4,
-                        cx - headHW, yTail + neckH * 0.7,
+      ctx.moveTo(cx - hw, junctionY);
+      ctx.bezierCurveTo(cx - hw,     junctionY + neckH * 0.4,
+                        cx - headHW, junctionY + neckH * 0.7,
                         cx - headHW, neckBot);
-      ctx.moveTo(cx + hw, yTail);
-      ctx.bezierCurveTo(cx + hw,     yTail + neckH * 0.4,
-                        cx + headHW, yTail + neckH * 0.7,
+      ctx.moveTo(cx + hw, junctionY);
+      ctx.bezierCurveTo(cx + hw,     junctionY + neckH * 0.4,
+                        cx + headHW, junctionY + neckH * 0.7,
                         cx + headHW, neckBot);
       ctx.stroke();
 
@@ -405,7 +406,7 @@ export const HADO99_THEME = {
       ctx.lineWidth   = 1.2;
       for (let i = 1; i <= 2; i++) {
         const t   = i / 3;
-        const cy2 = yTail + t * neckH * 0.75;
+        const cy2 = junctionY + t * neckH * 0.75;
         const cw2 = hw + (headHW - hw) * t;
         ctx.beginPath();
         ctx.moveTo(cx - cw2 * 0.80, cy2 - 3);
@@ -414,11 +415,11 @@ export const HADO99_THEME = {
         ctx.stroke();
       }
 
-      // Central spine continues into collar
+      // Central spine extends through the collar
       ctx.strokeStyle = pal.spineCol;
       ctx.lineWidth   = holding ? 2.2 : 1.6;
       ctx.beginPath();
-      ctx.moveTo(cx, yTail);
+      ctx.moveTo(cx, junctionY);
       ctx.lineTo(cx, neckBot);
       ctx.stroke();
 
