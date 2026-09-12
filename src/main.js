@@ -1,6 +1,6 @@
 // ==========================================
 // MAIN ENTRY POINT FOR NEON PIANO
 // ==========================================
-import "./danceCore.js?v=66.0";
+import "./danceCore.js?v=67.0";
 
 console.log("[Neon Piano] Cloud Edition (Authentic Engine) initialized.");

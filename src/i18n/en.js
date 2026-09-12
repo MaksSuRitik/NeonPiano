@@ -326,6 +326,8 @@ export default {
   autoPausedToast: "Game paused due to focus loss",
   resStarsEarned: "★ {count} of {total} Gold Stars",
   resDiamondsEarned: "✦ {count} of {total} Diamonds (Full Combo!)",
+  resMixedEarned: "✦ {diamonds} Diam. + ★ {gold} Gold ({total} stars)",
+  resDiamondsPartial: "✦ {count} of {total} Diamonds",
   resStarsNone: "0 of {total} stars",
 
   // Profile Customization & Cosmetics

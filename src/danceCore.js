@@ -3932,20 +3932,28 @@ function updateProgressBar(current, total) {
         const starEl = starsElements[i];
         if (!starEl) return;
 
-        let targetStatus = 0;
         if (ratio >= limit) {
-            targetStatus = (State.totalMisses === 0) ? 2 : 1;
-        }
-
-        if (State.starStatus[i] !== targetStatus) {
-            State.starStatus[i] = targetStatus;
-            if (targetStatus === 2) {
-                starEl.className = 'star-marker active diamond';
-                starEl.innerHTML = icons.diamond(16);
-            } else if (targetStatus === 1) {
-                starEl.className = 'star-marker active';
-                starEl.innerHTML = icons.starFilled(16);
-            } else {
+            // Зірка досягнута за прогресом
+            if (!State.starStatus[i] || State.starStatus[i] === 0) {
+                // Вперше досягли цієї зірки:
+                // Якщо до цього моменту не було жодного промаху (totalMisses === 0) — це діамант (2)!
+                // Якщо промах вже стався раніше (totalMisses > 0) — це звичайна золота зірка (1).
+                const status = (State.totalMisses === 0) ? 2 : 1;
+                State.starStatus[i] = status;
+                if (status === 2) {
+                    starEl.className = 'star-marker active diamond';
+                    starEl.innerHTML = icons.diamond(16);
+                } else {
+                    starEl.className = 'star-marker active';
+                    starEl.innerHTML = icons.starFilled(16);
+                }
+            }
+            // Якщо State.starStatus[i] вже встановлено (1 або 2) — ВОНО НЕ ЗНИЖУЄТЬСЯ!
+            // Отриманий раніше алмаз залишається алмазом назавжди, навіть якщо гравець зробить помилку пізніше.
+        } else {
+            // Зірка ще не досягнута
+            if (State.starStatus[i] !== 0) {
+                State.starStatus[i] = 0;
                 starEl.className = 'star-marker';
                 starEl.innerHTML = icons.starEmpty(16);
             }
@@ -4313,9 +4321,17 @@ function updateRipples(dt) {
         // Відображення текстового опису здобутих зірок / алмазів
         const resStarsTextEl = document.getElementById('res-stars-text');
         if (resStarsTextEl) {
-            if (diamondsCount > 0) {
+            if (diamondsCount === total) {
                 resStarsTextEl.className = 'res-stars-summary diamond';
                 const tpl = getText('resDiamondsEarned') || '✦ {count} / {total} Діамантів (Повне комбо!)';
+                resStarsTextEl.textContent = tpl.replace('{count}', diamondsCount).replace('{total}', total);
+            } else if (diamondsCount > 0 && goldCount > 0) {
+                resStarsTextEl.className = 'res-stars-summary diamond';
+                const tpl = getText('resMixedEarned') || '✦ {diamonds} Діам. + ★ {gold} Золотих (з {total})';
+                resStarsTextEl.textContent = tpl.replace('{diamonds}', diamondsCount).replace('{gold}', goldCount).replace('{total}', total);
+            } else if (diamondsCount > 0 && goldCount === 0) {
+                resStarsTextEl.className = 'res-stars-summary diamond';
+                const tpl = getText('resDiamondsPartial') || '✦ {count} / {total} Діамантів';
                 resStarsTextEl.textContent = tpl.replace('{count}', diamondsCount).replace('{total}', total);
             } else if (goldCount > 0) {
                 resStarsTextEl.className = 'res-stars-summary';

@@ -326,6 +326,8 @@ export default {
   autoPausedToast: "Игра приостановлена из-за потери фокуса",
   resStarsEarned: "★ {count} из {total} Золотых звёзд",
   resDiamondsEarned: "✦ {count} из {total} Алмазов (Полное комбо!)",
+  resMixedEarned: "✦ {diamonds} Алм. + ★ {gold} Золотых (из {total})",
+  resDiamondsPartial: "✦ {count} из {total} Алмазов",
   resStarsNone: "0 из {total} звёзд",
 
   // Profile Customization & Cosmetics
