@@ -213,8 +213,15 @@ export async function uploadTrack({ file, title, artist, duration, onProgress = 
  */
 export async function calculateAudioDurationFromUrl(url) {
   if (!url || typeof url !== "string") return 0;
-  const cleanUrl = url.trim();
+  let cleanUrl = url.trim();
   if (!cleanUrl) return 0;
+
+  if (cleanUrl.includes("pixeldrain.com/u/")) {
+    cleanUrl = cleanUrl.replace("pixeldrain.com/u/", "pixeldrain.com/api/file/");
+  }
+  if (cleanUrl.includes("dropbox.com") && cleanUrl.includes("dl=0")) {
+    cleanUrl = cleanUrl.replace("dl=0", "raw=1");
+  }
 
   return new Promise((resolve) => {
     let settled = false;
@@ -286,7 +293,16 @@ export async function addTrackByUrl({ url, title, artist, duration }) {
   if (!title?.trim()) throw new Error(i18n.t("adminSpecifyTitle") || "Вкажіть назву треку.");
   if (!artist?.trim()) throw new Error(i18n.t("adminSpecifyArtist") || "Вкажіть автора / виконавця.");
 
-  const cleanUrl = url.trim();
+  let cleanUrl = url.trim();
+
+  // Auto-convert Pixeldrain web view URL to direct API stream URL
+  if (cleanUrl.includes("pixeldrain.com/u/")) {
+    cleanUrl = cleanUrl.replace("pixeldrain.com/u/", "pixeldrain.com/api/file/");
+  }
+  // Auto-convert Dropbox share URL to direct raw stream URL
+  if (cleanUrl.includes("dropbox.com") && cleanUrl.includes("dl=0")) {
+    cleanUrl = cleanUrl.replace("dl=0", "raw=1");
+  }
 
   // Validate against Spotify and YouTube web player links
   if (cleanUrl.includes("spotify.com") || cleanUrl.includes("open.spotify")) {

@@ -6134,6 +6134,17 @@ function updateRipples(dt) {
                 return;
             }
 
+            // Автоматична конвертація Pixeldrain /u/ в прямий потік /api/file/
+            if (url.includes('pixeldrain.com/u/')) {
+                const converted = url.replace('pixeldrain.com/u/', 'pixeldrain.com/api/file/');
+                if (adminUrlInput) adminUrlInput.value = converted;
+            }
+            // Автоматична конвертація Dropbox dl=0 в прямий потік raw=1
+            if (url.includes('dropbox.com') && url.includes('dl=0')) {
+                const converted = url.replace('dl=0', 'raw=1');
+                if (adminUrlInput) adminUrlInput.value = converted;
+            }
+
             if (!url.startsWith('http://') && !url.startsWith('https://')) return;
 
             if (adminDurationFeedback) {
