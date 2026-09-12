@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=70.9";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash } from "./services/admin.js?v=71.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=70.9";
+import * as FieldThemes from "./game/fieldThemes.js?v=71.0";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -1454,6 +1454,12 @@ function bootGame() {
                 themeGold = { black: '#fffbeb', choco: '#d97706', glow: 'rgba(251, 191, 36, 0.55)', border: '#fef3c7', long1: '#f59e0b', long2: '#b45309' };
                 themeCosmic = { core: '#f0fdf4', accent: '#2dd4bf', glow: 'rgba(45, 212, 191, 0.55)', border: '#99f6e4', long1: '#2dd4bf', long2: '#0f766e' };
                 themeLegendary = { tap1: '#ffffff', tap2: '#fbbf24', glow: 'rgba(255, 255, 255, 0.70)', border: '#ffffff', long1: '#fbbf24', long2: '#38bdf8' };
+            } else if (activeFieldTheme.id === 'hado99') {
+                themeSteel = { light: '#f3e8ff', main: '#c084fc', dark: '#581c87', glow: 'rgba(168, 85, 247, 0.55)', border: '#d8b4fe', long1: '#9333ea', long2: '#3b0764' };
+                themeElectric = { tap1: '#fae8ff', tap2: '#a855f7', glow: 'rgba(192, 132, 252, 0.60)', border: '#f0abfc', long1: '#a855f7', long2: '#581c87' };
+                themeGold = { black: '#fdf4ff', choco: '#c026d3', glow: 'rgba(217, 70, 239, 0.65)', border: '#f5d0fe', long1: '#c026d3', long2: '#701a75' };
+                themeCosmic = { core: '#ffffff', accent: '#d946ef', glow: 'rgba(232, 121, 249, 0.75)', border: '#ffffff', long1: '#e879f9', long2: '#4a044e' };
+                themeLegendary = { tap1: '#ffffff', tap2: '#f0abfc', glow: 'rgba(255, 255, 255, 0.85)', border: '#ffffff', long1: '#f472b6', long2: '#831843' };
             }
 
             const styles = [
@@ -1487,60 +1493,71 @@ function bootGame() {
                 tapC.height = cHeight;
                 const tctx = tapC.getContext('2d');
 
-                const tapGrad = tctx.createLinearGradient(margin, margin, margin, margin + h);
-                tapGrad.addColorStop(0, s.c1 || '#38bdf8');
-                tapGrad.addColorStop(1, s.c2 || '#0284c7');
-
-                tctx.shadowColor = s.p.glow || 'rgba(56, 189, 248, 0.45)';
-                tctx.shadowBlur = (s.tier >= 800) ? 6 : ((s.tier >= 200) ? 4 : 2);
-                tctx.fillStyle = tapGrad;
-                tctx.beginPath();
-                if (tctx.roundRect) tctx.roundRect(margin, margin, w, h, noteRadius);
-                else tctx.fillRect(margin, margin, w, h);
-                tctx.fill();
-
-                tctx.shadowBlur = 0;
-                tctx.strokeStyle = s.p.border || '#38bdf8';
-                tctx.lineWidth = (s.tier >= 800) ? 1.8 : ((s.tier >= 200) ? 1.5 : 1.2);
-                tctx.stroke();
-
-                tctx.fillStyle = "rgba(255, 255, 255, 0.20)";
-                tctx.beginPath();
-                if (tctx.roundRect) tctx.roundRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH, 2);
-                else tctx.fillRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH);
-                tctx.fill();
-
-                tctx.fillStyle = "rgba(0, 0, 0, 0.20)";
-                tctx.fillRect(margin, margin + h - 5, w, 5);
-
-                if (s.tier >= 400) {
-                    const starX = margin + w / 2;
-                    const starY = margin + h / 2;
-                    const rOuter = (s.tier >= 800) ? Math.max(6, Math.round(w * 0.075)) : Math.max(5, Math.round(w * 0.058));
-                    const rInner = rOuter * 0.28;
-                    tctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    tctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-                    tctx.shadowBlur = 4;
-                    tctx.beginPath();
-                    tctx.moveTo(starX + rOuter, starY);
-                    tctx.lineTo(starX + rInner * 0.7071, starY + rInner * 0.7071);
-                    tctx.lineTo(starX, starY + rOuter);
-                    tctx.lineTo(starX - rInner * 0.7071, starY + rInner * 0.7071);
-                    tctx.lineTo(starX - rOuter, starY);
-                    tctx.lineTo(starX - rInner * 0.7071, starY - rInner * 0.7071);
-                    tctx.lineTo(starX, starY - rOuter);
-                    tctx.lineTo(starX + rInner * 0.7071, starY - rInner * 0.7071);
-                    tctx.closePath();
-                    tctx.fill();
-                    tctx.shadowBlur = 0;
+                let customTapBaked = false;
+                if (activeFieldTheme && typeof activeFieldTheme.bakeTapNote === 'function') {
+                    try {
+                        customTapBaked = activeFieldTheme.bakeTapNote(tctx, margin, margin, w, h, isLight, s);
+                    } catch (e) {
+                        console.warn('Theme bakeTapNote error:', e);
+                    }
                 }
 
-                // Оптимізація: запікаємо декор та гліфи активної теми безпосередньо в кеш-спрайт
-                if (activeFieldTheme && typeof activeFieldTheme.drawNoteDetails === 'function') {
-                    try {
-                        activeFieldTheme.drawNoteDetails(tctx, margin, margin, w, h, isLight, s.name);
-                    } catch (e) {
-                        console.warn('Theme drawNoteDetails bake error (tap):', e);
+                if (!customTapBaked) {
+                    const tapGrad = tctx.createLinearGradient(margin, margin, margin, margin + h);
+                    tapGrad.addColorStop(0, s.c1 || '#38bdf8');
+                    tapGrad.addColorStop(1, s.c2 || '#0284c7');
+
+                    tctx.shadowColor = s.p.glow || 'rgba(56, 189, 248, 0.45)';
+                    tctx.shadowBlur = (s.tier >= 800) ? 6 : ((s.tier >= 200) ? 4 : 2);
+                    tctx.fillStyle = tapGrad;
+                    tctx.beginPath();
+                    if (tctx.roundRect) tctx.roundRect(margin, margin, w, h, noteRadius);
+                    else tctx.fillRect(margin, margin, w, h);
+                    tctx.fill();
+
+                    tctx.shadowBlur = 0;
+                    tctx.strokeStyle = s.p.border || '#38bdf8';
+                    tctx.lineWidth = (s.tier >= 800) ? 1.8 : ((s.tier >= 200) ? 1.5 : 1.2);
+                    tctx.stroke();
+
+                    tctx.fillStyle = "rgba(255, 255, 255, 0.20)";
+                    tctx.beginPath();
+                    if (tctx.roundRect) tctx.roundRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH, 2);
+                    else tctx.fillRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH);
+                    tctx.fill();
+
+                    tctx.fillStyle = "rgba(0, 0, 0, 0.20)";
+                    tctx.fillRect(margin, margin + h - 5, w, 5);
+
+                    if (s.tier >= 400) {
+                        const starX = margin + w / 2;
+                        const starY = margin + h / 2;
+                        const rOuter = (s.tier >= 800) ? Math.max(6, Math.round(w * 0.075)) : Math.max(5, Math.round(w * 0.058));
+                        const rInner = rOuter * 0.28;
+                        tctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        tctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+                        tctx.shadowBlur = 4;
+                        tctx.beginPath();
+                        tctx.moveTo(starX + rOuter, starY);
+                        tctx.lineTo(starX + rInner * 0.7071, starY + rInner * 0.7071);
+                        tctx.lineTo(starX, starY + rOuter);
+                        tctx.lineTo(starX - rInner * 0.7071, starY + rInner * 0.7071);
+                        tctx.lineTo(starX - rOuter, starY);
+                        tctx.lineTo(starX - rInner * 0.7071, starY - rInner * 0.7071);
+                        tctx.lineTo(starX, starY - rOuter);
+                        tctx.lineTo(starX + rInner * 0.7071, starY - rInner * 0.7071);
+                        tctx.closePath();
+                        tctx.fill();
+                        tctx.shadowBlur = 0;
+                    }
+
+                    // Оптимізація: запікаємо декор та гліфи активної теми безпосередньо в кеш-спрайт
+                    if (activeFieldTheme && typeof activeFieldTheme.drawNoteDetails === 'function') {
+                        try {
+                            activeFieldTheme.drawNoteDetails(tctx, margin, margin, w, h, isLight, s.name);
+                        } catch (e) {
+                            console.warn('Theme drawNoteDetails bake error (tap):', e);
+                        }
                     }
                 }
 
@@ -1552,35 +1569,46 @@ function bootGame() {
                 headC.height = cHeight;
                 const hctx = headC.getContext('2d');
 
-                const headGrad = hctx.createLinearGradient(margin, margin, margin, margin + h);
-                headGrad.addColorStop(0, s.l1 || '#6366f1');
-                headGrad.addColorStop(1, s.l2 || '#0284c7');
-
-                hctx.shadowColor = s.p.glow || 'rgba(56, 189, 248, 0.45)';
-                hctx.shadowBlur = (s.tier >= 800) ? 6 : 3;
-                hctx.fillStyle = headGrad;
-                hctx.beginPath();
-                if (hctx.roundRect) hctx.roundRect(margin, margin, w, h, noteRadius);
-                else hctx.fillRect(margin, margin, w, h);
-                hctx.fill();
-
-                hctx.shadowBlur = 0;
-                hctx.strokeStyle = s.p.border || '#38bdf8';
-                hctx.lineWidth = 1.5;
-                hctx.stroke();
-
-                hctx.fillStyle = "rgba(255, 255, 255, 0.20)";
-                hctx.beginPath();
-                if (hctx.roundRect) hctx.roundRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH, 2);
-                else hctx.fillRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH);
-                hctx.fill();
-
-                // Оптимізація: запікаємо декор та гліфи активної теми безпосередньо в кеш-спрайт голови довгої ноти
-                if (activeFieldTheme && typeof activeFieldTheme.drawNoteDetails === 'function') {
+                let customHeadBaked = false;
+                if (activeFieldTheme && typeof activeFieldTheme.bakeLongHead === 'function') {
                     try {
-                        activeFieldTheme.drawNoteDetails(hctx, margin, margin, w, h, isLight, s.name);
+                        customHeadBaked = activeFieldTheme.bakeLongHead(hctx, margin, margin, w, h, isLight, s);
                     } catch (e) {
-                        console.warn('Theme drawNoteDetails bake error (head):', e);
+                        console.warn('Theme bakeLongHead error:', e);
+                    }
+                }
+
+                if (!customHeadBaked) {
+                    const headGrad = hctx.createLinearGradient(margin, margin, margin, margin + h);
+                    headGrad.addColorStop(0, s.l1 || '#6366f1');
+                    headGrad.addColorStop(1, s.l2 || '#0284c7');
+
+                    hctx.shadowColor = s.p.glow || 'rgba(56, 189, 248, 0.45)';
+                    hctx.shadowBlur = (s.tier >= 800) ? 6 : 3;
+                    hctx.fillStyle = headGrad;
+                    hctx.beginPath();
+                    if (hctx.roundRect) hctx.roundRect(margin, margin, w, h, noteRadius);
+                    else hctx.fillRect(margin, margin, w, h);
+                    hctx.fill();
+
+                    hctx.shadowBlur = 0;
+                    hctx.strokeStyle = s.p.border || '#38bdf8';
+                    hctx.lineWidth = 1.5;
+                    hctx.stroke();
+
+                    hctx.fillStyle = "rgba(255, 255, 255, 0.20)";
+                    hctx.beginPath();
+                    if (hctx.roundRect) hctx.roundRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH, 2);
+                    else hctx.fillRect(margin + glossInset, margin + 4, w - (glossInset * 2), glossH);
+                    hctx.fill();
+
+                    // Оптимізація: запікаємо декор та гліфи активної теми безпосередньо в кеш-спрайт голови довгої ноти
+                    if (activeFieldTheme && typeof activeFieldTheme.drawNoteDetails === 'function') {
+                        try {
+                            activeFieldTheme.drawNoteDetails(hctx, margin, margin, w, h, isLight, s.name);
+                        } catch (e) {
+                            console.warn('Theme drawNoteDetails bake error (head):', e);
+                        }
                     }
                 }
 
@@ -1594,15 +1622,26 @@ function bootGame() {
                 tailC.height = tailH;
                 const tlctx = tailC.getContext('2d');
 
-                const tailGrad = tlctx.createLinearGradient(0, 0, 0, tailH);
-                tailGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                tailGrad.addColorStop(0.2, s.l2 || '#0284c7');
-                tailGrad.addColorStop(1, s.l1 || '#6366f1');
-                tlctx.fillStyle = tailGrad;
-                tlctx.fillRect(0, 0, tailW, tailH);
+                let customTailBaked = false;
+                if (activeFieldTheme && typeof activeFieldTheme.bakeLongTail === 'function') {
+                    try {
+                        customTailBaked = activeFieldTheme.bakeLongTail(tlctx, tailW, tailH, isLight, s);
+                    } catch (e) {
+                        console.warn('Theme bakeLongTail error:', e);
+                    }
+                }
 
-                tlctx.fillStyle = (s.tier >= 800) ? 'rgba(255, 255, 255, 0.55)' : ((s.tier >= 200) ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.20)');
-                tlctx.fillRect(Math.floor(tailW / 2 - 1.5), 0, 3, tailH);
+                if (!customTailBaked) {
+                    const tailGrad = tlctx.createLinearGradient(0, 0, 0, tailH);
+                    tailGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                    tailGrad.addColorStop(0.2, s.l2 || '#0284c7');
+                    tailGrad.addColorStop(1, s.l1 || '#6366f1');
+                    tlctx.fillStyle = tailGrad;
+                    tlctx.fillRect(0, 0, tailW, tailH);
+
+                    tlctx.fillStyle = (s.tier >= 800) ? 'rgba(255, 255, 255, 0.55)' : ((s.tier >= 200) ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.20)');
+                    tlctx.fillRect(Math.floor(tailW / 2 - 1.5), 0, 3, tailH);
+                }
 
                 this.longTail[s.name] = tailC;
             });
@@ -3175,6 +3214,10 @@ function update(songTime) {
                             Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
                     }
 
+                    if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
+                        activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now);
+                    }
+
                     // Попелясто-сіра голова, що летить далі вниз
                     if (relHeadSprite && actualYHeadTop > -headH - 20 && actualYHeadTop < State.gameHeight + 40) {
                         ctx.drawImage(relHeadSprite, Math.round(x - 16), Math.round(actualYHeadTop - 16));
@@ -3192,6 +3235,11 @@ function update(songTime) {
                 if (tailH > 1 && curTailSprite) {
                     ctx.drawImage(curTailSprite, 0, 0, curTailSprite.width, curTailSprite.height,
                         Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + 10));
+                }
+
+                // Тематичний завершальний хвіст довгої ноти (наприклад, кристалічний хвіст дракона)
+                if (activeTheme && typeof activeTheme.drawHoldTail === 'function' && yTail > -headH - 40 && yTail < State.gameHeight + 40) {
+                    activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now);
                 }
 
                 // Відмальовування "голови" довгої ноти через кешований спрайт (усі деталі теми вже запечені)
