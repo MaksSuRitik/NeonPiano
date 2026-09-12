@@ -775,7 +775,10 @@ function bootGame() {
             if (span) span.textContent = getText('menu');
             else btnMenu.innerText = getText('menu');
         }
-        const loadText = document.querySelector('#loader h3'); if (loadText) loadText.innerText = getText('loading');
+        const loadTitle = document.querySelector('#loader .cyber-loader-title') || document.querySelector('#loader h3');
+        if (loadTitle) loadTitle.innerText = getText('loading') || 'Завантаження...';
+        const loadSub = document.querySelector('#loader .cyber-loader-subtitle');
+        if (loadSub) loadSub.innerText = getText('loadingTrack') || 'Аналіз треку та створення нот...';
         
         // Кнопка в меню
         const lbBtn = document.querySelector('.btn-leaderboard');
@@ -1910,9 +1913,10 @@ function bootGame() {
         });
         laneElements.forEach(el => { if (el) el.classList.remove('active'); });
         laneKeyElements.forEach(el => { if (el) el.classList.remove('active'); });
-        updateGameText();
-        
-        if(ctx) initGradients();
+        if(ctx) {
+            initGradients();
+            draw();
+        }
     }
 
 function getSavedData(songTitle) {
@@ -4141,6 +4145,28 @@ function updateRipples(dt) {
         State.animationFrameId = requestAnimationFrame(gameLoop);
     }
 
+    function cleanLevelRemnants() {
+        NotePool.resetAll();
+        State.activeTiles = [];
+        State.mapTiles = [];
+        State.nextSpawnIndex = 0;
+        State.holdingTiles = [null, null, null, null];
+        State.keyState = [false, false, false, false];
+        State.laneLastType = ['tap', 'tap', 'tap', 'tap'];
+        State.laneBeamAlpha = [0, 0, 0, 0];
+        State.laneStringVibe = [0, 0, 0, 0];
+        State.ripples = [];
+        for (let i = 0; i < MAX_PARTICLES; i++) {
+            if (particlePool[i]) particlePool[i].active = false;
+        }
+        State.activeRatings = [];
+        State.screenShake = 0;
+        if (progressBar) progressBar.style.width = '0%';
+        laneElements.forEach(el => { if (el) el.classList.remove('active'); });
+        laneKeyElements.forEach(el => { if (el) el.classList.remove('active'); });
+        if (ctx) draw();
+    }
+
     async function endGame(victory) {
         flushPlaytimeToCloud();
         State.isPlaying = false;
@@ -4174,6 +4200,9 @@ function updateRipples(dt) {
         if (victory && leftoverMisses > 0) {
             State.totalMisses = (State.totalMisses || 0) + leftoverMisses;
         }
+
+        // Негайне очищення всіх залишків рівня з ігрового поля та канвасу
+        cleanLevelRemnants();
 
         // Розрахунок точності (% вдалих попадань)
         const totalProcessed = (State.totalHits || 0) + (State.totalMisses || 0);
@@ -9172,7 +9201,7 @@ function updateRipples(dt) {
     loadCloudSongs();
     setTimeout(resizeCanvas, 100);
 
-    window.__gameDebug = { State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, handleInputDown, handleInputUp, draw, FieldThemes, updateProgressBar };
+    window.__gameDebug = { State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, handleInputDown, handleInputUp, draw, FieldThemes, updateProgressBar, cleanLevelRemnants, i18n, updateGameText };
 }
 
 if (document.readyState === 'loading') {

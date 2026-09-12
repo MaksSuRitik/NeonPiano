@@ -40,6 +40,7 @@ export default {
   perfect: "ІДЕАЛЬНО",
   good: "ДОБРЕ",
   miss: "ПРОМАХ",
+  loading: "Завантаження...",
   loadingTrack: "Аналіз треку та створення нот...",
 
   // Leaderboard Modal

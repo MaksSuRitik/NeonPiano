@@ -232,8 +232,26 @@
     </div>
 
     <div id="loader" class="loading-overlay hidden">
-      <div class="spinner"></div>
-      <h3 data-i18n="loadingTrack" style="color:white; margin-top:20px;">Аналіз треку та створення нот...</h3>
+      <div class="cyber-loader-card">
+        <div class="cyber-spinner-wrapper">
+          <div class="cyber-spinner-outer"></div>
+          <div class="cyber-spinner-inner"></div>
+          <div class="cyber-spinner-core">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"></path>
+              <circle cx="6" cy="18" r="3"></circle>
+              <circle cx="18" cy="16" r="3"></circle>
+            </svg>
+          </div>
+        </div>
+        <div class="cyber-loader-text">
+          <h3 class="cyber-loader-title" data-i18n="loading">Завантаження...</h3>
+          <p class="cyber-loader-subtitle" data-i18n="loadingTrack">Аналіз треку та створення нот...</p>
+        </div>
+        <div class="cyber-loader-bar">
+          <div class="cyber-loader-bar-glow"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Pause Modal -->
@@ -1117,6 +1135,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=68.0"></script>
+  <script type="module" src="src/main.js?v=69.0"></script>
 </body>
 </html>

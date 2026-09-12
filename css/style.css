@@ -3061,14 +3061,16 @@ canvas#rhythmCanvas {
   transition: background 0.1s;
 }
 
-/* Екран завантаження аналізу пісні */
+/* Екран завантаження аналізу пісні (Кіберпанк Неон) */
 .loading-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(5, 8, 22, 0.88);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
@@ -3083,8 +3085,184 @@ canvas#rhythmCanvas {
       -ms-flex-pack: center;
           justify-content: center;
   z-index: 200;
-  color: var(--highlight);
   contain: strict;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.cyber-loader-card {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  background: rgba(12, 19, 44, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  -webkit-box-shadow: 0 0 35px rgba(56, 189, 248, 0.22), inset 0 0 20px rgba(168, 85, 247, 0.12);
+          box-shadow: 0 0 35px rgba(56, 189, 248, 0.22), inset 0 0 20px rgba(168, 85, 247, 0.12);
+  border-radius: 24px;
+  padding: 32px 28px 26px 28px;
+  max-width: 320px;
+  width: 88%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-loader-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: -webkit-gradient(linear, left top, right top, from(transparent), color-stop(#38bdf8), color-stop(#a855f7), to(transparent));
+  background: linear-gradient(90deg, transparent, #38bdf8, #a855f7, transparent);
+}
+
+.cyber-spinner-wrapper {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  margin-bottom: 20px;
+}
+
+.cyber-spinner-outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  border-top-color: #38bdf8;
+  border-right-color: rgba(56, 189, 248, 0.4);
+  -webkit-animation: cyber-spin-cw 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+          animation: cyber-spin-cw 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  -webkit-filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+          filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+}
+
+.cyber-spinner-inner {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-bottom-color: #a855f7;
+  border-left-color: rgba(168, 85, 247, 0.5);
+  -webkit-animation: cyber-spin-ccw 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+          animation: cyber-spin-ccw 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  -webkit-filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.7));
+          filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.7));
+}
+
+.cyber-spinner-core {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  color: #38bdf8;
+  -webkit-animation: cyber-pulse-core 1.6s ease-in-out infinite alternate;
+          animation: cyber-pulse-core 1.6s ease-in-out infinite alternate;
+  -webkit-filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.9));
+          filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.9));
+}
+
+@-webkit-keyframes cyber-spin-cw {
+  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@keyframes cyber-spin-cw {
+  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@-webkit-keyframes cyber-spin-ccw {
+  100% { -webkit-transform: rotate(-360deg); transform: rotate(-360deg); }
+}
+@keyframes cyber-spin-ccw {
+  100% { -webkit-transform: rotate(-360deg); transform: rotate(-360deg); }
+}
+
+@-webkit-keyframes cyber-pulse-core {
+  0% { -webkit-transform: scale(0.88); transform: scale(0.88); opacity: 0.75; }
+  100% { -webkit-transform: scale(1.1); transform: scale(1.1); opacity: 1; }
+}
+@keyframes cyber-pulse-core {
+  0% { -webkit-transform: scale(0.88); transform: scale(0.88); opacity: 0.75; }
+  100% { -webkit-transform: scale(1.1); transform: scale(1.1); opacity: 1; }
+}
+
+.cyber-loader-text {
+  margin-bottom: 20px;
+}
+
+.cyber-loader-title {
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #f8fafc;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+  margin: 0 0 6px 0;
+}
+
+.cyber-loader-subtitle {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.cyber-loader-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cyber-loader-bar-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 45%;
+  background: -webkit-gradient(linear, left top, right top, from(transparent), color-stop(#38bdf8), color-stop(#a855f7), to(transparent));
+  background: linear-gradient(90deg, transparent, #38bdf8, #a855f7, transparent);
+  border-radius: 3px;
+  -webkit-animation: cyber-bar-slide 1.4s ease-in-out infinite;
+          animation: cyber-bar-slide 1.4s ease-in-out infinite;
+}
+
+@-webkit-keyframes cyber-bar-slide {
+  0% { left: -45%; }
+  100% { left: 100%; }
+}
+@keyframes cyber-bar-slide {
+  0% { left: -45%; }
+  100% { left: 100%; }
 }
 
 .spinner {
@@ -3694,9 +3872,11 @@ body[data-theme=light] #game-container {
     padding: 20px !important;
   }
   /* --- 🔥 ВИПРАВЛЕННЯ ДЛЯ ГРИ --- */
-  /* Зміщення гри на 1px вправо */
+  /* На мобільному прибираємо ліву крайню смугу та скидаємо зміщення */
   #game-container {
-    margin-left: 1px;
+    margin-left: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
   }
   /* 1. Опускаємо шкалу прогресу нижче кнопок меню */
   .game-header {
@@ -4114,6 +4294,9 @@ body[data-theme=light] #game-container {
   }
   /* 3. ОПТИМІЗАЦІЯ КОНТЕЙНЕРА */
   #game-container {
+    margin-left: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
     -webkit-transform: translateZ(0);
             transform: translateZ(0);
     will-change: border-color, box-shadow;

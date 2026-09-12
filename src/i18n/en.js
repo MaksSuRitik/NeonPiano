@@ -40,6 +40,7 @@ export default {
   perfect: "PERFECT",
   good: "GOOD",
   miss: "MISS",
+  loading: "Loading...",
   loadingTrack: "Analyzing audio & generating beatmap...",
 
   // Leaderboard Modal
