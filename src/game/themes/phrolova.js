@@ -24,12 +24,12 @@ export const PHROLOVA_THEME = {
     particleType: 'petal'
   },
   comboTiers: [
-    { min: 0,   max: 49,       name: 'crimson_rose',    border: 'rgba(244, 63, 94, 0.65)', glow: 'rgba(225, 29, 72, 0.45)', particleColors: ['#f43f5e', '#fda4af', '#e11d48'] },
-    { min: 50,  max: 99,       name: 'blood_velvet',    border: 'rgba(225, 29, 72, 0.85)', glow: 'rgba(190, 18, 60, 0.65)', particleColors: ['#e11d48', '#fb7185', '#ffe4e6'] },
-    { min: 100, max: 199,      name: 'rose_gold',       border: 'rgba(251, 146, 60, 0.90)', glow: 'rgba(225, 29, 72, 0.75)', particleColors: ['#fb923c', '#fda4af', '#fff1f2'] },
-    { min: 200, max: 399,      name: 'fiery_carnation', border: 'rgba(249, 115, 22, 0.95)', glow: 'rgba(234, 88, 12, 0.80)', particleColors: ['#f97316', '#fed7aa', '#ffffff'] },
-    { min: 400, max: 799,      name: 'royal_vermilion', border: 'rgba(255, 77, 109, 0.98)', glow: 'rgba(225, 29, 72, 0.90)', particleColors: ['#ff4d6d', '#ff758f', '#fff0f3'] },
-    { min: 800, max: Infinity, name: 'celestial_lily',   border: '#ffd700',                  glow: 'rgba(251, 191, 36, 0.95)', particleColors: ['#ffd700', '#ff0054', '#ffffff'] }
+    { min: 0,   max: 49,       name: 'crimson_rose',      border: 'rgba(190, 18, 60, 0.70)', glow: 'rgba(190, 18, 60, 0.45)', particleColors: ['#be123c', '#fda4af', '#e11d48'] },
+    { min: 50,  max: 99,       name: 'blood_velvet',      border: 'rgba(225, 29, 72, 0.85)', glow: 'rgba(225, 29, 72, 0.60)', particleColors: ['#e11d48', '#fb7185', '#ffe4e6'] },
+    { min: 100, max: 199,      name: 'lycoris_radiata',   border: 'rgba(244, 63, 94, 0.90)', glow: 'rgba(244, 63, 94, 0.70)', particleColors: ['#f43f5e', '#fda4af', '#fff1f2'] },
+    { min: 200, max: 399,      name: 'scarlet_requiem',   border: 'rgba(255, 23, 68, 0.95)', glow: 'rgba(255, 23, 68, 0.80)', particleColors: ['#ff1744', '#ff4d6d', '#ffffff'] },
+    { min: 400, max: 799,      name: 'claret_resonance',  border: 'rgba(255, 0, 85, 0.98)',  glow: 'rgba(255, 0, 85, 0.90)',  particleColors: ['#ff0055', '#ff758f', '#ffffff'] },
+    { min: 800, max: Infinity, name: 'ash_requiem',       border: '#f8fafc',                  glow: 'rgba(225, 29, 72, 0.95)', particleColors: ['#f8fafc', '#ff1744', '#cbd5e1'] }
   ],
 
   getTier(combo) {
@@ -49,17 +49,17 @@ export const PHROLOVA_THEME = {
     }
     if (typeof tier === 'string') {
       const s = tier.toLowerCase();
-      if (s === 'celestial_lily' || s === 'legendary' || s === 'gold_tier') return 800;
-      if (s === 'royal_vermilion' || s === 'cosmic') return 400;
-      if (s === 'fiery_carnation' || s === 'gold') return 200;
-      if (s === 'rose_gold' || s === 'electric') return 100;
+      if (s === 'ash_requiem' || s === 'celestial_lily' || s === 'legendary' || s === 'gold_tier') return 800;
+      if (s === 'claret_resonance' || s === 'royal_vermilion' || s === 'cosmic') return 400;
+      if (s === 'scarlet_requiem' || s === 'fiery_carnation' || s === 'gold') return 200;
+      if (s === 'lycoris_radiata' || s === 'rose_gold' || s === 'electric') return 100;
       if (s === 'blood_velvet') return 50;
       if (s === 'crimson_rose' || s === 'steel') return 0;
     }
     return 0;
   },
 
-  // Color palette by combo tier (vivid adaptation across all 6 tiers)
+  // Color palette by combo tier (Authentic Phrolova: Obsidian, Blood Crimson, Lycoris Ruby, Bordeaux Claret, Ash Platinum Silver — ZERO yellow/orange)
   _getPalette(tierInput, isDead = false) {
     if (isDead) {
       return {
@@ -72,51 +72,51 @@ export const PHROLOVA_THEME = {
     const tier = this._resolveTierNum(tierInput);
 
     if (tier >= 800) {
-      // 800+: celestial_lily (Ascended Celestial Imperial Gold & White)
+      // 800+: ash_requiem (Phrolova's Signature Ash-Platinum Silver & Bleeding Crimson)
       return {
-        bgTop: '#78350f', bgMid: '#451a03', bgBot: '#1c0c02',
-        border: '#ffd700', core: '#ffffff', ribbonGlow: 'rgba(251, 191, 36, 0.85)',
-        starCol: '#ffffff', stringCol: '#fef08a', beadCol: '#ffd700',
-        gemCol: '#ffd700', obsCol: '#181200', trackBg: 'rgba(35, 25, 5, 0.45)'
+        bgTop: '#2d3748', bgMid: '#1a202c', bgBot: '#0f172a',
+        border: '#f8fafc', core: '#ffffff', ribbonGlow: 'rgba(225, 29, 72, 0.85)',
+        starCol: '#ffffff', stringCol: '#e2e8f0', beadCol: '#f8fafc',
+        gemCol: '#ff1744', obsCol: '#0f1117', trackBg: 'rgba(20, 24, 32, 0.45)'
       };
     }
     if (tier >= 400) {
-      // 400+: royal_vermilion (Royal Radiant Vermilion / Neon Magenta-Crimson)
+      // 400+: claret_resonance (Royal Deep Claret Wine & Pure Diamond White)
       return {
-        bgTop: '#831843', bgMid: '#500724', bgBot: '#1f020e',
-        border: '#ff0054', core: '#fff0f5', ribbonGlow: 'rgba(255, 0, 84, 0.80)',
-        starCol: '#ffffff', stringCol: '#ff758f', beadCol: '#ff0054',
-        gemCol: '#ff0054', obsCol: '#0f0108', trackBg: 'rgba(30, 2, 14, 0.45)'
+        bgTop: '#6b0724', bgMid: '#430415', bgBot: '#180108',
+        border: '#ff0055', core: '#ffffff', ribbonGlow: 'rgba(255, 0, 85, 0.80)',
+        starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#ff0055',
+        gemCol: '#ff3366', obsCol: '#0d0106', trackBg: 'rgba(28, 2, 12, 0.45)'
       };
     }
     if (tier >= 200) {
-      // 200+: fiery_carnation (Blazing Fiery Flame-Orange / Molten Crimson)
+      // 200+: scarlet_requiem (Pure Intense Neon Blood Scarlet)
       return {
-        bgTop: '#7c2d12', bgMid: '#431407', bgBot: '#1a0502',
-        border: '#f97316', core: '#fffbeb', ribbonGlow: 'rgba(249, 115, 22, 0.75)',
-        starCol: '#ffffff', stringCol: '#fed7aa', beadCol: '#f97316',
-        gemCol: '#f97316', obsCol: '#140402', trackBg: 'rgba(28, 8, 3, 0.45)'
+        bgTop: '#7f1d1d', bgMid: '#450a0a', bgBot: '#190308',
+        border: '#ff1744', core: '#ffffff', ribbonGlow: 'rgba(255, 23, 68, 0.75)',
+        starCol: '#ffffff', stringCol: '#fecdd3', beadCol: '#ff1744',
+        gemCol: '#ff2a55', obsCol: '#100105', trackBg: 'rgba(26, 2, 8, 0.45)'
       };
     }
     if (tier >= 100) {
-      // 100+: rose_gold (Warm Rose Gold / Sunset Coral)
+      // 100+: lycoris_radiata (Radiant Spider Lily Carmine & Petal Pink)
       return {
-        bgTop: '#701a35', bgMid: '#440f20', bgBot: '#1c050d',
-        border: '#fb923c', core: '#fff7ed', ribbonGlow: 'rgba(251, 146, 60, 0.70)',
-        starCol: '#ffffff', stringCol: '#fdba74', beadCol: '#fb923c',
-        gemCol: '#fb7185', obsCol: '#120408', trackBg: 'rgba(26, 6, 12, 0.45)'
+        bgTop: '#831843', bgMid: '#4c0519', bgBot: '#1a0309',
+        border: '#f43f5e', core: '#fff1f2', ribbonGlow: 'rgba(244, 63, 94, 0.70)',
+        starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#f43f5e',
+        gemCol: '#fb7185', obsCol: '#0e0207', trackBg: 'rgba(24, 2, 9, 0.45)'
       };
     }
     if (tier >= 50) {
-      // 50+: blood_velvet (Deep Blood Carmine / Rich Scarlet Ruby)
+      // 50+: blood_velvet (Deep Blood Carmine Velvet)
       return {
         bgTop: '#6b0724', bgMid: '#390312', bgBot: '#170206',
         border: '#e11d48', core: '#ffe4e6', ribbonGlow: 'rgba(225, 29, 72, 0.60)',
         starCol: '#ffffff', stringCol: '#fda4af', beadCol: '#e11d48',
-        gemCol: '#f43f5e', obsCol: '#0c0105', trackBg: 'rgba(24, 2, 8, 0.45)'
+        gemCol: '#f43f5e', obsCol: '#0a0104', trackBg: 'rgba(22, 2, 7, 0.45)'
       };
     }
-    // Tier 0 (0-49): crimson_rose (Dark Crimson & Obsidian)
+    // Tier 0 (0-49): crimson_rose (Dark Velvet Crimson & Void Obsidian)
     return {
       bgTop: '#4c0519', bgMid: '#28030c', bgBot: '#120105',
       border: '#be123c', core: '#fecdd3', ribbonGlow: 'rgba(190, 18, 60, 0.50)',
@@ -133,7 +133,6 @@ export const PHROLOVA_THEME = {
   // ==========================================================================
   bakeTapNote(ctx, x, yTop, w, h, isLight, style) {
     const tier = this._resolveTierNum(style);
-    const isGold = (tier >= 800);
     const pal = this._getPalette(tier, false);
     const cx = x + w / 2;
     const cy = yTop + h / 2;
@@ -213,7 +212,7 @@ export const PHROLOVA_THEME = {
 
     // Outer diamond facet
     ctx.fillStyle = isLight ? 'rgba(225, 29, 72, 0.25)' : 'rgba(0, 0, 0, 0.65)';
-    ctx.strokeStyle = isGold ? '#ffd700' : pal.border;
+    ctx.strokeStyle = pal.border;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(cx, cy - starH);
@@ -227,7 +226,7 @@ export const PHROLOVA_THEME = {
     // Radiant scarlet-white 4-point star core
     const coreW = starW * 0.55;
     const coreH = starH * 0.55;
-    ctx.fillStyle = isGold ? '#ffffff' : pal.core;
+    ctx.fillStyle = pal.core;
     ctx.beginPath();
     ctx.moveTo(cx, cy - coreH);
     ctx.quadraticCurveTo(cx, cy, cx + coreW, cy);
