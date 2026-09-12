@@ -381,7 +381,7 @@ export default {
   frameCosmicNebula: "Космічний вихор",
   frameCosmicNebulaDesc: "Наберіть 400+ комбо",
   frameCyberGlitch: "Кібер-глітч",
-  frameCyberGlitchDesc: "Пройдіть трек на швидкості 1.6x",
+  frameCyberGlitchDesc: "Пройдіть трек на швидкості 1.4x",
   framePrismatic: "Призматична легенда",
   framePrismaticDesc: "800+ комбо або діамантова зірка",
 
@@ -391,7 +391,7 @@ export default {
   titleSteelFingers: "Сталеві пальці",
   titleSteelFingersDesc: "100 Perfect за трек",
   titleSpeedDemon: "Демон швидкості",
-  titleSpeedDemonDesc: "Перемога на швидкості 1.6x",
+  titleSpeedDemonDesc: "Перемога на швидкості 1.4x",
   titleNoMercy: "Без права на помилку",
   titleNoMercyDesc: "Перемога у режимі Hardcore",
   titleNightPianist: "Нічний піаніст",

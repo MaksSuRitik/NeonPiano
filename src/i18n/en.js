@@ -381,7 +381,7 @@ export default {
   frameCosmicNebula: "Cosmic Nebula",
   frameCosmicNebulaDesc: "Reach 400+ combo",
   frameCyberGlitch: "Cyber Glitch",
-  frameCyberGlitchDesc: "Pass a track at 1.6x speed",
+  frameCyberGlitchDesc: "Pass a track at 1.4x speed",
   framePrismatic: "Prismatic Legend",
   framePrismaticDesc: "800+ combo or Diamond star",
 
@@ -391,7 +391,7 @@ export default {
   titleSteelFingers: "Steel Fingers",
   titleSteelFingersDesc: "100 Perfect hits in a track",
   titleSpeedDemon: "Speed Demon",
-  titleSpeedDemonDesc: "Victory at 1.6x speed",
+  titleSpeedDemonDesc: "Victory at 1.4x speed",
   titleNoMercy: "No Mercy",
   titleNoMercyDesc: "Victory in Hardcore mode",
   titleNightPianist: "Night Pianist",

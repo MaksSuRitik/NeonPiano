@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=73.1";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=73.2";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=73.1";
+import * as FieldThemes from "./game/fieldThemes.js?v=73.2";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -323,8 +323,8 @@ const State = {
     // НОВОВВЕДЕННЯ: Попередньо відмальований спрайт радіального світіння. Він зберігається в пам'яті для оптимізованого рендерингу.
     glowSprite: null,
 
-    // Модифікатори гри: швидкість (ноти 1.0x, 1.3x, 1.6x), хардкор-режим та множник очків.
-    selectedSpeed: 1.0,       // 1.0 | 1.3 | 1.6
+    // Модифікатори гри: швидкість (ноти 1.0x, 1.2x, 1.4x), хардкор-режим та множник очків.
+    selectedSpeed: 1.0,       // 1.0 | 1.2 | 1.4
     isHardcore: false,        // 1 промах = смерть
     scoreMultiplier: 1.0      // Обчислюється з модифікаторів
 };
@@ -2225,14 +2225,14 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
                 midSens = 0.25;
                 minHoldDur = 0.34;
             } else if (diffKey === 'hard') {
-                minNoteGap = 0.23;      // Hard (1.6x): 0.23с (+57% нот, висока віртуозна щільність)
+                minNoteGap = 0.23;      // Hard (1.4x): 0.23с (+57% нот, висока віртуозна щільність)
                 chordPadding = 0.36;
                 chordCooldown = 1.9;
                 lowSens = 0.32;
                 midSens = 0.28;
                 minHoldDur = 0.36;
             } else if (diffKey === 'normal') {
-                minNoteGap = 0.28;      // Normal (1.3x): 0.28с (+27% більше нот для збереження динаміки під 1.3x)
+                minNoteGap = 0.28;      // Normal (1.2x): 0.28с (+27% більше нот для збереження динаміки під 1.2x)
                 chordPadding = 0.45;
                 chordCooldown = 2.5;
                 lowSens = 0.38;
@@ -3850,7 +3850,7 @@ function handleInputDown(lane, touchY, touchX) {
 
     // Обчислення множника очків на основі обраних модифікаторів (швидкість + хардкор).
     function computeScoreMultiplier(speed, hardcore) {
-        const speedMap = { 1.0: 1.0, 1.3: 1.3, 1.6: 1.6 };
+        const speedMap = { 1.0: 1.0, 1.2: 1.3, 1.3: 1.3, 1.4: 1.6, 1.6: 1.6 };
         const speedMult = speedMap[speed] || speed || 1.0;
         return hardcore ? Math.round(speedMult * 1.5 * 10) / 10 : speedMult;
     }
@@ -3858,16 +3858,16 @@ function handleInputDown(lane, touchY, touchX) {
     // Визначення мітки складності для відображення на картці треку.
     function getDifficultyLabel() {
         if (State.isHardcore) return getText('modHardcore');
-        if (State.selectedSpeed >= 1.5) return getText('diffHard');
-        if (State.selectedSpeed >= 1.2) return getText('diffNormal');
+        if (State.selectedSpeed >= 1.35) return getText('diffHard');
+        if (State.selectedSpeed >= 1.15) return getText('diffNormal');
         return getText('diffEasy');
     }
 
     // Отримання ключа складності для збереження (не залежить від мови).
     function getDifficultyKey() {
         if (State.isHardcore) return 'hardcore';
-        if (State.selectedSpeed >= 1.5) return 'hard';
-        if (State.selectedSpeed >= 1.2) return 'normal';
+        if (State.selectedSpeed >= 1.35) return 'hard';
+        if (State.selectedSpeed >= 1.15) return 'normal';
         return 'easy';
     }
 
@@ -5024,15 +5024,15 @@ function updateRipples(dt) {
 
         function getDiffText(speed, hardcore) {
             if (hardcore) return getText('modHardcore');
-            if (speed >= 1.5) return getText('diffHard');
-            if (speed >= 1.2) return getText('diffNormal');
+            if (speed >= 1.35) return getText('diffHard');
+            if (speed >= 1.15) return getText('diffNormal');
             return getText('diffEasy');
         }
 
         function getDiffColor(speed, hardcore) {
             if (hardcore) return '#f43f5e';
-            if (speed >= 1.5) return '#fb923c';
-            if (speed >= 1.2) return '#facc15';
+            if (speed >= 1.35) return '#fb923c';
+            if (speed >= 1.15) return '#facc15';
             return '#4ade80';
         }
 
@@ -5062,12 +5062,12 @@ function updateRipples(dt) {
                                 <span class="speed-val">1.0x</span>
                                 <span class="speed-sub">${getText('diffEasy')}</span>
                             </button>
-                            <button type="button" class="launch-speed-btn ${chosenSpeed === 1.3 ? 'active' : ''}" data-speed="1.3">
-                                <span class="speed-val">1.3x</span>
+                            <button type="button" class="launch-speed-btn ${chosenSpeed === 1.2 ? 'active' : ''}" data-speed="1.2">
+                                <span class="speed-val">1.2x</span>
                                 <span class="speed-sub">${getText('diffNormal')} (+30%)</span>
                             </button>
-                            <button type="button" class="launch-speed-btn ${chosenSpeed === 1.6 ? 'active' : ''}" data-speed="1.6">
-                                <span class="speed-val">1.6x</span>
+                            <button type="button" class="launch-speed-btn ${chosenSpeed === 1.4 ? 'active' : ''}" data-speed="1.4">
+                                <span class="speed-val">1.4x</span>
                                 <span class="speed-sub">${getText('diffHard')} (+60%)</span>
                             </button>
                         </div>

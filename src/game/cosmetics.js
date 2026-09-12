@@ -391,8 +391,8 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
     }
   }
 
-  // 5. Frame: Cyber Glitch & Title: Speed Demon (Pass track at 1.6x speed)
-  if (ctx.victory && ctx.speed >= 1.55) {
+  // 5. Frame: Cyber Glitch & Title: Speed Demon (Pass track at 1.4x speed)
+  if (ctx.victory && ctx.speed >= 1.35) {
     if (unlockFrame('frame_cyber_glitch', getText, showNotification)) {
       unlocked.push('frame_cyber_glitch');
     }

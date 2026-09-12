@@ -2,7 +2,7 @@
 // FIELD THEMES REGISTRY & HELPERS
 // ==========================================
 import { CLASSIC_THEME } from "./classic.js";
-import { PHROLOVA_THEME } from "./phrolova.js?v=73.1";
+import { PHROLOVA_THEME } from "./phrolova.js?v=73.2";
 import { DARK_ANGEL_THEME } from "./darkAngel.js";
 import { COSMIC_THEME } from "./cosmic.js";
 import { IUNO_THEME } from "./iuno.js";
