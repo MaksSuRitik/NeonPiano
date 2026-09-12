@@ -10,9 +10,9 @@ const dragonSprites = {
   gold:   typeof Image !== 'undefined' ? new Image() : null,
   dead:   typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.violet) dragonSprites.violet.src = './assets/themes/hado99_dragon_violet.png?v=71.1';
-if (dragonSprites.gold)   dragonSprites.gold.src   = './assets/themes/hado99_dragon_gold.png?v=71.1';
-if (dragonSprites.dead)   dragonSprites.dead.src   = './assets/themes/hado99_dragon_dead.png?v=71.1';
+if (dragonSprites.violet) dragonSprites.violet.src = './assets/themes/hado99_dragon_violet.png?v=71.2';
+if (dragonSprites.gold)   dragonSprites.gold.src   = './assets/themes/hado99_dragon_gold.png?v=71.2';
+if (dragonSprites.dead)   dragonSprites.dead.src   = './assets/themes/hado99_dragon_dead.png?v=71.2';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -210,27 +210,30 @@ export const HADO99_THEME = {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, tailW, tailH);
 
-    // Top-down overlapping dragon scale rows
-    const rowH = tailH / 18;
-    ctx.strokeStyle = gold ? 'rgba(251, 191, 36, 0.30)' : 'rgba(192, 132, 252, 0.26)';
-    ctx.fillStyle   = gold ? 'rgba(180, 83, 9, 0.18)'   : 'rgba(88, 28, 135, 0.18)';
-    ctx.lineWidth   = 1.0;
-    for (let r = 0; r < 18; r++) {
-      const y   = r * rowH;
-      const off = (r % 2) * tailW * 0.14;
-      for (let c = 0; c < 3; c++) {
-        const sx = (c / 2) * tailW + off * (c - 1);
-        const rx = tailW * 0.28, ry = rowH * 0.55;
-        ctx.beginPath();
-        ctx.ellipse(sx, y + ry, rx, ry, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      }
+    // Left and right border strokes (continuous with tail curves)
+    ctx.strokeStyle = gold ? 'rgba(251, 191, 36, 0.55)' : 'rgba(192, 132, 252, 0.45)';
+    ctx.lineWidth   = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(1, 0); ctx.lineTo(1, tailH);
+    ctx.moveTo(tailW - 1, 0); ctx.lineTo(tailW - 1, tailH);
+    ctx.stroke();
+
+    // Seamless V-shaped chevron armor scales pointing down towards the head
+    const rowCount = Math.round(tailH / 22);
+    ctx.strokeStyle = gold ? 'rgba(251, 191, 36, 0.32)' : 'rgba(192, 132, 252, 0.28)';
+    ctx.lineWidth   = 1.5;
+    for (let r = 0; r < rowCount; r++) {
+      const y = r * 22 + 10;
+      ctx.beginPath();
+      ctx.moveTo(cx - tailW * 0.42, y - 5);
+      ctx.lineTo(cx, y + 7);
+      ctx.lineTo(cx + tailW * 0.42, y - 5);
+      ctx.stroke();
     }
 
     // Central luminous spinal cord
     const sg = ctx.createLinearGradient(0, 0, 0, tailH);
-    sg.addColorStop(0,   gold ? 'rgba(251, 191, 36, 0.35)' : 'rgba(216, 180, 254, 0.35)');
+    sg.addColorStop(0,   gold ? 'rgba(251, 191, 36, 0.40)' : 'rgba(216, 180, 254, 0.40)');
     sg.addColorStop(0.5, gold ? '#fbbf24' : '#e9d5ff');
     sg.addColorStop(1,   '#ffffff');
     ctx.strokeStyle = sg;
@@ -252,64 +255,144 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // HOLD TAIL (rendered per-frame at trailing edge of hold note)
+  // HOLD TAIL (Seamless natural continuation of the dragon body)
+  // Perfectly merges at yTail with body width, tapering into a dragon fin tip.
   // ==========================================================================
   drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now) {
-    const isMob  = typeof window !== 'undefined' && (window.innerWidth <= 768 || navigator.maxTouchPoints > 1);
-    const cx     = Math.round(x + w / 2);
-    const sX     = w / 100;
-    const len    = Math.min(36, headH) * sX;
-    const tipY   = yTail - len;
-    const hw     = Math.max(5, Math.round((w - 18) / 2));
+    const isMob   = typeof window !== 'undefined' && (window.innerWidth <= 768 || navigator.maxTouchPoints > 1);
+    const bodyW   = Math.max(10, Math.round(w - 16));
+    const bodyX   = Math.round(x + 8);
+    const cx      = bodyX + bodyW / 2;
+    const hw      = bodyW / 2;
+    const tailLen = Math.min(95, Math.round(headH * 0.55));
+    const tipY    = yTail - tailLen;
+
     const holding = tile.holding && tile.hit;
     const dead    = tile.failed;
+    // Check if gold tier (800+ combo)
+    const isGold  = (tile?.style?.tier >= 800 || (typeof State !== 'undefined' && State?.combo >= 800)) && !dead;
 
     ctx.save();
 
-    const tg = ctx.createLinearGradient(cx, yTail, cx, tipY);
+    // Color palette for tail
+    let bgTop, bgBot, borderCol, chevronCol, spineCol, finCol;
     if (dead) {
-      tg.addColorStop(0, '#1e293b'); tg.addColorStop(1, '#0f172a');
+      bgTop = '#0f172a'; bgBot = '#1e293b';
+      borderCol = '#334155'; chevronCol = 'rgba(100, 116, 139, 0.4)';
+      spineCol = '#64748b'; finCol = '#334155';
+    } else if (isGold) {
+      bgTop = '#78350f'; bgBot = '#b45309';
+      borderCol = '#fbbf24'; chevronCol = 'rgba(253, 224, 71, 0.55)';
+      spineCol = '#ffffff'; finCol = '#fbbf24';
     } else if (holding) {
-      tg.addColorStop(0, '#c084fc'); tg.addColorStop(0.55, '#d946ef'); tg.addColorStop(1, '#ffffff');
+      bgTop = '#581c87'; bgBot = '#9333ea';
+      borderCol = '#f0abfc'; chevronCol = 'rgba(245, 208, 254, 0.65)';
+      spineCol = '#ffffff'; finCol = '#d946ef';
     } else {
-      tg.addColorStop(0, '#3b0764'); tg.addColorStop(0.6,  '#7e22ce'); tg.addColorStop(1, '#c084fc');
+      bgTop = '#2e0854'; bgBot = '#4c1d95';
+      borderCol = 'rgba(192, 132, 252, 0.70)'; chevronCol = 'rgba(192, 132, 252, 0.35)';
+      spineCol = '#e9d5ff'; finCol = '#7e22ce';
     }
 
-    ctx.fillStyle   = tg;
-    ctx.strokeStyle = dead ? '#334155' : (holding ? '#ffffff' : '#a855f7');
-    ctx.lineWidth   = 1.1;
+    // 1. Tapering dragon tail body (cubic bezier with vertical tangent at body connection)
+    const tg = ctx.createLinearGradient(cx, tipY, cx, yTail + 2);
+    tg.addColorStop(0, bgTop);
+    tg.addColorStop(1, bgBot);
+    ctx.fillStyle = tg;
 
-    // Tapered dragon tail body
+    // Build left and right curves
+    // At yTail + 2: width is exactly bodyW (cx ± hw), vertical slope matches body sides
     ctx.beginPath();
-    ctx.moveTo(cx - hw, yTail);
-    ctx.bezierCurveTo(cx - hw * 0.50, yTail - len * 0.45, cx - 5 * sX, yTail - len * 0.80, cx, tipY - 2 * sX);
-    ctx.bezierCurveTo(cx + 5 * sX, yTail - len * 0.80, cx + hw * 0.50, yTail - len * 0.45, cx + hw, yTail);
+    ctx.moveTo(cx - hw, yTail + 2);
+    ctx.bezierCurveTo(
+      cx - hw,         yTail - tailLen * 0.32,
+      cx - hw * 0.28,  tipY + tailLen * 0.22,
+      cx,              tipY
+    );
+    ctx.bezierCurveTo(
+      cx + hw * 0.28,  tipY + tailLen * 0.22,
+      cx + hw,         yTail - tailLen * 0.32,
+      cx + hw,         yTail + 2
+    );
     ctx.closePath();
     ctx.fill();
+
+    // Stroke ONLY left and right outer curves (NO stroke across the base seam!)
+    ctx.strokeStyle = borderCol;
+    ctx.lineWidth   = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx - hw, yTail + 2);
+    ctx.bezierCurveTo(
+      cx - hw,         yTail - tailLen * 0.32,
+      cx - hw * 0.28,  tipY + tailLen * 0.22,
+      cx,              tipY
+    );
+    ctx.moveTo(cx, tipY);
+    ctx.bezierCurveTo(
+      cx + hw * 0.28,  tipY + tailLen * 0.22,
+      cx + hw,         yTail - tailLen * 0.32,
+      cx + hw,         yTail + 2
+    );
     ctx.stroke();
 
-    // Barbed fin-blades at tail tip
-    if (!dead) {
-      ctx.strokeStyle = holding ? '#ffffff' : '#c084fc';
-      ctx.lineWidth   = 1.8 * sX;
-      ctx.lineCap     = 'round';
-      for (const s of [-1, 1]) {
-        ctx.beginPath();
-        ctx.moveTo(cx, tipY - 2 * sX);
-        ctx.bezierCurveTo(cx + s * 4 * sX, tipY - 9 * sX, cx + s * 8 * sX, tipY - 14 * sX, cx + s * 3 * sX, tipY - 20 * sX);
-        ctx.stroke();
-      }
+    // 2. Tapering chevron armor scales (seamless continuation of body scales)
+    ctx.strokeStyle = chevronCol;
+    ctx.lineWidth   = 1.4;
+    const chevrons  = 4;
+    for (let i = 1; i <= chevrons; i++) {
+      const t = i / (chevrons + 1);
+      const cyT = yTail - t * tailLen * 0.80;
+      const curHW = hw * Math.pow(1.0 - t, 1.25);
+      ctx.beginPath();
+      ctx.moveTo(cx - curHW + 2, cyT - 3);
+      ctx.lineTo(cx, cyT + 5);
+      ctx.lineTo(cx + curHW - 2, cyT - 3);
+      ctx.stroke();
     }
 
-    // Spiritual lightning flash on hold
-    if (holding && !isMob) {
-      const fl = Math.sin(now * 0.022) * 3;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth   = 1.3;
+    // 3. Continuous spinal cord running straight to the tip
+    ctx.strokeStyle = spineCol;
+    ctx.lineWidth   = holding ? 2.6 : 2.0;
+    ctx.beginPath();
+    ctx.moveTo(cx, yTail + 4);
+    ctx.lineTo(cx, tipY);
+    ctx.stroke();
+
+    // 4. Elegant dragon tail fin (flame blades at the tip)
+    if (!dead) {
+      // Side flame blades
+      ctx.fillStyle   = finCol;
+      ctx.strokeStyle = isGold ? '#ffffff' : (holding ? '#ffffff' : '#e9d5ff');
+      ctx.lineWidth   = 1.0;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(cx, tipY + 8);
+        ctx.bezierCurveTo(cx + s * 14, tipY - 4, cx + s * 22, tipY - 14, cx + s * 18, tipY - 26);
+        ctx.bezierCurveTo(cx + s * 10, tipY - 16, cx + s * 4, tipY - 10, cx, tipY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Center plume blade
+      ctx.fillStyle = isGold ? '#ffffff' : (holding ? '#ffffff' : '#f5d0fe');
       ctx.beginPath();
-      ctx.moveTo(cx, tipY - 20 * sX);
-      ctx.lineTo(cx + fl, tipY - 28 * sX);
-      ctx.lineTo(cx - fl * 0.5, tipY - 35 * sX);
+      ctx.moveTo(cx - 3, tipY + 4);
+      ctx.lineTo(cx, tipY - 30);
+      ctx.lineTo(cx + 3, tipY + 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 5. Spiritual lightning arcs when holding
+    if (holding && !isMob) {
+      const fl = Math.sin(now * 0.022) * 3.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth   = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(cx, tipY - 18);
+      ctx.lineTo(cx + fl, tipY - 26);
+      ctx.lineTo(cx - fl * 0.6, tipY - 36);
       ctx.stroke();
     }
 
