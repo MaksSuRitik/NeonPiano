@@ -49,10 +49,10 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=72.5";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=72.6";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=72.5";
+import * as FieldThemes from "./game/fieldThemes.js?v=72.6";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -4699,14 +4699,17 @@ function updateRipples(dt) {
             }
         }
 
-        // Перевірка секретних рівнів та підрахунок статистики каталогу
+        // Перевірка секретних рівнів та підрахунок статистики каталогу (пройденими вважаються треки з >= 3 зірками)
         let total3StarSongs = 0;
         let totalCompleted = 0;
         songsDB.forEach(s => {
             if (!s) return;
             const d = getSavedData(s.title);
-            if (d && d.stars >= 3 && !s.isSecret) total3StarSongs++;
-            if (d && d.score > 0) totalCompleted++;
+            const stars = (d && typeof d.stars === 'number') ? d.stars : 0;
+            if (stars >= 3) {
+                totalCompleted++;
+                if (!s.isSecret) total3StarSongs++;
+            }
         });
         const isSecretUnlocked = total3StarSongs >= 5;
 
@@ -4764,9 +4767,11 @@ function updateRipples(dt) {
 
         // 2. Фільтрація за активним чіпом категорії
         if (currentSongFilter === 'completed') {
-            displayedSongs = displayedSongs.filter(item => (item.saved.score || 0) > 0);
+            // Пройдені: рівні, де зароблено 3 або більше зірок
+            displayedSongs = displayedSongs.filter(item => (item.saved.stars || 0) >= 3);
         } else if (currentSongFilter === 'unplayed') {
-            displayedSongs = displayedSongs.filter(item => !item.saved.score || item.saved.score === 0);
+            // Не пройдені: рівні, де менше 3 зірок (< 3)
+            displayedSongs = displayedSongs.filter(item => (item.saved.stars || 0) < 3);
         } else if (currentSongFilter === 'hardcore') {
             displayedSongs = displayedSongs.filter(item => {
                 const s = item.saved;
@@ -4778,7 +4783,36 @@ function updateRipples(dt) {
 
         // 3. Сортування списку
         if (currentSongSort === 'score') {
-            displayedSongs.sort((a, b) => (b.saved.score || 0) - (a.saved.score || 0));
+            // Сортування за рекордом: враховує зірки, діаманти та рахунок
+            displayedSongs.sort((a, b) => {
+                const sA = a.saved || {};
+                const sB = b.saved || {};
+
+                const starsA = sA.stars || 0;
+                const starsB = sB.stars || 0;
+
+                const typesA = Array.isArray(sA.starTypes) ? sA.starTypes : [];
+                const typesB = Array.isArray(sB.starTypes) ? sB.starTypes : [];
+
+                const diamondsA = typesA.slice(0, starsA).filter(t => t === 2).length;
+                const diamondsB = typesB.slice(0, starsB).filter(t => t === 2).length;
+
+                const scoreA = sA.score || 0;
+                const scoreB = sB.score || 0;
+
+                // 1. Кількість зірок: рівні з більшою кількістю зірок вище (3 зірки > 2 зірки > 1 зірка > 0)
+                if (starsA !== starsB) {
+                    return starsB - starsA;
+                }
+
+                // 2. Діамантові зірки: при рівній кількості зірок діаманти (0 промахів / Full Combo) дають пріоритет
+                if (diamondsA !== diamondsB) {
+                    return diamondsB - diamondsA;
+                }
+
+                // 3. Рекордний рахунок (score): при однакових зірках та діамантах порівнюємо числовий результат
+                return scoreB - scoreA;
+            });
         } else if (currentSongSort === 'title') {
             displayedSongs.sort((a, b) => (a.song.title || '').localeCompare(b.song.title || ''));
         } else if (currentSongSort === 'durationAsc') {
