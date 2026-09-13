@@ -5,6 +5,7 @@
 
 const PIXI_CDN_URL = "https://cdn.jsdelivr.net/npm/pixi.js@8.7.3/dist/pixi.mjs";
 import { pixiNotePool } from "./PixiNotePool.js";
+import { pixiParticleSystem } from "./PixiParticleSystem.js";
 
 /**
  * Loads the PixiJS v8 engine either from global window.PIXI (if loaded via script tag)
@@ -48,6 +49,8 @@ export class PixiRenderer {
     this.statusIndicator = null;
     this.backendName = "Unknown";
     this.areNotesHandled = false;
+    this.areParticlesHandled = false;
+    this.particleSystem = pixiParticleSystem;
   }
 
   /**
@@ -147,6 +150,10 @@ export class PixiRenderer {
         padding: padding
       });
 
+      // Initialize Phase 4 visual effects and particle system
+      this.particleSystem.init(this.PIXI, this.app, this.effectsLayer, this.backgroundLayer);
+      this.areParticlesHandled = true;
+
       // Detect active graphics backend (WebGPU or WebGL2)
       this.backendName = (this.app.renderer && this.app.renderer.type) ? String(this.app.renderer.type) : "WebGL";
       if (this.app.renderer?.name) {
@@ -229,6 +236,11 @@ export class PixiRenderer {
       pixiNotePool.update(songTime, state.activeTiles, state, config, activeTheme);
     }
 
+    // Update Phase 4 visual effects and particle system
+    if (this.particleSystem && this.areParticlesHandled) {
+      this.particleSystem.update(Date.now(), state ? state.combo : 0, activeTheme);
+    }
+
     // Animate status indicator (smooth neon pulse)
     if (this.statusIndicator) {
       const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.004);
@@ -244,6 +256,42 @@ export class PixiRenderer {
    */
   clearNotes() {
     pixiNotePool.reset();
+  }
+
+  /**
+   * Clears all active particles and hit visualizers.
+   */
+  clearParticles() {
+    if (this.particleSystem) {
+      this.particleSystem.reset();
+    }
+  }
+
+  /**
+   * Triggers a cinematic hit explosion with expanding acoustic shockwave, razor lacerations, and diamond shards.
+   */
+  triggerHitEffect(cx, cy, w, h, isPerfect = true, themeId = 'default', combo = 0, lane = 0, activeTheme = null) {
+    if (this.particleSystem && this.areParticlesHandled) {
+      this.particleSystem.spawnHit(cx, cy, w, h, isPerfect, themeId, combo, activeTheme);
+    }
+  }
+
+  /**
+   * Spawns directional sparks and shards.
+   */
+  spawnSparks(cx, cy, count, colorHex, themeId = 'default', type = 'good', combo = 0) {
+    if (this.particleSystem && this.areParticlesHandled) {
+      this.particleSystem.spawnSparks(cx, cy, count, colorHex, themeId, type, combo);
+    }
+  }
+
+  /**
+   * Spawns dissolve particles for hold notes.
+   */
+  spawnDissolve(x, y, w) {
+    if (this.particleSystem && this.areParticlesHandled) {
+      this.particleSystem.spawnDissolve(x, y, w);
+    }
   }
 
   /**

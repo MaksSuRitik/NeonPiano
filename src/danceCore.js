@@ -49,11 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=74.2";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=74.3";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=74.2";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=74.2";
+import * as FieldThemes from "./game/fieldThemes.js?v=74.3";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=74.3";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -1950,6 +1950,7 @@ function bootGame() {
         
         // Скидання стану всіх частинок у пулі, щоб вони були готові до повторного використання у новій грі.
         for(let i=0; i<MAX_PARTICLES; i++) particlePool[i].active = false;
+        if (pixiRenderer && pixiRenderer.clearParticles) pixiRenderer.clearParticles();
         State.activeRatings = [];
         
         State.comboScale = 1.0;
@@ -3077,25 +3078,27 @@ function update(songTime) {
         const pixiHandlesNotes = pixiRenderer && pixiRenderer.isReady && pixiRenderer.areNotesHandled;
 
         if (pixiHandlesNotes) {
-            // Ноти рендеряться на GPU через Pixi.js. Canvas 2D відмальовує хіт-анімації влучання до Фази 4.
-            for (let i = 0; i < State.activeTiles.length; i++) {
-                const tile = State.activeTiles[i];
-                if (tile.completed || !tile.hit || !tile.hitAnimStart) continue;
+            // Ноти рендеряться на GPU через Pixi.js. Canvas 2D хіт-анімації викликаються лише як фолбек, якщо Pixi ефекти вимкнено (Фаза 4)
+            if (!pixiRenderer.areParticlesHandled) {
+                for (let i = 0; i < State.activeTiles.length; i++) {
+                    const tile = State.activeTiles[i];
+                    if (tile.completed || !tile.hit || !tile.hitAnimStart) continue;
 
-                const animDuration = 240;
-                const elapsed = now - tile.hitAnimStart;
-                if (elapsed < animDuration) {
-                    const p = elapsed / animDuration;
-                    const x = tile.lane * laneW + padding;
-                    const progressStart = 1 - (tile.time - songTime) / State.currentSpeed;
-                    const visualY = (tile.hitVisualY > 0) ? tile.hitVisualY : progressStart * hitY;
-                    const yTop = visualY - CONFIG.noteHeight;
-                    const cx = x + w / 2;
-                    const cy = yTop + CONFIG.noteHeight / 2;
-                    const isPerfect = (tile.hitRating === 'perfect');
+                    const animDuration = 240;
+                    const elapsed = now - tile.hitAnimStart;
+                    if (elapsed < animDuration) {
+                        const p = elapsed / animDuration;
+                        const x = tile.lane * laneW + padding;
+                        const progressStart = 1 - (tile.time - songTime) / State.currentSpeed;
+                        const visualY = (tile.hitVisualY > 0) ? tile.hitVisualY : progressStart * hitY;
+                        const yTop = visualY - CONFIG.noteHeight;
+                        const cx = x + w / 2;
+                        const cy = yTop + CONFIG.noteHeight / 2;
+                        const isPerfect = (tile.hitRating === 'perfect');
 
-                    if (activeTheme && typeof activeTheme.drawHitAnimation === 'function') {
-                        activeTheme.drawHitAnimation(ctx, cx, cy, w, CONFIG.noteHeight, p, isPerfect, isLight, now, State.combo);
+                        if (activeTheme && typeof activeTheme.drawHitAnimation === 'function') {
+                            activeTheme.drawHitAnimation(ctx, cx, cy, w, CONFIG.noteHeight, p, isPerfect, isLight, now, State.combo);
+                        }
                     }
                 }
             }
@@ -3390,55 +3393,58 @@ function update(songTime) {
             activeTheme.drawPostNotesOverlay(ctx, now, State.combo);
         }
 
-        // 5. Рендеринг системи частинок (іскор) при влучанні по нотах.
+        // 5. Рендеринг системи частинок (іскор) при влучанні по нотах (Canvas 2D фолбек)
         ctx.shadowBlur = 0; 
         
-        for (let i = 0; i < MAX_PARTICLES; i++) {
-            let pt = particlePool[i];
-            if (!pt.active) continue;
+        const pixiHandlesParticles = pixiRenderer && pixiRenderer.isReady && pixiRenderer.areParticlesHandled;
+        if (!pixiHandlesParticles) {
+            for (let i = 0; i < MAX_PARTICLES; i++) {
+                let pt = particlePool[i];
+                if (!pt.active) continue;
 
-            pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.5; pt.life -= 0.035;
-            if (State.combo >= 400) pt.angle += pt.spin; 
-            
-            if (pt.life <= 0.05) { pt.active = false; continue; }
+                pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.5; pt.life -= 0.035;
+                if (State.combo >= 400) pt.angle += pt.spin; 
+                
+                if (pt.life <= 0.05) { pt.active = false; continue; }
 
-            ctx.globalAlpha = Math.max(0, pt.life);
-            ctx.fillStyle = pt.color;
-            
-            if (activeTheme && typeof activeTheme.drawParticle === 'function') {
-                activeTheme.drawParticle(ctx, pt, pt.life);
-                continue;
+                ctx.globalAlpha = Math.max(0, pt.life);
+                ctx.fillStyle = pt.color;
+                
+                if (activeTheme && typeof activeTheme.drawParticle === 'function') {
+                    activeTheme.drawParticle(ctx, pt, pt.life);
+                    continue;
+                }
+
+                ctx.beginPath();
+                if (State.combo >= 800 || State.combo >= 400) {
+                     const size = State.combo >= 800 ? 6 : 8; 
+                     const thickness = 2; 
+                     const c = Math.cos(pt.angle);
+                     const s = Math.sin(pt.angle);
+                     
+                     const hw = size/2; const hh = thickness/2;
+                     const p1x = (-hw)*c - (-hh)*s + pt.x; const p1y = (-hw)*s + (-hh)*c + pt.y;
+                     const p2x = (hw)*c - (-hh)*s + pt.x;  const p2y = (hw)*s + (-hh)*c + pt.y;
+                     const p3x = (hw)*c - (hh)*s + pt.x;   const p3y = (hw)*s + (hh)*c + pt.y;
+                     const p4x = (-hw)*c - (hh)*s + pt.x;  const p4y = (-hw)*s + (hh)*c + pt.y;
+                     ctx.moveTo(p1x, p1y); ctx.lineTo(p2x, p2y); ctx.lineTo(p3x, p3y); ctx.lineTo(p4x, p4y); ctx.lineTo(p1x, p1y);
+
+                     const vhw = thickness/2; const vhh = size/2;
+                     const q1x = (-vhw)*c - (-vhh)*s + pt.x; const q1y = (-vhw)*s + (-vhh)*c + pt.y;
+                     const q2x = (vhw)*c - (-vhh)*s + pt.x;  const q2y = (vhw)*s + (-vhh)*c + pt.y;
+                     const q3x = (vhw)*c - (vhh)*s + pt.x;   const q3y = (vhw)*s + (vhh)*c + pt.y;
+                     const q4x = (-vhw)*c - (vhh)*s + pt.x;  const q4y = (-vhw)*s + (hh)*c + pt.y;
+                     ctx.moveTo(q1x, q1y); ctx.lineTo(q2x, q2y); ctx.lineTo(q3x, q3y); ctx.lineTo(q4x, q4y); ctx.lineTo(q1x, q1y);
+                     
+                } else if (State.combo >= 200) {
+                    ctx.moveTo(pt.x, pt.y - 4); ctx.lineTo(pt.x + 4, pt.y); ctx.lineTo(pt.x, pt.y + 4); ctx.lineTo(pt.x - 4, pt.y);
+                } else {
+                    ctx.arc(pt.x, pt.y, (i % 3) + 1, 0, Math.PI * 2);
+                }
+                ctx.fill();
             }
-
-            ctx.beginPath();
-            if (State.combo >= 800 || State.combo >= 400) {
-                 const size = State.combo >= 800 ? 6 : 8; 
-                 const thickness = 2; 
-                 const c = Math.cos(pt.angle);
-                 const s = Math.sin(pt.angle);
-                 
-                 const hw = size/2; const hh = thickness/2;
-                 const p1x = (-hw)*c - (-hh)*s + pt.x; const p1y = (-hw)*s + (-hh)*c + pt.y;
-                 const p2x = (hw)*c - (-hh)*s + pt.x;  const p2y = (hw)*s + (-hh)*c + pt.y;
-                 const p3x = (hw)*c - (hh)*s + pt.x;   const p3y = (hw)*s + (hh)*c + pt.y;
-                 const p4x = (-hw)*c - (hh)*s + pt.x;  const p4y = (-hw)*s + (hh)*c + pt.y;
-                 ctx.moveTo(p1x, p1y); ctx.lineTo(p2x, p2y); ctx.lineTo(p3x, p3y); ctx.lineTo(p4x, p4y); ctx.lineTo(p1x, p1y);
-
-                 const vhw = thickness/2; const vhh = size/2;
-                 const q1x = (-vhw)*c - (-vhh)*s + pt.x; const q1y = (-vhw)*s + (-vhh)*c + pt.y;
-                 const q2x = (vhw)*c - (-vhh)*s + pt.x;  const q2y = (vhw)*s + (-vhh)*c + pt.y;
-                 const q3x = (vhw)*c - (vhh)*s + pt.x;   const q3y = (vhw)*s + (vhh)*c + pt.y;
-                 const q4x = (-vhw)*c - (vhh)*s + pt.x;  const q4y = (-vhw)*s + (hh)*c + pt.y;
-                 ctx.moveTo(q1x, q1y); ctx.lineTo(q2x, q2y); ctx.lineTo(q3x, q3y); ctx.lineTo(q4x, q4y); ctx.lineTo(q1x, q1y);
-                 
-            } else if (State.combo >= 200) {
-                ctx.moveTo(pt.x, pt.y - 4); ctx.lineTo(pt.x + 4, pt.y); ctx.lineTo(pt.x, pt.y + 4); ctx.lineTo(pt.x - 4, pt.y);
-            } else {
-                ctx.arc(pt.x, pt.y, (i % 3) + 1, 0, Math.PI * 2);
-            }
-            ctx.fill();
+            ctx.globalAlpha = 1;
         }
-        ctx.globalAlpha = 1;
 
         // 6. Останнім шаром відмальовуються тільки оцінки точності в центрі (ІДЕАЛЬНО / ДОБРЕ / ПРОМАХ).
         // Комбо та множник тепер елегантно інтегровані у верхній бейдж game-combo-pill.
@@ -3615,6 +3621,13 @@ function update(songTime) {
         }
         
         const count = type === 'perfect' ? 16 : 8;
+
+        // Phase 4: Delegate to PixiRenderer WebGL particle system
+        if (pixiRenderer && pixiRenderer.isReady && pixiRenderer.areParticlesHandled) {
+            pixiRenderer.spawnSparks(x, y, count, finalColor, activeTheme ? activeTheme.id : 'default', type, State.combo);
+            return;
+        }
+
         let spawned = 0;
         
         for (let i = 0; i < MAX_PARTICLES; i++) {
@@ -3642,6 +3655,12 @@ function update(songTime) {
 
     // Легкі димчасто-попелясті частинки розчинення довгої ноти, що занурюється крізь струни в невидимий простір
     function spawnDissolveParticles(x, y, w) {
+        // Phase 4: Delegate to PixiRenderer WebGL dissolve particles
+        if (pixiRenderer && pixiRenderer.isReady && pixiRenderer.areParticlesHandled) {
+            pixiRenderer.spawnDissolve(x, y, w);
+            return;
+        }
+
         for (let i = 0; i < 2; i++) {
             const idx = (particlePoolIndex + i) % MAX_PARTICLES;
             if (!particlePool[idx].active) {
@@ -3795,6 +3814,17 @@ function handleInputDown(lane, touchY, touchX) {
             } else {
                 State.combo++;
                 if (State.combo > State.maxCombo) State.maxCombo = State.combo;
+            }
+
+            // Phase 4: Trigger GPU WebGL Hit Explosion in PixiRenderer
+            if (pixiRenderer && pixiRenderer.isReady && pixiRenderer.areParticlesHandled) {
+                const laneW = State.gameWidth / 4;
+                const padding = 6;
+                const w = laneW - (padding * 2);
+                const cx = target.lane * laneW + laneW / 2;
+                const cy = (target.hitVisualY > 0 ? target.hitVisualY : targetY) - CONFIG.noteHeight / 2;
+                const isPerfect = (target.hitRating === 'perfect');
+                pixiRenderer.triggerHitEffect(cx, cy, w, CONFIG.noteHeight, isPerfect, activeTheme ? activeTheme.id : 'default', State.combo, target.lane, activeTheme);
             }
 
             // Плавна неонова хвиля на лінії удару без вибуху ноти
@@ -4350,6 +4380,7 @@ function updateRipples(dt) {
             draw();
             pixiRenderer.render(0, State);
             pixiRenderer.clearNotes();
+            if (pixiRenderer.clearParticles) pixiRenderer.clearParticles();
         }
     }
 
