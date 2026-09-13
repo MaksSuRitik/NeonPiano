@@ -51,6 +51,7 @@ export class PixiRenderer {
     this.areNotesHandled = false;
     this.areParticlesHandled = false;
     this.particleSystem = pixiParticleSystem;
+    this.cachedSpriteCache = null;
   }
 
   /**
@@ -111,6 +112,29 @@ export class PixiRenderer {
         } else if (container) {
           container.appendChild(this.canvas);
         }
+
+        // WebGL Context Loss & Restore Resilience (Phase 5)
+        this.canvas.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault();
+          console.warn("[PixiRenderer] WebGL context lost! Falling back seamlessly to Canvas 2D.");
+          this.isReady = false;
+          this.areNotesHandled = false;
+          this.areParticlesHandled = false;
+        }, false);
+
+        this.canvas.addEventListener('webglcontextrestored', () => {
+          console.log("[PixiRenderer] WebGL context restored! Re-synchronizing textures.");
+          try {
+            if (this.cachedSpriteCache) {
+              this.syncThemeTextures(this.cachedSpriteCache);
+            }
+            this.isReady = true;
+            this.areNotesHandled = true;
+            this.areParticlesHandled = true;
+          } catch (err) {
+            console.error("[PixiRenderer] Context restoration failed:", err);
+          }
+        }, false);
       }
 
       // Root scene graph setup
@@ -217,6 +241,7 @@ export class PixiRenderer {
    */
   syncThemeTextures(SpriteCache) {
     if (!SpriteCache) return;
+    this.cachedSpriteCache = SpriteCache;
     pixiNotePool.updateTexturesFromCache(SpriteCache);
     this.areNotesHandled = true;
   }
@@ -344,6 +369,8 @@ export class PixiRenderer {
       width: this.width,
       height: this.height,
       dpr: this.dpr,
+      areNotesHandled: this.areNotesHandled,
+      areParticlesHandled: this.areParticlesHandled,
       childrenCount: {
         background: this.backgroundLayer?.children.length || 0,
         field: this.fieldLayer?.children.length || 0,
