@@ -1069,6 +1069,195 @@ export async function fetchSpotifyTrackMetadata(spotifyUrl) {
 }
 
 /**
+ * Fetches YouTube and YouTube Music track metadata (Title, Artist, Duration, Cover) using 100% CORS-friendly
+ * endpoints (official YouTube oEmbed, Noembed fallback, Microlink fallback, and iTunes Search API fallback for duration).
+ * 
+ * @param {string} youtubeUrl 
+ * @returns {Promise<{ success: boolean, title: string, artist: string, duration: number, coverUrl?: string }>}
+ */
+export async function fetchYouTubeTrackMetadata(youtubeUrl) {
+  if (!youtubeUrl || typeof youtubeUrl !== "string") {
+    throw new Error(i18n.t("adminSpotifyError") || "Вкажіть посилання на трек YouTube / YouTube Music.");
+  }
+
+  const cleanInput = youtubeUrl.trim();
+  const videoIdMatch = cleanInput.match(/(?:(?:music\.)?youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+  const videoId = videoIdMatch ? videoIdMatch[1] : (cleanInput.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(cleanInput) ? cleanInput : null);
+
+  if (!videoId && !cleanInput.includes("youtube.com") && !cleanInput.includes("youtu.be")) {
+    throw new Error(i18n.t("adminSpotifyError") || "Невірний формат посилання YouTube Music. Очікується https://music.youtube.com/watch?v=...");
+  }
+
+  let rawTitle = "";
+  let rawAuthor = "";
+  let coverUrl = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "";
+
+  // Strategy 1: Official YouTube oEmbed API (supports CORS directly from browser)
+  if (videoId) {
+    try {
+      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+      const resp = await fetch(oembedUrl, { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json.title) rawTitle = json.title;
+        if (json.author_name) rawAuthor = json.author_name;
+        if (json.thumbnail_url) coverUrl = json.thumbnail_url;
+      }
+    } catch (err) {
+      console.warn("[YouTube] Official oEmbed failed:", err);
+    }
+  }
+
+  // Strategy 2: Noembed fallback (public CORS-friendly oEmbed proxy)
+  if (!rawTitle && videoId) {
+    try {
+      const noembedUrl = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`;
+      const resp = await fetch(noembedUrl, { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json.title) rawTitle = json.title;
+        if (json.author_name) rawAuthor = json.author_name;
+        if (json.thumbnail_url) coverUrl = json.thumbnail_url;
+      }
+    } catch (err) {
+      console.warn("[YouTube] Noembed fallback failed:", err);
+    }
+  }
+
+  // Strategy 3: Microlink fallback
+  if (!rawTitle) {
+    try {
+      const target = videoId ? `https://www.youtube.com/watch?v=${videoId}` : cleanInput;
+      const microlinkUrl = `https://api.microlink.io/?url=${encodeURIComponent(target)}`;
+      const resp = await fetch(microlinkUrl, { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json?.data) {
+          if (json.data.title) rawTitle = json.data.title;
+          if (json.data.author) rawAuthor = json.data.author;
+          if (json.data.image?.url) coverUrl = json.data.image.url;
+        }
+      }
+    } catch (err) {
+      console.warn("[YouTube] Microlink fallback failed:", err);
+    }
+  }
+
+  // Smart Parsing of Artist and Track Title:
+  let parsedArtist = "";
+  let parsedTitle = "";
+
+  // 1. If author has " - Topic" (YouTube Music auto-generated artist topic channels), clean it
+  let cleanAuthor = rawAuthor ? rawAuthor.replace(/\s*-\s*Topic$/i, "").trim() : "";
+
+  if (rawTitle) {
+    // Check if title has "Artist - Title" format
+    const dashMatch = rawTitle.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+    if (dashMatch) {
+      parsedArtist = dashMatch[1].trim();
+      parsedTitle = dashMatch[2].trim();
+    } else {
+      parsedTitle = rawTitle.trim();
+      parsedArtist = cleanAuthor;
+    }
+  }
+
+  // 2. Remove typical YouTube video noise words from the track title
+  parsedTitle = parsedTitle
+    .replace(/[\(\[]\s*(?:Official\s*(?:Music\s*)?(?:Video|Audio|Visualizer|Lyric\s*Video)|Music\s*Video|Lyric\s*Video|Lyrics|Audio|Visualizer|MV|4K|Remaster(?:ed)?|HD|HQ)\b[^\)\]]*[\)\]]/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  // 3. Clean common channel suffixes like VEVO or Official Channel
+  if (parsedArtist) {
+    parsedArtist = parsedArtist
+      .replace(/(?:VEVO|Official(?:\s*(?:Channel|Music|Video))?)$/i, "")
+      .trim();
+  }
+
+  let duration = 0;
+
+  // Strategy 4: iTunes Search API fallback to obtain exact duration and HD album cover
+  if (parsedTitle) {
+    try {
+      const query = parsedArtist ? `${parsedArtist} ${parsedTitle}` : parsedTitle;
+      const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`;
+      const resp = await fetch(itunesUrl, { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) {
+        const json = await resp.json();
+        const item = json.results?.[0];
+        if (item) {
+          if (item.trackTimeMillis) {
+            duration = Math.round(item.trackTimeMillis / 100) / 10;
+          }
+          if (!parsedArtist && item.artistName) {
+            parsedArtist = item.artistName;
+          }
+          if (item.artworkUrl100) {
+            coverUrl = item.artworkUrl100.replace("100x100bb", "600x600bb");
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[YouTube] iTunes search fallback failed:", err);
+    }
+  }
+
+  if (!parsedTitle && !parsedArtist) {
+    throw new Error(i18n.t("adminSpotifyError") || "Не вдалося отримати дані треку з YouTube. Будь ласка, перевірте посилання.");
+  }
+
+  return {
+    success: true,
+    title: parsedTitle.trim(),
+    artist: parsedArtist.trim(),
+    duration: duration > 0 ? duration : 0,
+    coverUrl
+  };
+}
+
+/**
+ * Automatically detects whether a URL is from Spotify or YouTube / YouTube Music
+ * and extracts track metadata accordingly.
+ * 
+ * @param {string} url 
+ * @returns {Promise<{ success: boolean, title: string, artist: string, duration: number, coverUrl?: string }>}
+ */
+export async function fetchMusicTrackMetadata(url) {
+  if (!url || typeof url !== "string") {
+    throw new Error(i18n.t("adminSpotifyError") || "Вкажіть посилання на трек.");
+  }
+
+  const trimmed = url.trim();
+  if (trimmed.includes("spotify.com") || trimmed.includes("spotify:")) {
+    return await fetchSpotifyTrackMetadata(trimmed);
+  } else if (trimmed.includes("youtube.com") || trimmed.includes("youtu.be") || trimmed.includes("music.youtube")) {
+    return await fetchYouTubeTrackMetadata(trimmed);
+  }
+
+  // If 22 alphanumeric characters, likely a Spotify Track ID
+  if (/^[a-zA-Z0-9]{22}$/.test(trimmed)) {
+    return await fetchSpotifyTrackMetadata(trimmed);
+  }
+
+  // If 11 characters (alphanumeric, dash, underscore), likely a YouTube Video ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return await fetchYouTubeTrackMetadata(trimmed);
+  }
+
+  // Fallback: try Spotify first, then YouTube
+  try {
+    return await fetchSpotifyTrackMetadata(trimmed);
+  } catch (spotifyErr) {
+    try {
+      return await fetchYouTubeTrackMetadata(trimmed);
+    } catch (ytErr) {
+      throw new Error(i18n.t("adminSpotifyError") || "Не вдалося розпізнати посилання. Вкажіть дійсне посилання Spotify або YouTube Music.");
+    }
+  }
+}
+
+/**
  * Fetches theme customization & discount settings from Firestore (with localStorage fallback).
  * 
  * @returns {Promise<object>}

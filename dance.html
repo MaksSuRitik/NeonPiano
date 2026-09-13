@@ -420,20 +420,21 @@
           </div>
 
           <form id="admin-track-form">
-            <!-- Spotify Autofill Box -->
+            <!-- Spotify & YouTube Music Autofill Box -->
             <div class="admin-spotify-box" style="background: rgba(30, 215, 96, 0.08); border: 1px solid rgba(30, 215, 96, 0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;">
               <div class="admin-spotify-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                 <label for="admin-spotify-input" class="admin-spotify-label" style="font-size: 0.82rem; color: #1ed760; font-weight: 700; display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer;">
-                  <span class="admin-spotify-icon-container">
+                  <span class="admin-spotify-icon-container" style="display: inline-flex; align-items: center; gap: 5px;">
                     <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="#1ed760" aria-hidden="true"><path d="M12 2C6.477 2 2 6.477 2 12c0 5.523 4.477 10 10 10s10-4.477 10-10c0-5.523-4.477-10-10-10zm4.586 14.424a.625.625 0 0 1-.861.208c-2.358-1.441-5.326-1.766-8.822-.967a.625.625 0 0 1-.277-1.219c3.826-.874 7.108-.506 9.752 1.117.297.182.39.574.208.861zm1.222-2.718a.782.782 0 0 1-1.077.257c-2.7-1.66-6.816-2.14-10.008-1.171a.782.782 0 1 1-.452-1.498c3.649-1.108 8.196-.577 11.28 1.335a.782.782 0 0 1 .257 1.077zm.106-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.938.938 0 1 1-.546-1.794c3.526-1.07 9.409-.866 13.197 1.383a.938.938 0 1 1-.948 1.621z"/></svg>
+                    <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="#ff0033" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                   </span>
-                  <span data-i18n="adminSpotifyLabel">Автозаповнення зі Spotify:</span>
+                  <span data-i18n="adminSpotifyLabel">Автозаповнення (Spotify / YouTube Music):</span>
                 </label>
                 <span id="admin-spotify-status" class="admin-spotify-status"></span>
               </div>
               <div class="admin-spotify-input-row">
-                <input type="url" id="admin-spotify-input" class="modern-input admin-spotify-input" data-i18n-placeholder="adminSpotifyPlaceholder" placeholder="https://open.spotify.com/track/...">
-                <button type="button" id="admin-spotify-btn" class="modern-btn admin-spotify-btn" title="Отримати дані зі Spotify">
+                <input type="url" id="admin-spotify-input" class="modern-input admin-spotify-input" data-i18n-placeholder="adminSpotifyPlaceholder" placeholder="Spotify або YouTube Music посилання...">
+                <button type="button" id="admin-spotify-btn" class="modern-btn admin-spotify-btn" title="Отримати дані (Spotify / YouTube Music)">
                   <span class="admin-spotify-btn-icon"></span>
                   <span data-i18n="adminSpotifyFetchBtn">Отримати дані</span>
                 </button>
@@ -1382,6 +1383,6 @@
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="src/main.js?v=75.4"></script>
+  <script type="module" src="src/main.js?v=75.5"></script>
 </body>
 </html>

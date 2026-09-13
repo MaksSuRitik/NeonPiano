@@ -49,11 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=75.4";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, fetchYouTubeTrackMetadata, fetchMusicTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=75.5";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=75.4";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=75.4";
+import * as FieldThemes from "./game/fieldThemes.js?v=75.5";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=75.5";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -6314,8 +6314,10 @@ function updateRipples(dt) {
         const adminSpotifyIconContainer = document.querySelector('.admin-spotify-icon-container');
         const adminSpotifyBtnIcon = document.querySelector('.admin-spotify-btn-icon');
 
-        if (adminSpotifyIconContainer && icons.spotify) {
-            adminSpotifyIconContainer.innerHTML = icons.spotify(16);
+        if (adminSpotifyIconContainer) {
+            const spIcon = icons.spotify ? icons.spotify(16) : '';
+            const ytIcon = icons.youtube ? icons.youtube(16) : '';
+            adminSpotifyIconContainer.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px;">${spIcon}${ytIcon}</span>`;
         }
         if (adminSpotifyBtnIcon && icons.sparkles) {
             adminSpotifyBtnIcon.innerHTML = icons.sparkles(14);
@@ -6331,14 +6333,17 @@ function updateRipples(dt) {
             if (isFetchingSpotify) return;
             isFetchingSpotify = true;
 
+            const isYouTube = /youtube\.com|youtu\.be|music\.youtube/i.test(rawUrl);
+
             if (adminSpotifyBtn) adminSpotifyBtn.disabled = true;
             if (adminSpotifyFeedback) {
                 adminSpotifyFeedback.className = 'admin-spotify-feedback loading';
-                adminSpotifyFeedback.innerHTML = `${icons.refresh(13)} <span>${getText('adminSpotifyFetching')}</span>`;
+                const fetchingMsg = isYouTube ? (getText('adminYouTubeFetching') || 'Отримання даних із YouTube Music...') : getText('adminSpotifyFetching');
+                adminSpotifyFeedback.innerHTML = `${icons.refresh(13)} <span>${fetchingMsg}</span>`;
             }
 
             try {
-                const metadata = await fetchSpotifyTrackMetadata(rawUrl);
+                const metadata = await fetchMusicTrackMetadata(rawUrl);
                 if (metadata && (metadata.title || metadata.artist)) {
                     if (adminTitleInput && metadata.title) {
                         adminTitleInput.value = metadata.title;
@@ -6365,7 +6370,7 @@ function updateRipples(dt) {
                     throw new Error(getText('adminSpotifyError'));
                 }
             } catch (err) {
-                console.warn('[Spotify] Import error:', err);
+                console.warn('[MusicImport] Import error:', err);
                 if (adminSpotifyFeedback) {
                     adminSpotifyFeedback.className = 'admin-spotify-feedback error';
                     adminSpotifyFeedback.innerHTML = `<span>⚠️ ${err.message || getText('adminSpotifyError')}</span>`;
@@ -6387,8 +6392,10 @@ function updateRipples(dt) {
             adminSpotifyInput.addEventListener('input', () => {
                 clearTimeout(spotifyDebounceTimer);
                 const val = adminSpotifyInput.value.trim();
-                if (val.includes('spotify.com/track/') || val.includes('spotify:track:') || val.match(/^[a-zA-Z0-9]{22}$/)) {
-                    spotifyDebounceTimer = setTimeout(() => handleSpotifyImport(), 600);
+                if (val.includes('spotify.com/track/') || val.includes('spotify:track:') || val.match(/^[a-zA-Z0-9]{22}$/) ||
+                    val.includes('music.youtube.com') || val.includes('youtube.com/watch') || val.includes('youtu.be/') || val.includes('youtube.com/shorts/') ||
+                    (val.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(val))) {
+                    spotifyDebounceTimer = setTimeout(() => handleSpotifyImport(), 500);
                 }
             });
             adminSpotifyInput.addEventListener('paste', () => {
@@ -6483,14 +6490,15 @@ function updateRipples(dt) {
                 return;
             }
 
-            // Якщо користувач випадково вставив посилання Spotify у поле прямого аудіофайлу
-            if (url.includes('spotify.com/track/') || url.includes('spotify:track:')) {
+            // Якщо користувач випадково вставив посилання Spotify або YouTube у поле прямого аудіофайлу
+            if (url.includes('spotify.com') || url.includes('spotify:track:') ||
+                url.includes('music.youtube.com') || url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/shorts/')) {
                 if (adminSpotifyInput) adminSpotifyInput.value = url;
                 if (adminUrlInput) adminUrlInput.value = '';
                 handleSpotifyImport(url);
                 if (adminDurationFeedback) {
                     adminDurationFeedback.className = 'duration-feedback-row';
-                    adminDurationFeedback.innerHTML = `<span style="color: #1ed760;">${getText('adminSpotifyRedirectHint')}</span>`;
+                    adminDurationFeedback.innerHTML = `<span style="color: #38bdf8;">${getText('adminSpotifyRedirectHint')}</span>`;
                 }
                 return;
             }
