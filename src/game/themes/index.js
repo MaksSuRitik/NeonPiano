@@ -1,12 +1,12 @@
 // ==========================================
 // FIELD THEMES REGISTRY & HELPERS
 // ==========================================
-import { CLASSIC_THEME } from "./classic.js";
-import { PHROLOVA_THEME } from "./phrolova.js?v=75.1";
-import { DARK_ANGEL_THEME } from "./darkAngel.js";
-import { COSMIC_THEME } from "./cosmic.js";
-import { IUNO_THEME } from "./iuno.js";
-import { HADO99_THEME } from "./hado99.js";
+import { CLASSIC_THEME } from "./classic.js?v=75.4";
+import { PHROLOVA_THEME } from "./phrolova.js?v=75.4";
+import { DARK_ANGEL_THEME } from "./darkAngel.js?v=75.4";
+import { COSMIC_THEME } from "./cosmic.js?v=75.4";
+import { IUNO_THEME } from "./iuno.js?v=75.4";
+import { HADO99_THEME } from "./hado99.js?v=75.4";
 
 export { CLASSIC_THEME, PHROLOVA_THEME, DARK_ANGEL_THEME, COSMIC_THEME, IUNO_THEME, HADO99_THEME };
 

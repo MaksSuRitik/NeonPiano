@@ -11,7 +11,7 @@ import {
   IUNO_THEME,
   HADO99_THEME,
   getThemeById 
-} from "./themes/index.js?v=75.1";
+} from "./themes/index.js?v=75.4";
 
 export { 
   FIELD_THEMES, 
@@ -209,12 +209,13 @@ export function getCoinsData(songsDB = []) {
  * Gets list of unlocked theme IDs.
  */
 export function getUnlockedThemes() {
-  let themes = ['classic'];
+  const defaultUnlocked = FIELD_THEMES.filter(t => t.unlockedByDefault).map(t => t.id);
+  let themes = Array.from(new Set(['classic', ...defaultUnlocked]));
   try {
     const raw = localStorage.getItem('neon_unlocked_field_themes');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) themes = Array.from(new Set(['classic', ...parsed]));
+      if (Array.isArray(parsed)) themes = Array.from(new Set([...themes, ...parsed]));
     }
   } catch (e) {}
   return themes;
@@ -238,6 +239,15 @@ export function getPreviewThemeOverride() {
  */
 export function getActiveThemeId() {
   if (previewThemeOverride) return previewThemeOverride;
+  if (typeof window !== 'undefined' && window.location && window.location.search) {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTheme = urlParams.get('theme');
+      if (urlTheme && FIELD_THEMES.some(t => t.id === urlTheme)) {
+        return urlTheme;
+      }
+    } catch (e) {}
+  }
   const unlocked = getUnlockedThemes();
   const active = localStorage.getItem('neon_active_field_theme') || 'classic';
   return unlocked.includes(active) ? active : 'classic';

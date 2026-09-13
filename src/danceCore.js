@@ -49,11 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=75.1";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=75.4";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=75.1";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=75.1";
+import * as FieldThemes from "./game/fieldThemes.js?v=75.4";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=75.4";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -2818,6 +2818,9 @@ function update(songTime) {
     // Цикл рендерингу. Це найбільш критична до продуктивності частина коду. Я максимально оптимізував її, мінімізувавши зміни стану контексту Canvas та використовуючи кешовані об'єкти.
     function draw(songTime) {
         if (!ctx) return;
+        const validSongTime = (typeof songTime === 'number' && !isNaN(songTime))
+            ? songTime
+            : (State.audioCtx ? Math.max(0, (State.audioCtx.currentTime - (State.startTime || 0)) * 1000) : (State.songTime || 0));
         const now = Date.now();
         const isLight = document.body.getAttribute('data-theme') === 'light';
         const activeTheme = FieldThemes.getActiveTheme();
@@ -2864,8 +2867,8 @@ function update(songTime) {
             ctx.fillStyle = "rgba(255,255,255,0.95)"; 
             ctx.fillRect(0, 0, State.gameWidth, State.gameHeight); 
         } else {
-            // Аудіо-реактивна динамічна неонова аура або фон активної теми поля (кешований градієнт)
-            if (activeTheme.id !== 'classic' && activeTheme.colors?.bgCenter) {
+            // Dynamic theme background gradient
+            if (activeTheme.colors?.bgCenter) {
                 const bgKey = `${activeTheme.id}_${State.gameWidth}_${State.gameHeight}`;
                 if (!GRADIENT_CACHE.bgGrad || GRADIENT_CACHE.bgGradKey !== bgKey) {
                     const bgGrad = ctx.createRadialGradient(
@@ -2904,26 +2907,26 @@ function update(songTime) {
             const speedBoost = 1.0 + State.bgPulse * 0.8;
 
             if (activeTheme && typeof activeTheme.updateAndDrawAtmosphere === 'function') {
-                activeTheme.updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State);
+                activeTheme.updateAndDrawAtmosphere(ctx, validSongTime, warpMult, speedBoost, State);
             }
 
-            // Тонкі неонові лінії перспективи шосе (Horizon Highway Grid) — пакетне малювання
-            const gridTime = (songTime * 0.0008 * warpMult) % 1.0;
-            ctx.save();
-            ctx.strokeStyle = (activeTheme.id !== 'classic' && activeTheme.colors?.receptorBorder) 
-                ? activeTheme.colors.receptorBorder 
-                : (p.border || 'rgba(56, 189, 248, 0.2)');
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = 0.06 + State.bgPulse * 0.05;
-            ctx.beginPath();
-            for (let g = 0; g < 5; g++) {
-                const gyRatio = ((g / 5) + gridTime * (1 / 5)) % 1.0;
-                const gy = Math.pow(gyRatio, 1.7) * hitY;
-                ctx.moveTo(6, gy);
-                ctx.lineTo(State.gameWidth - 6, gy);
+            // Тонкі неонові лінії перспективи шосе для теми Classic
+            if (activeTheme.id === 'classic') {
+                const gridTime = (validSongTime * 0.0008 * warpMult) % 1.0;
+                ctx.save();
+                ctx.strokeStyle = activeTheme.colors?.receptorBorder || (p.border || 'rgba(56, 189, 248, 0.2)');
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = 0.06 + State.bgPulse * 0.05;
+                ctx.beginPath();
+                for (let g = 0; g < 5; g++) {
+                    const gyRatio = ((g / 5) + gridTime * (1 / 5)) % 1.0;
+                    const gy = Math.pow(gyRatio, 1.7) * hitY;
+                    ctx.moveTo(6, gy);
+                    ctx.lineTo(State.gameWidth - 6, gy);
+                }
+                ctx.stroke();
+                ctx.restore();
             }
-            ctx.stroke();
-            ctx.restore();
         }
 
         ctx.save();

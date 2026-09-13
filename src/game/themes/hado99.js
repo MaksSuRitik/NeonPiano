@@ -20,13 +20,13 @@ const dragonSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=75.1';
-if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=75.1';
-if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=75.1';
-if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=75.1';
-if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=75.1';
-if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=75.1';
-if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=75.1';
+if (dragonSprites.tier0) dragonSprites.tier0.src = './assets/themes/hado99_dragon_tier0.png?v=75.4';
+if (dragonSprites.tier1) dragonSprites.tier1.src = './assets/themes/hado99_dragon_tier1.png?v=75.4';
+if (dragonSprites.tier2) dragonSprites.tier2.src = './assets/themes/hado99_dragon_tier2.png?v=75.4';
+if (dragonSprites.tier3) dragonSprites.tier3.src = './assets/themes/hado99_dragon_tier3.png?v=75.4';
+if (dragonSprites.tier4) dragonSprites.tier4.src = './assets/themes/hado99_dragon_tier4.png?v=75.4';
+if (dragonSprites.tier5) dragonSprites.tier5.src = './assets/themes/hado99_dragon_tier5.png?v=75.4';
+if (dragonSprites.dead)  dragonSprites.dead.src  = './assets/themes/hado99_dragon_dead.png?v=75.4';
 
 // Preload 5-Heads Dragon Tail Sprites (Goryūtenmetsu Crown) for all combo tiers
 const dragon5HeadsSprites = {
@@ -38,13 +38,13 @@ const dragon5HeadsSprites = {
   tier5: typeof Image !== 'undefined' ? new Image() : null,
   dead:  typeof Image !== 'undefined' ? new Image() : null
 };
-if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=75.1';
-if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=75.1';
-if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=75.1';
-if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=75.1';
-if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=75.1';
-if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=75.1';
-if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=75.1';
+if (dragon5HeadsSprites.tier0) dragon5HeadsSprites.tier0.src = './assets/themes/hado99_dragon_5heads_tier0.png?v=75.4';
+if (dragon5HeadsSprites.tier1) dragon5HeadsSprites.tier1.src = './assets/themes/hado99_dragon_5heads_tier1.png?v=75.4';
+if (dragon5HeadsSprites.tier2) dragon5HeadsSprites.tier2.src = './assets/themes/hado99_dragon_5heads_tier2.png?v=75.4';
+if (dragon5HeadsSprites.tier3) dragon5HeadsSprites.tier3.src = './assets/themes/hado99_dragon_5heads_tier3.png?v=75.4';
+if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/hado99_dragon_5heads_tier4.png?v=75.4';
+if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=75.4';
+if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=75.4';
 
 export const HADO99_THEME = {
   id: 'hado99',
@@ -294,34 +294,158 @@ export const HADO99_THEME = {
   },
 
 
-  // Helper for drawing serrated dorsal fins on the outer curves of the serpent body
-  _drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, ribbonHW, pal, waveAnim = 0) {
+  // Detailed Eastern Dragon Claws / Talons (4 predatory razor talons, armored knuckles, forearm scales)
+  _drawDragonPaw(ctx, x, y, dir, pal, holding, isGold, scale = 1.35) {
     ctx.save();
-    ctx.fillStyle   = pal.finSpikeCol || '#c084fc';
-    ctx.strokeStyle = pal.borderCol;
-    ctx.lineWidth   = 1.1;
+    ctx.translate(x, y);
+    ctx.scale(dir * scale, scale);
 
-    const numSpikes = Math.max(4, Math.floor(tailH / 28));
+    const borderCol = isGold ? '#ffd700' : pal.borderCol;
+    const bodyCol = pal.bgTop;
+    const darkPlateCol = isGold ? '#78350f' : (pal.darkShade || pal.bgBot);
+    const clawTipCol = '#ffffff';
+
+    // 1. Muscular Shoulder & Forearm (Thick, sinuous dragon musculature)
+    ctx.fillStyle = bodyCol;
+    ctx.strokeStyle = borderCol;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.quadraticCurveTo(16, -18, 26, -10); // Deltoid / upper shoulder
+    ctx.quadraticCurveTo(34, 0, 30, 18);    // Forearm down to wrist
+    ctx.lineTo(18, 16);                     // Inner wrist
+    ctx.quadraticCurveTo(12, 4, 0, 10);     // Inner arm to body joint
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Elbow Dorsal Fin Blade / Spur (Острый локтевой шип-клинок)
+    ctx.fillStyle = pal.finSpikeCol || darkPlateCol;
+    ctx.strokeStyle = borderCol;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(20, -14);
+    ctx.quadraticCurveTo(32, -22, 42, -26); // sharp backward curved blade
+    ctx.quadraticCurveTo(32, -10, 26, -2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Spur energy streak
+    ctx.strokeStyle = isGold ? '#fef08a' : (pal.spineCol || '#ffffff');
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.moveTo(22, -12);
+    ctx.lineTo(38, -22);
+    ctx.stroke();
+
+    // 3. Forearm Scale Armor Plates (Чешуйчатые щитки предплечья)
+    ctx.strokeStyle = pal.chevronCol;
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(6, -4);  ctx.lineTo(16, 2);
+    ctx.moveTo(12, -7); ctx.lineTo(22, -1);
+    ctx.moveTo(17, -1); ctx.lineTo(25, 7);
+    ctx.stroke();
+
+    // 4. Broad Armored Palm / Knuckle Plate (Пясть лапы)
+    ctx.fillStyle = darkPlateCol;
+    ctx.strokeStyle = borderCol;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.ellipse(26, 18, 9, 6, Math.PI / 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Glowing Spiritual Jewel / Dragon Pearl in knuckle
+    ctx.fillStyle = isGold ? '#fef08a' : (pal.spineCol || '#ffffff');
+    ctx.beginPath();
+    ctx.arc(26, 18, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 5. Four Predatory Curved Talons (Саблевидные когти дракона)
+    // Dynamic spread: Inner, Main Front, Outer Front, Lateral Thumb Spur
+    this._drawSingleTalon(ctx, 20, 16, 12, 34, pal, borderCol, clawTipCol, 3.2); // inner talon
+    this._drawSingleTalon(ctx, 25, 22, 23, 44, pal, borderCol, clawTipCol, 3.8); // main front talon
+    this._drawSingleTalon(ctx, 30, 21, 34, 41, pal, borderCol, clawTipCol, 3.5); // outer talon
+    this._drawSingleTalon(ctx, 33, 16, 44, 28, pal, borderCol, clawTipCol, 3.0); // lateral thumb spur
+
+    ctx.restore();
+  },
+
+  _drawSingleTalon(ctx, bx, by, tx, ty, pal, borderCol, tipCol, rootW = 3.2) {
+    ctx.save();
+    // Talon base gradient: dark root tapering to razor white tip
+    ctx.fillStyle = borderCol;
+    ctx.strokeStyle = pal.bgTop;
+    ctx.lineWidth = 1.1;
+
+    // Curved crescent dagger geometry
+    ctx.beginPath();
+    ctx.moveTo(bx - rootW, by);
+    // Outer curve with aggressive sickle hook
+    ctx.quadraticCurveTo((bx + tx) / 2 + 4, (by + ty) / 2 - 2, tx, ty);
+    // Inner curve returning to inner base
+    ctx.quadraticCurveTo((bx + tx) / 2 - 2, (by + ty) / 2 + 3, bx + rootW, by + 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Luminous razor tip & spiritual edge
+    ctx.strokeStyle = tipCol;
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.moveTo((bx + tx) / 2 + 2, (by + ty) / 2);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+
+    ctx.fillStyle = tipCol;
+    ctx.beginPath();
+    ctx.arc(tx, ty, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  },
+
+  // Layered, sweeping dragon dorsal spines and Reiatsu flames along the back ridge
+  _drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, getHW, pal, waveAnim = 0) {
+    ctx.save();
+    const numSpikes = Math.max(5, Math.floor(tailH / 22));
+
     for (let s = 1; s < numSpikes; s++) {
       const prog = s / numSpikes;
       const y = headTopY - prog * tailH;
       const sinE = Math.sin(prog * Math.PI);
-      const env = sinE * sinE;
+      const env = Math.pow(sinE, 1.2);
       const phase = prog * numCoils * Math.PI * 2 - waveAnim;
       const sinV = Math.sin(phase);
-      if (Math.abs(sinV) < 0.35) continue; // only on curved sections
+      const hw = getHW(prog);
+
+      if (Math.abs(sinV) < 0.25) continue;
 
       const dir = sinV > 0 ? 1 : -1;
       const cx = bodyCenterX + sinV * (maxAmp * env);
-      const fx = cx + dir * ribbonHW;
-      const spikeSpan = (8 + Math.abs(sinV) * 6) * dir;
+      const fx = cx + dir * hw;
+      const spineLen = (11 + Math.abs(sinV) * 9);
+
+      // Layered flame fin blade
+      ctx.fillStyle = pal.finSpikeCol || pal.bgBot;
+      ctx.strokeStyle = pal.borderCol;
+      ctx.lineWidth = 1.3;
 
       ctx.beginPath();
-      ctx.moveTo(fx, y + 4);
-      ctx.lineTo(fx + spikeSpan, y - 5);
-      ctx.lineTo(fx, y - 3);
+      ctx.moveTo(fx - dir * 2, y + 8);
+      ctx.quadraticCurveTo(fx + dir * (spineLen * 0.45), y + 2, fx + dir * spineLen, y - 8);
+      ctx.quadraticCurveTo(fx + dir * (spineLen * 0.25), y - 3, fx - dir * 2, y - 4);
       ctx.closePath();
       ctx.fill();
+      ctx.stroke();
+
+      // Glowing spine core streak
+      ctx.strokeStyle = pal.spineCol || '#ffffff';
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(fx, y + 3);
+      ctx.lineTo(fx + dir * (spineLen * 0.75), y - 5);
       ctx.stroke();
     }
     ctx.restore();
@@ -333,6 +457,7 @@ export const HADO99_THEME = {
   _drawDragonHead(ctx, cx, cy, w, h, tier, isDead) {
     const pal = this._getTierPalette(tier, isDead, false);
     const sprite = this._getDragonSprite(tier, isDead);
+    const isGold = (pal.borderCol === '#ffd700');
 
     ctx.save();
 
@@ -484,6 +609,42 @@ export const HADO99_THEME = {
         ctx.lineTo(ex, eyeY + 1);
         ctx.closePath();
         ctx.fill();
+
+        // Burning eye flame trail (духовное пламя из очей)
+        ctx.strokeStyle = pal.eyeGlow || pal.borderCol;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(ex, eyeY - 3);
+        ctx.quadraticCurveTo(ex + side * 10, eyeY - 12, ex + side * 14, eyeY - 24);
+        ctx.stroke();
+      }
+
+      // Long Sinuous Dragon Whiskers (Длинные усы дракона)
+      const whiskerBaseY = cy + headH * 0.18;
+      for (const side of [-1, 1]) {
+        const wx = cx + side * (headW * 0.12);
+        ctx.strokeStyle = pal.spineCol || '#ffffff';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(wx, whiskerBaseY);
+        ctx.bezierCurveTo(
+          cx + side * (headW * 0.42), whiskerBaseY + 6,
+          cx + side * (headW * 0.48), cy - headH * 0.05,
+          cx + side * (headW * 0.36), cy - headH * 0.28
+        );
+        ctx.stroke();
+
+        // Outer whisker glow
+        ctx.strokeStyle = pal.borderCol;
+        ctx.lineWidth = 2.4;
+        ctx.globalAlpha = 0.6;
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+
+        // Sharp luminous whisker core
+        ctx.strokeStyle = isGold ? '#fef08a' : (pal.spineCol || '#ffffff');
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
       }
     }
 
@@ -829,7 +990,7 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // SINUOUS SERPENTINE DRAGON BODY (Извивающийся хвост дракона по эскизу)
+  // SINUOUS SERPENTINE DRAGON BODY (Мощное анатомическое тело восточного дракона)
   // ==========================================================================
   drawHoldBody(ctx, x, yTail, w, headH, tile, isLight, now, tailH, currentCombo = 0, actualYHeadTop = null, isReleased = false) {
     if (tailH <= 2) return true;
@@ -849,68 +1010,77 @@ export const HADO99_THEME = {
 
     ctx.save();
 
-    // 1. Calculate serpentine parameters
-    const ribbonHW       = Math.max(7, Math.round(bodyLaneW * 0.22));
-    const maxAmpBase     = Math.max(4, (bodyLaneW / 2) - ribbonHW - 2);
-    // Smoothly scale amplitude down when tail is short so it doesn't whip near the receptor
-    const ampScale       = Math.min(1.0, tailH / 90);
+    // 1. Serpentine Dynamic Width Profile: Tapers organically from chest (36%) to tail (19%)
+    const getHW = (prog) => {
+      const base = bodyLaneW * (0.36 - prog * 0.17);
+      return Math.max(9, Math.round(base));
+    };
+
+    const maxAmpBase     = Math.max(6, bodyLaneW * 0.38);
+    const ampScale       = Math.min(1.0, tailH / 85);
     const maxAmp         = maxAmpBase * ampScale;
-    const coilWavelength = 200;
+    const coilWavelength = 220;
     const numCoils       = Math.max(1.0, tailH / coilWavelength);
 
-    // Dynamic wave animation: living undulating slither travelling along dragon body
     const waveSpeed = (holding && !dead) ? 0.0075 : 0.0042;
     const waveAnim  = (now || 0) * waveSpeed;
 
+    const getProg = (y) => Math.max(0, Math.min(1, (headTopY - y) / tailH));
+
     const getCenterX = (y) => {
-      const prog = Math.max(0, Math.min(1, (headTopY - y) / tailH));
-      // sin^2 envelope ensures BOTH lateral deviation AND horizontal derivative (slope) are STRICTLY 0
-      // at prog=0 (neck junction) and prog=1 (tail tip junction).
-      // This mathematically guarantees that the slithering body remains 100% vertically aligned
-      // with the neck at the bottom and with the tip shaft at the top with ZERO gap or detachment!
+      const prog = getProg(y);
       const sinE = Math.sin(prog * Math.PI);
-      const env = sinE * sinE;
+      const env = Math.pow(sinE, 1.2);
       const phase = prog * numCoils * Math.PI * 2 - waveAnim;
       return bodyCenterX + Math.sin(phase) * (maxAmp * env);
     };
 
-    const stepY = 16;
+    const stepY = 12;
     const numSteps = Math.ceil(tailH / stepY);
 
-    // Path 1: Dark ethereal smoky aura hugging the winding body
-    const auraWidth = ribbonHW + 7;
-    ctx.strokeStyle = isGold ? 'rgba(251, 191, 36, 0.22)' : (pal.auraCol || 'rgba(168, 85, 247, 0.20)');
-    ctx.lineWidth   = auraWidth * 2;
+    // Precalculate polygon nodes along the undulating spine
+    const nodes = [];
+    for (let i = 0; i <= numSteps; i++) {
+      const y = Math.max(yTail, headTopY - i * stepY);
+      const prog = getProg(y);
+      const cx = getCenterX(y);
+      const hw = getHW(prog);
+      nodes.push({ y, prog, cx, hw });
+      if (y <= yTail) break;
+    }
+
+    // PATH 1: Ethereal Reiatsu Pressure Aura
+    ctx.strokeStyle = isGold ? 'rgba(251, 191, 36, 0.28)' : (pal.auraCol || 'rgba(168, 85, 247, 0.24)');
+    ctx.lineWidth   = Math.round(bodyLaneW * 0.76);
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
     ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      if (i === 0) ctx.moveTo(cx, y);
-      else ctx.lineTo(cx, y);
-      if (y <= yTail) break;
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (i === 0) ctx.moveTo(n.cx, n.y);
+      else ctx.lineTo(n.cx, n.y);
     }
     ctx.stroke();
 
-    // Path 2: Solid dragon serpent body (filled ribbon with gradient)
-    ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      const lx = cx - ribbonHW;
-      if (i === 0) ctx.moveTo(lx, y);
-      else ctx.lineTo(lx, y);
-      if (y <= yTail) break;
+    // PATH 2: Dorsal Reiatsu Spines & Fins along outer curves
+    if (!dead) {
+      this._drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, getHW, pal, waveAnim);
     }
-    const topCX = getCenterX(yTail);
-    ctx.lineTo(topCX + ribbonHW, yTail);
-    for (let i = numSteps; i >= 0; i--) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      const rx = cx + ribbonHW;
-      ctx.lineTo(rx, y);
-      if (y >= headTopY) break;
+
+    // PATH 3: Solid Muscular Dragon Serpent Body (Filled Ribbon with Shaded Contours)
+    ctx.beginPath();
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      const lx = n.cx - n.hw;
+      if (i === 0) ctx.moveTo(lx, n.y);
+      else ctx.lineTo(lx, n.y);
+    }
+    const topNode = nodes[nodes.length - 1];
+    ctx.lineTo(topNode.cx + topNode.hw, topNode.y);
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i];
+      const rx = n.cx + n.hw;
+      ctx.lineTo(rx, n.y);
     }
     ctx.closePath();
 
@@ -921,75 +1091,120 @@ export const HADO99_THEME = {
     ctx.fillStyle = bgGrad;
     ctx.fill();
 
-    // Outer edge borders of serpent body
+    // Armored lateral contour borders
     ctx.strokeStyle = pal.borderCol;
-    ctx.lineWidth   = 1.6;
+    ctx.lineWidth   = 2.0;
     ctx.stroke();
 
-    // 3. Serrated dorsal fin spikes along outer curves (synchronized with animated wave)
-    if (!dead) {
-      this._drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, ribbonHW, pal, waveAnim);
-    }
-
-    // 5. Chevron armor scales along the winding centerline
-    ctx.strokeStyle = pal.chevronCol;
-    ctx.lineWidth   = 1.3;
-    const chevronStep = 24;
-    for (let y = headTopY - 14; y > yTail + 10; y -= chevronStep) {
+    // PATH 4: 3D Volumetric Anatomy: Interlocking Dragon Armor Scales & Ventral Scutes
+    const segmentStep = 18;
+    for (let y = headTopY - 14; y > yTail + 8; y -= segmentStep) {
+      const prog = getProg(y);
       const cx = getCenterX(y);
-      const cw = ribbonHW * 0.75;
+      const hw = getHW(prog);
+      const phase = prog * numCoils * Math.PI * 2 - waveAnim;
+      const sinV = Math.sin(phase);
+
+      // 4A. Interlocking Dragon Scales spanning the dorsal body
+      const scaleW = hw * 0.78;
+      ctx.strokeStyle = pal.chevronCol;
+      ctx.lineWidth   = 1.4;
       ctx.beginPath();
-      ctx.moveTo(cx - cw, y - 4);
-      ctx.lineTo(cx,      y + 4);
-      ctx.lineTo(cx + cw, y - 4);
+      ctx.moveTo(cx - scaleW, y - 3);
+      ctx.quadraticCurveTo(cx, y + 6, cx + scaleW, y - 3);
       ctx.stroke();
+
+      // Subtle scale highlight edge
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth   = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(cx - scaleW * 0.5, y);
+      ctx.quadraticCurveTo(cx, y + 4, cx + scaleW * 0.5, y);
+      ctx.stroke();
+
+      // 4B. Ventral Underbelly Scutes (Visible on inner bends when turning)
+      if (Math.abs(sinV) > 0.20) {
+        const bellyDir = sinV > 0 ? -1 : 1;
+        const flankX   = cx + bellyDir * hw;
+        const scuteW   = hw * 0.42;
+
+        ctx.fillStyle   = isGold ? '#b45309' : (pal.darkShade || '#1c0326');
+        ctx.strokeStyle = isGold ? '#fef08a' : pal.borderCol;
+        ctx.lineWidth   = 1.1;
+
+        ctx.beginPath();
+        ctx.moveTo(flankX, y - 5);
+        ctx.quadraticCurveTo(flankX - bellyDir * scuteW, y, flankX, y + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Rib luminous edge
+        ctx.strokeStyle = isGold ? '#fef08a' : (pal.spineCol || '#ffffff');
+        ctx.lineWidth   = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(flankX, y);
+        ctx.lineTo(flankX - bellyDir * (scuteW * 0.7), y);
+        ctx.stroke();
+      }
     }
 
-    // 6. Sinuous central spinal cord & glowing vertebrae beads (о-о-о-о-о)
+    // PATH 5: Raised Central Spinal Cord & Glowing Dragon Vertebrae
     ctx.strokeStyle = pal.spineCol;
-    ctx.lineWidth   = holding ? 2.2 : 1.8;
+    ctx.lineWidth   = holding ? 2.6 : 2.0;
     ctx.beginPath();
-    for (let i = 0; i <= numSteps; i++) {
-      const y = Math.max(yTail, headTopY - i * stepY);
-      const cx = getCenterX(y);
-      if (i === 0) ctx.moveTo(cx, y);
-      else ctx.lineTo(cx, y);
-      if (y <= yTail) break;
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (i === 0) ctx.moveTo(n.cx, n.y);
+      else ctx.lineTo(n.cx, n.y);
     }
     ctx.stroke();
 
-    // Glowing vertebrae beads following the undulating S-curve (batched in 2 passes for 60fps)
-    const beadStep = 24;
-    let beadIdx = 0;
-    const beads = [];
-    for (let y = headTopY - 12; y > yTail + 8; y -= beadStep) {
+    // Raised vertebrae crests (ромбовидные щитки позвоночника)
+    const crestStep = 22;
+    let crestIdx = 0;
+    for (let y = headTopY - 12; y > yTail + 8; y -= crestStep) {
+      const prog = getProg(y);
       const cx = getCenterX(y);
-      const wave = Math.sin(now * 0.008 - beadIdx * 0.6) * 0.5 + 0.5;
-      const bRad = 2.4 + wave * 0.7;
-      beads.push({ cx, y, bRad });
-      beadIdx++;
+      const wave = Math.sin(now * 0.008 - crestIdx * 0.6) * 0.5 + 0.5;
+      const cSize = (3.2 + wave * 1.0) * (1.0 - prog * 0.25);
+
+      ctx.fillStyle   = isGold ? '#fef08a' : (pal.beadCol || '#ffffff');
+      ctx.strokeStyle = pal.borderCol;
+      ctx.lineWidth   = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(cx, y - cSize * 1.4);
+      ctx.lineTo(cx + cSize, y);
+      ctx.lineTo(cx, y + cSize * 1.4);
+      ctx.lineTo(cx - cSize, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      crestIdx++;
     }
 
-    if (beads.length > 0) {
-      // Outer glow batch
-      ctx.fillStyle = isGold ? 'rgba(254, 240, 138, 0.40)' : (pal.auraCol || 'rgba(192, 132, 252, 0.35)');
-      ctx.beginPath();
-      for (let b = 0; b < beads.length; b++) {
-        const item = beads[b];
-        ctx.moveTo(item.cx + item.bRad * 1.8, item.y);
-        ctx.arc(item.cx, item.y, item.bRad * 1.8, 0, Math.PI * 2);
-      }
-      ctx.fill();
+    // PATH 6: Muscular Dragon Paws with Razor Talons (Лапы дракона)
+    if (!dead && tailH >= 80) {
+      // Front Paws (Upper Torso): Positioned dynamically near chest
+      const frontY = headTopY - Math.min(tailH * 0.20, 85);
+      const frontProg = getProg(frontY);
+      const frontCX = getCenterX(frontY);
+      const frontHW = getHW(frontProg);
 
-      // Inner solid core batch
-      ctx.fillStyle = pal.beadCol || '#ffffff';
-      ctx.beginPath();
-      for (let b = 0; b < beads.length; b++) {
-        const item = beads[b];
-        ctx.moveTo(item.cx + item.bRad, item.y);
-        ctx.arc(item.cx, item.y, item.bRad, 0, Math.PI * 2);
+      // Left Front Paw & Right Front Paw reaching downward
+      this._drawDragonPaw(ctx, frontCX - frontHW + 2, frontY, -1, pal, holding, isGold, 1.35);
+      this._drawDragonPaw(ctx, frontCX + frontHW - 2, frontY,  1, pal, holding, isGold, 1.35);
+
+      // Hind Paws (Lower Torso): Only appear if hold note is long enough
+      if (tailH >= 360) {
+        const rearY = headTopY - tailH * 0.70;
+        const rearProg = getProg(rearY);
+        const rearCX = getCenterX(rearY);
+        const rearHW = getHW(rearProg);
+
+        this._drawDragonPaw(ctx, rearCX - rearHW + 2, rearY, -1, pal, holding, isGold, 1.15);
+        this._drawDragonPaw(ctx, rearCX + rearHW - 2, rearY,  1, pal, holding, isGold, 1.15);
       }
-      ctx.fill();
     }
 
     ctx.restore();
@@ -1008,63 +1223,103 @@ export const HADO99_THEME = {
   },
 
   // ==========================================================================
-  // DRAGON NECK CONNECTOR (Same width as tail body, zero widening, synchronized with head)
+  // DRAGON NECK CONNECTOR (Бесшовный чешуйчатый загривок дракона)
   // ==========================================================================
   drawNeck(ctx, x, junctionY, w, headH, tile, isReleased = false, currentCombo = 0) {
-    const bodyW   = Math.max(10, Math.round(w - 16));
-    const bodyX   = Math.round(x + 8);
-    const cx      = bodyX + bodyW / 2;
-    // Exactly matches serpent body thickness (Math.round(bodyW * 0.22))
-    const hw      = Math.max(7, Math.round(bodyW * 0.22));
-    const neckH   = Math.round(headH * 0.45);
-    const neckBot = junctionY + neckH;
+    const bodyLaneW = Math.max(10, Math.round(w - 16));
+    const bodyX     = Math.round(x + 8);
+    const cx        = bodyX + bodyLaneW / 2;
 
     const dead    = isReleased || Boolean(tile && tile.failed);
     const holding = Boolean(tile && tile.holding && tile.hit);
     const tier    = dead ? 0 : (currentCombo || (tile?.style?.tier || 0));
     const pal     = this._getTierPalette(tier, dead, holding);
+    const isGold  = (pal.borderCol === '#ffd700');
+
+    // Neck dimensions: smoothly connects upper body (0.36 width) to head skull base (0.44 width)
+    const hwTop   = Math.max(9, Math.round(bodyLaneW * 0.36));
+    const hwBot   = Math.max(12, Math.round(bodyLaneW * 0.44));
+    const neckH   = Math.round(headH * 0.45);
+    const neckBot = junctionY + neckH;
 
     ctx.save();
 
-    // 1. Uniform neck body matching tail width exactly (NO widening at end)
-    const ng = ctx.createLinearGradient(cx, junctionY, cx, neckBot);
-    ng.addColorStop(0,    pal.bgBot);
-    ng.addColorStop(0.50, pal.bgTop);
+    // 1. Seamless muscular neck trapezoid (ZERO dark gaps: exactly matches pal.bgTop of body)
+    const ng = ctx.createLinearGradient(cx, junctionY - 6, cx, neckBot);
+    ng.addColorStop(0,    pal.bgTop);
+    ng.addColorStop(0.65, pal.bgTop);
     ng.addColorStop(1,    pal.bgBot);
     ctx.fillStyle = ng;
+
     ctx.beginPath();
-    ctx.rect(cx - hw, junctionY, hw * 2, neckH);
+    ctx.moveTo(cx - hwTop, junctionY - 6);
+    ctx.lineTo(cx + hwTop, junctionY - 6);
+    ctx.lineTo(cx + hwBot, neckBot);
+    ctx.lineTo(cx - hwBot, neckBot);
+    ctx.closePath();
     ctx.fill();
 
-    // 2. Parallel side border lines (same width as tail)
+    // Lateral border contours
     ctx.strokeStyle = pal.borderCol;
-    ctx.lineWidth   = 1.5;
+    ctx.lineWidth   = 2.0;
     ctx.beginPath();
-    ctx.moveTo(cx - hw, junctionY);
-    ctx.lineTo(cx - hw, neckBot);
-    ctx.moveTo(cx + hw, junctionY);
-    ctx.lineTo(cx + hw, neckBot);
+    ctx.moveTo(cx - hwTop, junctionY - 6);
+    ctx.lineTo(cx - hwBot, neckBot);
+    ctx.moveTo(cx + hwTop, junctionY - 6);
+    ctx.lineTo(cx + hwBot, neckBot);
     ctx.stroke();
 
-    // 3. Chevrons inside neck
-    ctx.strokeStyle = pal.chevronCol;
-    ctx.lineWidth   = 1.2;
-    for (let i = 1; i <= 2; i++) {
-      const cy2 = junctionY + (i / 3) * neckH;
+    // 2. Overlapping Flared Nape Mane Flames / Spikes (Грива на загривке)
+    for (let i = 1; i <= 3; i++) {
+      const t = i / 4;
+      const py = junctionY + t * neckH;
+      const curHW = hwTop + (hwBot - hwTop) * t;
+
+      // Nape dorsal flame spikes jutting outward
+      ctx.fillStyle   = pal.finSpikeCol || pal.bgTop;
+      ctx.strokeStyle = pal.borderCol;
+      ctx.lineWidth   = 1.2;
+
+      // Left mane tuft
       ctx.beginPath();
-      ctx.moveTo(cx - hw * 0.75, cy2 - 3);
-      ctx.lineTo(cx,             cy2 + 4);
-      ctx.lineTo(cx + hw * 0.75, cy2 - 3);
+      ctx.moveTo(cx - curHW, py);
+      ctx.lineTo(cx - curHW - 9, py - 5);
+      ctx.lineTo(cx - curHW + 2, py + 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Right mane tuft
+      ctx.beginPath();
+      ctx.moveTo(cx + curHW, py);
+      ctx.lineTo(cx + curHW + 9, py - 5);
+      ctx.lineTo(cx + curHW - 2, py + 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Translucent chevron scale collar ring
+      ctx.strokeStyle = pal.chevronCol;
+      ctx.lineWidth   = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(cx - curHW * 0.75, py - 2);
+      ctx.quadraticCurveTo(cx, py + 4, cx + curHW * 0.75, py - 2);
       ctx.stroke();
     }
 
-    // 4. Central spine through neck
+    // 3. Central spinal connector line
     ctx.strokeStyle = pal.spineCol;
-    ctx.lineWidth   = holding ? 2.2 : 1.8;
+    ctx.lineWidth   = holding ? 2.6 : 2.0;
     ctx.beginPath();
-    ctx.moveTo(cx, junctionY);
+    ctx.moveTo(cx, junctionY - 6);
     ctx.lineTo(cx, neckBot);
     ctx.stroke();
+
+    // Vertebrae bead at junction
+    ctx.fillStyle = isGold ? '#fef08a' : (pal.beadCol || '#ffffff');
+    ctx.beginPath();
+    ctx.arc(cx, junctionY + neckH * 0.4, 2.5, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
   },
@@ -1080,7 +1335,7 @@ export const HADO99_THEME = {
     const bodyW   = Math.max(10, Math.round(w - 16));
     const bodyX   = Math.round(x + 8);
     const cx      = bodyX + bodyW / 2;
-    const hw      = Math.max(7, Math.round(bodyW * 0.22));
+    const hw      = Math.max(7, Math.round(bodyW * 0.19));
 
     const holding = tile.holding && tile.hit;
     const dead    = tile.failed;
@@ -1465,8 +1720,9 @@ export const HADO99_THEME = {
   _atm: null, _bgGrad: null, _bgKey: '',
 
   updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State) {
-    const W = State.gameWidth, H = State.gameHeight;
-    const t = songTime * 0.001, isMob = State.isMobile;
+    const W = ctx.canvas?.width || State?.gameWidth || 400;
+    const H = ctx.canvas?.height || State?.gameHeight || 700;
+    const t = songTime * 0.001, isMob = State ? State.isMobile : false;
 
     if (!this._atm || this._atm._W !== W || this._atm._H !== H) {
       this._atm = {
@@ -1498,6 +1754,65 @@ export const HADO99_THEME = {
     ctx.save();
     ctx.fillStyle = this._bgGrad;
     ctx.fillRect(0, 0, W, H);
+
+    const bass = (typeof State !== 'undefined' && State?.bgPulse) ? State.bgPulse : 0;
+
+    // 1. Towering Kurohitsugi Obsidian Coffin Spires in background flanks
+    const spireW = W * 0.08;
+    ctx.fillStyle = '#040108';
+    ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
+    ctx.lineWidth = 1.2;
+
+    // Left towering spires
+    ctx.fillRect(W * 0.04, H * 0.15, spireW, H * 0.55);
+    ctx.strokeRect(W * 0.04, H * 0.15, spireW, H * 0.55);
+    ctx.fillRect(W * 0.10, H * 0.28, spireW * 0.8, H * 0.45);
+    ctx.strokeRect(W * 0.10, H * 0.28, spireW * 0.8, H * 0.45);
+
+    // Right towering spires
+    ctx.fillRect(W * 0.88, H * 0.15, spireW, H * 0.55);
+    ctx.strokeRect(W * 0.88, H * 0.15, spireW, H * 0.55);
+    ctx.fillRect(W * 0.82, H * 0.28, spireW * 0.8, H * 0.45);
+    ctx.strokeRect(W * 0.82, H * 0.28, spireW * 0.8, H * 0.45);
+
+    // 2. Kurohitsugi Spirit Pressure (Reiatsu) Vortex in Deep Abyss
+    const vcx = W * 0.50, vcy = H * 0.36;
+    const vRadius = Math.min(W * 0.38, 120) * (1 + bass * 0.35);
+    const vGrad = ctx.createRadialGradient(vcx, vcy, 5, vcx, vcy, vRadius);
+    vGrad.addColorStop(0, 'rgba(147, 51, 234, 0.45)');
+    vGrad.addColorStop(0.45, 'rgba(88, 28, 135, 0.20)');
+    vGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = vGrad;
+    ctx.beginPath();
+    ctx.arc(vcx, vcy, vRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Swirling Reiatsu spiral rings
+    ctx.strokeStyle = 'rgba(192, 132, 252, 0.30)';
+    ctx.lineWidth = 1.1;
+    for (let r = 0; r < 3; r++) {
+      const ringR = vRadius * (0.35 + r * 0.28);
+      const ringTilt = t * (0.8 + r * 0.4);
+      ctx.beginPath();
+      ctx.ellipse(vcx, vcy, ringR, ringR * 0.42, ringTilt, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 3. Audio-Reactive Reishi Lightning Flashes across the chasm on heavy beats
+    if (bass > 0.18) {
+      const flashAlpha = Math.min(0.7, (bass - 0.18) * 2.2);
+      ctx.strokeStyle = `rgba(240, 171, 252, ${flashAlpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      let lx = W * 0.15, ly = H * 0.22;
+      ctx.moveTo(lx, ly);
+      for (let seg = 0; seg < 6; seg++) {
+        lx += (W * 0.70 / 6) + (Math.sin(t * 10 + seg) * 12);
+        ly += (Math.cos(t * 8 + seg) * 22);
+        ctx.lineTo(lx, ly);
+      }
+      ctx.stroke();
+    }
 
     // Grand dragon silhouettes in distant sky
     for (let d = 0; d < atm.dragons.length; d++) {
