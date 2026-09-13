@@ -4,6 +4,29 @@
 // and Shattered Gothic Mirror aesthetic.
 // ============================================================================
 
+// Preload high-resolution 3D photorealistic soundweave sprites for Phrolova hold notes
+const phrolovaSprites = {
+  large:     typeof Image !== 'undefined' ? new Image() : null,
+  small:     typeof Image !== 'undefined' ? new Image() : null,
+  tip:       typeof Image !== 'undefined' ? new Image() : null,
+  largeDead: typeof Image !== 'undefined' ? new Image() : null,
+  smallDead: typeof Image !== 'undefined' ? new Image() : null,
+  tipDead:   typeof Image !== 'undefined' ? new Image() : null,
+  largeT5:   typeof Image !== 'undefined' ? new Image() : null,
+  smallT5:   typeof Image !== 'undefined' ? new Image() : null,
+  tipT5:     typeof Image !== 'undefined' ? new Image() : null
+};
+
+if (phrolovaSprites.large)     phrolovaSprites.large.src     = './assets/themes/phrolova_seg_large.png?v=76.0';
+if (phrolovaSprites.small)     phrolovaSprites.small.src     = './assets/themes/phrolova_seg_small.png?v=76.0';
+if (phrolovaSprites.tip)       phrolovaSprites.tip.src       = './assets/themes/phrolova_tail_tip.png?v=76.0';
+if (phrolovaSprites.largeDead) phrolovaSprites.largeDead.src = './assets/themes/phrolova_seg_large_dead.png?v=76.0';
+if (phrolovaSprites.smallDead) phrolovaSprites.smallDead.src = './assets/themes/phrolova_seg_small_dead.png?v=76.0';
+if (phrolovaSprites.tipDead)   phrolovaSprites.tipDead.src   = './assets/themes/phrolova_tail_tip_dead.png?v=76.0';
+if (phrolovaSprites.largeT5)   phrolovaSprites.largeT5.src   = './assets/themes/phrolova_seg_large_t5.png?v=76.0';
+if (phrolovaSprites.smallT5)   phrolovaSprites.smallT5.src   = './assets/themes/phrolova_seg_small_t5.png?v=76.0';
+if (phrolovaSprites.tipT5)     phrolovaSprites.tipT5.src     = './assets/themes/phrolova_tail_tip_t5.png?v=76.0';
+
 export const PHROLOVA_THEME = {
   id: 'phrolova',
   nameKey: 'themePhrolova',
@@ -282,13 +305,49 @@ export const PHROLOVA_THEME = {
     return true;
   },
 
+  _getSegmentSprite(isSmall, tier, isDead) {
+    if (isDead) {
+      return isSmall ? phrolovaSprites.smallDead : phrolovaSprites.largeDead;
+    }
+    if (tier >= 800) {
+      return isSmall ? phrolovaSprites.smallT5 : phrolovaSprites.largeT5;
+    }
+    return isSmall ? phrolovaSprites.small : phrolovaSprites.large;
+  },
+
+  _getTipSprite(tier, isDead) {
+    if (isDead) return phrolovaSprites.tipDead;
+    if (tier >= 800) return phrolovaSprites.tipT5;
+    return phrolovaSprites.tip;
+  },
+
   // Authentic Wuthering Waves Phrolova Soundweave Blade-Whip Segment
-  // Faithful reproduction based on official orthogonal 3D sketch:
-  // - Tripartite obsidian wing (Outer crescent sickle + Inner vertical horn + Downward fang)
-  // - Glowing red/rose outer blade bevel cutting edge and chiseled internal ridges
-  // - Central ruby lily chalice core with crystalline gem & specular star
-  // - Alternating equidistant segments: Large (sc = 1.0, idx % 2 === 0) vs Small (sc = 0.65, idx % 2 === 1)
-  _drawSoundweaveSegment(ctx, cx, ly, hw, pal, isDead, isHolding, now = 0, idx = 0) {
+  // - High-resolution 3D photorealistic sprites matching user 3D render exactly
+  // - Procedural vector fallback if image is loading
+  _drawSoundweaveSegment(ctx, cx, ly, hw, pal, isDead, isHolding, now = 0, idx = 0, tier = 0) {
+    const isSmall = (idx % 2 === 1);
+    const sprite = this._getSegmentSprite(isSmall, tier, isDead);
+
+    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+      ctx.save();
+      const dw = hw * 2.2;
+      const dh = isSmall ? dw * (170 / 268) : dw * (330 / 268);
+      ctx.drawImage(sprite, cx - dw / 2, ly - dh / 2, dw, dh);
+
+      if (isHolding && !isDead) {
+        const pulse = Math.sin((now || 0) * 0.012 + idx * 0.8) * 0.5 + 0.5;
+        ctx.strokeStyle = pal.core || '#ffffff';
+        ctx.lineWidth   = Math.max(0.8, hw * 0.026);
+        const rRay = Math.max(3.2, hw * 0.10) + pulse * (hw * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(cx - rRay, ly); ctx.lineTo(cx + rRay, ly);
+        ctx.moveTo(cx, ly - rRay); ctx.lineTo(cx, ly + rRay);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
     const borderCol = isDead ? '#475569' : pal.border;
     const bodyCol   = isDead ? '#111827' : (pal.obsCol || '#0c0206');
     const coreCol   = isDead ? '#64748b' : (pal.gemCol || '#f43f5e');
@@ -299,7 +358,6 @@ export const PHROLOVA_THEME = {
 
     const sx = (side, f) => cx + side * (hw * f);
     const sy = (f) => ly + (hw * f);
-    const isSmall = (idx % 2 === 1);
     const sc = isSmall ? 0.65 : 1.0;
 
     // Key landmark coordinates in normalized units:
@@ -507,13 +565,14 @@ export const PHROLOVA_THEME = {
     ctx.stroke();
 
     // 3. Repeating Soundweave Barbed Scythe Segments (Equidistant Alternating Long & Small Pairs)
-    const nodeSpacing = 28;
+    const dw = hw * 2.2;
+    const nodeSpacing = Math.max(28, Math.round(dw * 0.70));
     const numNodes = Math.max(1, Math.floor(tailH / nodeSpacing));
     const effectiveSpacing = tailH / numNodes;
 
     for (let i = 0; i <= numNodes; i++) {
       const ly = i * effectiveSpacing;
-      this._drawSoundweaveSegment(ctx, cx, ly, hw, pal, false, false, 0, i);
+      this._drawSoundweaveSegment(ctx, cx, ly, hw, pal, false, false, 0, i, tier);
     }
 
     return true;
@@ -608,7 +667,8 @@ export const PHROLOVA_THEME = {
     ctx.stroke();
 
     // 3. Repeating Authentic Soundweave Barbed Scythe Segments (Equidistant Alternating Long & Small Pairs)
-    const nodeSpacing = 28;
+    const dw = hw * 2.2;
+    const nodeSpacing = Math.max(28, Math.round(dw * 0.70));
     const startY = headTopY - 18;
     const endY = yTail + 14;
 
@@ -618,7 +678,7 @@ export const PHROLOVA_THEME = {
 
       for (let i = 0; i <= numNodes; i++) {
         const ly = startY - i * effectiveSpacing;
-        this._drawSoundweaveSegment(ctx, cx, ly, hw, pal, dead, holding, now, i);
+        this._drawSoundweaveSegment(ctx, cx, ly, hw, pal, dead, holding, now, i, tier);
       }
 
       // 4. Holding/Audio energetic resonance pulse down the cord
@@ -672,50 +732,57 @@ export const PHROLOVA_THEME = {
     const tipY = yTail - tailLen;
     ctx.save();
 
-    // 1. Curved Talon Barbs flanking the tail base
-    ctx.fillStyle   = dead ? '#1e293b' : (pal.obsCol || '#0c0206');
-    ctx.strokeStyle = dead ? '#475569' : pal.border;
-    ctx.lineWidth   = 1.3;
+    const tipSprite = this._getTipSprite(tier, dead);
+    if (tipSprite && tipSprite.complete && tipSprite.naturalWidth > 0) {
+      const dw = hw * 2.2;
+      const dh = dw * (94 / 268);
+      ctx.drawImage(tipSprite, cx - dw / 2, yTail - dh * 0.45, dw, dh);
+    } else {
+      // 1. Curved Talon Barbs flanking the tail base
+      ctx.fillStyle   = dead ? '#1e293b' : (pal.obsCol || '#0c0206');
+      ctx.strokeStyle = dead ? '#475569' : pal.border;
+      ctx.lineWidth   = 1.3;
 
-    for (const side of [-1, 1]) {
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(cx + side * 4, yTail);
+        ctx.bezierCurveTo(
+          cx + side * (hw * 0.50), yTail - tailLen * 0.15,
+          cx + side * (hw * 0.85), yTail - tailLen * 0.40,
+          cx + side * (hw * 0.65), yTail - tailLen * 0.65
+        );
+        ctx.quadraticCurveTo(
+          cx + side * (hw * 0.40), yTail - tailLen * 0.45,
+          cx + side * 3,           yTail - tailLen * 0.30
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // 2. Terminal Stiletto Spearhead with Flared Barbs (Оконечный гарпунный шпиль)
+      ctx.fillStyle   = dead ? '#222222' : pal.obsCol;
+      ctx.strokeStyle = dead ? '#555555' : pal.border;
+      ctx.lineWidth   = 1.3;
+
       ctx.beginPath();
-      ctx.moveTo(cx + side * 4, yTail);
-      ctx.bezierCurveTo(
-        cx + side * (hw * 0.50), yTail - tailLen * 0.15,
-        cx + side * (hw * 0.85), yTail - tailLen * 0.40,
-        cx + side * (hw * 0.65), yTail - tailLen * 0.65
-      );
-      ctx.quadraticCurveTo(
-        cx + side * (hw * 0.40), yTail - tailLen * 0.45,
-        cx + side * 3,           yTail - tailLen * 0.30
-      );
+      ctx.moveTo(cx, tipY);
+      ctx.lineTo(cx + hw * 0.28, yTail - tailLen * 0.45);
+      ctx.lineTo(cx + hw * 0.12, yTail);
+      ctx.lineTo(cx - hw * 0.12, yTail);
+      ctx.lineTo(cx - hw * 0.28, yTail - tailLen * 0.45);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+
+      // Stiletto razor spine
+      ctx.strokeStyle = dead ? '#888888' : pal.core;
+      ctx.lineWidth   = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(cx, yTail);
+      ctx.lineTo(cx, tipY);
+      ctx.stroke();
     }
-
-    // 2. Terminal Stiletto Spearhead with Flared Barbs (Оконечный гарпунный шпиль)
-    ctx.fillStyle   = dead ? '#222222' : pal.obsCol;
-    ctx.strokeStyle = dead ? '#555555' : pal.border;
-    ctx.lineWidth   = 1.3;
-
-    ctx.beginPath();
-    ctx.moveTo(cx, tipY);
-    ctx.lineTo(cx + hw * 0.28, yTail - tailLen * 0.45);
-    ctx.lineTo(cx + hw * 0.12, yTail);
-    ctx.lineTo(cx - hw * 0.12, yTail);
-    ctx.lineTo(cx - hw * 0.28, yTail - tailLen * 0.45);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Stiletto razor spine
-    ctx.strokeStyle = dead ? '#888888' : pal.core;
-    ctx.lineWidth   = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(cx, yTail);
-    ctx.lineTo(cx, tipY);
-    ctx.stroke();
 
     // 2. Radiant Crimson Resonance Orb (Сфера резонанса Звукоплетения per Screenshot 1)
     const orbY = yTail - tailLen * 0.35;
