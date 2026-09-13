@@ -291,9 +291,180 @@ function getRealisticSakuraStamps() {
   return _realisticSakuraStamps;
 }
 
+// Caches for performance optimization
+let _flameCanvases = null;
+
+function getFlameCanvases() {
+  if (_flameCanvases) return _flameCanvases;
+  if (typeof document === 'undefined') return null;
+
+  const size = 64;
+  const half = size / 2;
+
+  // 1. T5 Outer Crimson Flame
+  const cT5Outer = document.createElement('canvas');
+  cT5Outer.width = size; cT5Outer.height = size;
+  const gT5O = cT5Outer.getContext('2d');
+  const gradT5O = gT5O.createRadialGradient(half, half, 2, half, half, half);
+  gradT5O.addColorStop(0,    'rgba(255, 77, 77, 0.85)');
+  gradT5O.addColorStop(0.45, 'rgba(255, 23, 68, 0.55)');
+  gradT5O.addColorStop(0.8,  'rgba(153, 27, 27, 0.20)');
+  gradT5O.addColorStop(1,    'rgba(0, 0, 0, 0)');
+  gT5O.fillStyle = gradT5O;
+  gT5O.fillRect(0, 0, size, size);
+
+  // 2. T5 Inner Core Flame
+  const cT5Core = document.createElement('canvas');
+  cT5Core.width = size; cT5Core.height = size;
+  const gT5C = cT5Core.getContext('2d');
+  const gradT5C = gT5C.createRadialGradient(half, half, 1, half, half, half);
+  gradT5C.addColorStop(0,   'rgba(255, 255, 255, 0.90)');
+  gradT5C.addColorStop(0.5, 'rgba(255, 77, 77, 0.60)');
+  gradT5C.addColorStop(1,   'rgba(220, 38, 38, 0)');
+  gT5C.fillStyle = gradT5C;
+  gT5C.fillRect(0, 0, size, size);
+
+  // 3. Glacio Cold Ice Outer Flame
+  const cIceOuter = document.createElement('canvas');
+  cIceOuter.width = size; cIceOuter.height = size;
+  const gIceO = cIceOuter.getContext('2d');
+  const gradIceO = gIceO.createRadialGradient(half, half, 2, half, half, half);
+  gradIceO.addColorStop(0,    'rgba(224, 242, 254, 0.80)');
+  gradIceO.addColorStop(0.4,  'rgba(56, 189, 248, 0.50)');
+  gradIceO.addColorStop(0.75, 'rgba(14, 165, 233, 0.20)');
+  gradIceO.addColorStop(1,    'rgba(2, 132, 199, 0)');
+  gIceO.fillStyle = gradIceO;
+  gIceO.fillRect(0, 0, size, size);
+
+  // 4. Glacio Cold Ice Core Flame
+  const cIceCore = document.createElement('canvas');
+  cIceCore.width = size; cIceCore.height = size;
+  const gIceC = cIceCore.getContext('2d');
+  const gradIceC = gIceC.createRadialGradient(half, half, 1, half, half, half);
+  gradIceC.addColorStop(0,   'rgba(255, 255, 255, 0.90)');
+  gradIceC.addColorStop(0.5, 'rgba(186, 230, 253, 0.55)');
+  gradIceC.addColorStop(1,   'rgba(56, 189, 248, 0)');
+  gIceC.fillStyle = gradIceC;
+  gIceC.fillRect(0, 0, size, size);
+
+  _flameCanvases = {
+    t5Outer: cT5Outer,
+    t5Core: cT5Core,
+    iceOuter: cIceOuter,
+    iceCore: cIceCore
+  };
+  return _flameCanvases;
+}
+
+let _cachedWoodCanvas = null;
+let _cachedWoodGw = 0;
+let _cachedWoodGh = 0;
+
+function getSakuraWoodCanvas(gw, gh) {
+  if (_cachedWoodCanvas && _cachedWoodGw === gw && _cachedWoodGh === gh) {
+    return _cachedWoodCanvas;
+  }
+  if (typeof document === 'undefined') return null;
+
+  const c = document.createElement('canvas');
+  c.width = gw;
+  c.height = gh;
+  const g = c.getContext('2d');
+
+  const rootBase = { x: gw * 0.66, y: gh * 0.98 };
+  const trunkMid = { x: gw * 0.65, y: gh * 0.75 };
+  const trunkFork = { x: gw * 0.63, y: gh * 0.54 };
+
+  const boughLeftMain = { x: gw * 0.46, y: gh * 0.46 };
+  const boughFarLeft = { x: gw * 0.28, y: gh * 0.40 };
+  const twigFarLeft1 = { x: gw * 0.15, y: gh * 0.44 };
+  const twigFarLeft2 = { x: gw * 0.20, y: gh * 0.32 };
+  const twigLeftDrop = { x: gw * 0.18, y: gh * 0.55 };
+
+  const boughHighLeft = { x: gw * 0.38, y: gh * 0.28 };
+  const twigHighLeft1 = { x: gw * 0.26, y: gh * 0.20 };
+  const twigHighLeft2 = { x: gw * 0.36, y: gh * 0.14 };
+
+  const boughCenterHigh = { x: gw * 0.58, y: gh * 0.34 };
+  const twigCenterTop1 = { x: gw * 0.50, y: gh * 0.16 };
+  const twigCenterTop2 = { x: gw * 0.62, y: gh * 0.12 };
+  const twigCenterTop3 = { x: gw * 0.44, y: gh * 0.08 };
+
+  const boughRightMain = { x: gw * 0.78, y: gh * 0.44 };
+  const boughFarRight = { x: gw * 0.88, y: gh * 0.38 };
+  const twigRightHigh = { x: gw * 0.76, y: gh * 0.20 };
+  const twigRightDrop1 = { x: gw * 0.94, y: gh * 0.42 };
+  const twigRightDrop2 = { x: gw * 0.86, y: gh * 0.56 };
+
+  const boughLowerLeft = { x: gw * 0.56, y: gh * 0.62 };
+  const twigLowerDrop = { x: gw * 0.45, y: gh * 0.68 };
+
+  function drawWoodSegment(p1, cp, p2, w1, w2) {
+    g.save();
+    g.beginPath();
+    g.moveTo(p1.x, p1.y);
+    g.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
+    g.strokeStyle = '#180f15';
+    g.lineWidth = (w1 + w2) * 0.5;
+    g.lineCap = 'round';
+    g.stroke();
+
+    g.strokeStyle = '#2d1b26';
+    g.lineWidth = Math.max(1.2, (w1 + w2) * 0.35);
+    g.stroke();
+
+    g.strokeStyle = 'rgba(186, 230, 253, 0.35)';
+    g.lineWidth = Math.max(0.7, (w1 + w2) * 0.12);
+    g.beginPath();
+    g.moveTo(p1.x - (w1 * 0.2), p1.y - (w1 * 0.2));
+    g.quadraticCurveTo(cp.x - 1.5, cp.y - 1.5, p2.x - (w2 * 0.2), p2.y - (w2 * 0.2));
+    g.stroke();
+    g.restore();
+  }
+
+  g.save();
+  g.strokeStyle = '#150d13';
+  g.lineWidth = 14;
+  g.beginPath();
+  g.moveTo(rootBase.x - 24, rootBase.y);
+  g.quadraticCurveTo(rootBase.x - 8, rootBase.y - 14, rootBase.x, rootBase.y - 22);
+  g.moveTo(rootBase.x + 26, rootBase.y);
+  g.quadraticCurveTo(rootBase.x + 12, rootBase.y - 14, rootBase.x, rootBase.y - 22);
+  g.stroke();
+  g.restore();
+
+  drawWoodSegment(rootBase, { x: (rootBase.x + trunkMid.x)*0.5 + 4, y: (rootBase.y + trunkMid.y)*0.5 }, trunkMid, 30, 22);
+  drawWoodSegment(trunkMid, { x: (trunkMid.x + trunkFork.x)*0.5 - 3, y: (trunkMid.y + trunkFork.y)*0.5 }, trunkFork, 22, 16);
+
+  drawWoodSegment(trunkFork, { x: (trunkFork.x + boughLeftMain.x)*0.5 - 4, y: (trunkFork.y + boughLeftMain.y)*0.5 + 3 }, boughLeftMain, 16, 11);
+  drawWoodSegment(boughLeftMain, { x: (boughLeftMain.x + boughFarLeft.x)*0.5 - 4, y: (boughLeftMain.y + boughFarLeft.y)*0.5 + 2 }, boughFarLeft, 11, 7);
+  drawWoodSegment(boughFarLeft, { x: (boughFarLeft.x + twigFarLeft1.x)*0.5, y: (boughFarLeft.y + twigFarLeft1.y)*0.5 + 2 }, twigFarLeft1, 6, 2.5);
+  drawWoodSegment(boughFarLeft, { x: (boughFarLeft.x + twigLeftDrop.x)*0.5 - 2, y: (boughFarLeft.y + twigLeftDrop.y)*0.5 + 4 }, twigLeftDrop, 5.5, 2.0);
+  drawWoodSegment(boughLeftMain, { x: (boughLeftMain.x + boughHighLeft.x)*0.5 + 2, y: (boughLeftMain.y + boughHighLeft.y)*0.5 - 3 }, boughHighLeft, 10, 6);
+  drawWoodSegment(boughHighLeft, { x: (boughHighLeft.x + twigHighLeft1.x)*0.5, y: (boughHighLeft.y + twigHighLeft1.y)*0.5 + 2 }, twigHighLeft1, 5.5, 2.2);
+
+  drawWoodSegment(trunkFork, { x: (trunkFork.x + boughCenterHigh.x)*0.5 + 2, y: (trunkFork.y + boughCenterHigh.y)*0.5 - 3 }, boughCenterHigh, 14, 9);
+  drawWoodSegment(boughCenterHigh, { x: (boughCenterHigh.x + twigCenterTop1.x)*0.5, y: (boughCenterHigh.y + twigCenterTop1.y)*0.5 + 2 }, twigCenterTop1, 6.5, 2.5);
+  drawWoodSegment(boughCenterHigh, { x: (boughCenterHigh.x + twigCenterTop2.x)*0.5, y: (boughCenterHigh.y + twigCenterTop2.y)*0.5 - 2 }, twigCenterTop2, 6, 2.2);
+
+  drawWoodSegment(trunkFork, { x: (trunkFork.x + boughRightMain.x)*0.5 + 4, y: (trunkFork.y + boughRightMain.y)*0.5 + 3 }, boughRightMain, 15, 10);
+  drawWoodSegment(boughRightMain, { x: (boughRightMain.x + boughFarRight.x)*0.5 + 3, y: (boughRightMain.y + boughFarRight.y)*0.5 }, boughFarRight, 10, 6.5);
+  drawWoodSegment(boughFarRight, { x: (boughFarRight.x + twigRightDrop1.x)*0.5, y: (boughFarRight.y + twigRightDrop1.y)*0.5 + 3 }, twigRightDrop1, 6, 2.5);
+  drawWoodSegment(boughFarRight, { x: (boughFarRight.x + twigRightDrop2.x)*0.5 - 2, y: (boughFarRight.y + twigRightDrop2.y)*0.5 + 4 }, twigRightDrop2, 5.5, 2.0);
+  drawWoodSegment(boughRightMain, { x: (boughRightMain.x + twigRightHigh.x)*0.5, y: (boughRightMain.y + twigRightHigh.y)*0.5 - 3 }, twigRightHigh, 6.5, 2.5);
+
+  drawWoodSegment(trunkMid, { x: (trunkMid.x + boughLowerLeft.x)*0.5 - 3, y: (trunkMid.y + boughLowerLeft.y)*0.5 + 2 }, boughLowerLeft, 10, 5.5);
+  drawWoodSegment(boughLowerLeft, { x: (boughLowerLeft.x + twigLowerDrop.x)*0.5, y: (boughLowerLeft.y + twigLowerDrop.y)*0.5 + 3 }, twigLowerDrop, 5, 2.0);
+
+  _cachedWoodCanvas = c;
+  _cachedWoodGw = gw;
+  _cachedWoodGh = gh;
+  return c;
+}
+
 function initAtmosphereParticles(gw, gh, blossomNodes) {
   if (sanhuaPetals.length === 0) {
-    for (let i = 0; i < 110; i++) {
+    for (let i = 0; i < 35; i++) {
       const node = (blossomNodes && blossomNodes.length > 0)
         ? blossomNodes[i % blossomNodes.length]
         : { x: gw * 0.65, y: gh * 0.35 };
@@ -1114,7 +1285,7 @@ export const SANHUA_THEME = {
 
     // Function to render a single 3D sakura petal
     const drawSpiralPetal = (pet) => {
-      const { px, py, z, theta, col, p } = pet;
+      const { px, py, z, theta, p } = pet;
       const isFront = z >= 0;
       const pSize = (isFront ? 5.8 : 4.4) + Math.sin(p * 1.3) * 0.6;
       const pAlpha = isFront ? 0.95 : 0.65;
@@ -1124,25 +1295,11 @@ export const SANHUA_THEME = {
       ctx.translate(px, py);
       ctx.rotate(theta * 0.4 + p * 0.8);
       ctx.scale(flip, 1);
-
-      // Delicate pink petal body
-      ctx.fillStyle = col;
       ctx.globalAlpha = pAlpha;
-      ctx.beginPath();
-      ctx.moveTo(0, -pSize);
-      ctx.quadraticCurveTo(pSize * 0.75, -pSize * 0.35, pSize * 0.35, pSize * 0.7);
-      ctx.quadraticCurveTo(0, pSize, -pSize * 0.35, pSize * 0.7);
-      ctx.quadraticCurveTo(-pSize * 0.75, -pSize * 0.35, 0, -pSize);
-      ctx.closePath();
-      ctx.fill();
-
-      // Delicate specular glint on petal edge (for front petals)
-      if (isFront) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.70)';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
+      const stampPetal = getRealisticSakuraStamps()?.petal;
+      if (stampPetal) {
+        ctx.drawImage(stampPetal, -pSize, -pSize, pSize * 2, pSize * 2);
       }
-
       ctx.restore();
     };
 
@@ -1162,6 +1319,12 @@ export const SANHUA_THEME = {
     const drawFlamePass = (targetDepth) => {
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
+      const flameCanvases = getFlameCanvases();
+      if (!flameCanvases) { ctx.restore(); return; }
+      const outerCanvas = isT5 ? flameCanvases.t5Outer : flameCanvases.iceOuter;
+      const coreCanvas  = isT5 ? flameCanvases.t5Core  : flameCanvases.iceCore;
+
+      ctx.globalAlpha = baseAlpha;
 
       for (let sy = yTail - 10; sy < headTopY + 10; sy += flameStep) {
         // Strand 1 phase and depth
@@ -1175,72 +1338,21 @@ export const SANHUA_THEME = {
         const disp2 = Math.sin(phi2) * spiralOrbit;
 
         const lobeL = (Math.max(0, Math.sin(sy * 0.045 - timeOffset * 0.07)) * 10 + 8) * swell;
-        const lobeR = (Math.max(0, Math.cos(sy * 0.048 - timeOffset * 0.065 + 1.8)) * 10 + 8) * swell;
         const rOuter = (14 + lobeL * 0.35) * swell;
         const rInner = (6 + lobeL * 0.20) * swell;
 
         // Draw Strand 1 if it matches target depth
         if ((targetDepth === 'back' && z1 < 0) || (targetDepth === 'front' && z1 >= 0)) {
           const lx = cx + disp1;
-          const grad1 = ctx.createRadialGradient(lx, sy, 2, lx, sy, rOuter);
-          if (isT5) {
-            // Black & Red demonic crimson flame
-            grad1.addColorStop(0,    `rgba(255, 77, 77, ${baseAlpha * 0.85})`);
-            grad1.addColorStop(0.45, `rgba(255, 23, 68, ${baseAlpha * 0.55})`);
-            grad1.addColorStop(0.8,  `rgba(153, 27, 27, ${baseAlpha * 0.20})`);
-            grad1.addColorStop(1,    'rgba(0, 0, 0, 0)');
-          } else {
-            // Glacio Cold Ice Flame (as in Screen 3 reference)
-            grad1.addColorStop(0,    `rgba(224, 242, 254, ${baseAlpha * 0.80})`);
-            grad1.addColorStop(0.4,  `rgba(56, 189, 248, ${baseAlpha * 0.50})`);
-            grad1.addColorStop(0.75, `rgba(14, 165, 233, ${baseAlpha * 0.20})`);
-            grad1.addColorStop(1,    'rgba(2, 132, 199, 0)');
-          }
-          ctx.fillStyle = grad1;
-          ctx.beginPath();
-          ctx.arc(lx, sy, rOuter, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Hot inner core
-          const grad1Core = ctx.createRadialGradient(lx, sy, 1, lx, sy, rInner);
-          grad1Core.addColorStop(0, `rgba(255, 255, 255, ${baseAlpha * 0.90})`);
-          grad1Core.addColorStop(0.5, isT5 ? `rgba(255, 77, 77, ${baseAlpha * 0.60})` : `rgba(186, 230, 253, ${baseAlpha * 0.55})`);
-          grad1Core.addColorStop(1, isT5 ? 'rgba(220, 38, 38, 0)' : 'rgba(56, 189, 248, 0)');
-          ctx.fillStyle = grad1Core;
-          ctx.beginPath();
-          ctx.arc(lx, sy, rInner, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.drawImage(outerCanvas, lx - rOuter, sy - rOuter, rOuter * 2, rOuter * 2);
+          ctx.drawImage(coreCanvas, lx - rInner, sy - rInner, rInner * 2, rInner * 2);
         }
 
         // Draw Strand 2 if it matches target depth
         if ((targetDepth === 'back' && z2 < 0) || (targetDepth === 'front' && z2 >= 0)) {
           const rx = cx + disp2;
-          const grad2 = ctx.createRadialGradient(rx, sy, 2, rx, sy, rOuter);
-          if (isT5) {
-            grad2.addColorStop(0,    `rgba(255, 77, 77, ${baseAlpha * 0.85})`);
-            grad2.addColorStop(0.45, `rgba(255, 23, 68, ${baseAlpha * 0.55})`);
-            grad2.addColorStop(0.8,  `rgba(153, 27, 27, ${baseAlpha * 0.20})`);
-            grad2.addColorStop(1,    'rgba(0, 0, 0, 0)');
-          } else {
-            grad2.addColorStop(0,    `rgba(224, 242, 254, ${baseAlpha * 0.80})`);
-            grad2.addColorStop(0.4,  `rgba(56, 189, 248, ${baseAlpha * 0.50})`);
-            grad2.addColorStop(0.75, `rgba(14, 165, 233, ${baseAlpha * 0.20})`);
-            grad2.addColorStop(1,    'rgba(2, 132, 199, 0)');
-          }
-          ctx.fillStyle = grad2;
-          ctx.beginPath();
-          ctx.arc(rx, sy, rOuter, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Hot inner core
-          const grad2Core = ctx.createRadialGradient(rx, sy, 1, rx, sy, rInner);
-          grad2Core.addColorStop(0, `rgba(255, 255, 255, ${baseAlpha * 0.90})`);
-          grad2Core.addColorStop(0.5, isT5 ? `rgba(255, 77, 77, ${baseAlpha * 0.60})` : `rgba(186, 230, 253, ${baseAlpha * 0.55})`);
-          grad2Core.addColorStop(1, isT5 ? 'rgba(220, 38, 38, 0)' : 'rgba(56, 189, 248, 0)');
-          ctx.fillStyle = grad2Core;
-          ctx.beginPath();
-          ctx.arc(rx, sy, rInner, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.drawImage(outerCanvas, rx - rOuter, sy - rOuter, rOuter * 2, rOuter * 2);
+          ctx.drawImage(coreCanvas, rx - rInner, sy - rInner, rInner * 2, rInner * 2);
         }
       }
       ctx.restore();
@@ -1504,6 +1616,7 @@ export const SANHUA_THEME = {
 
     // 4. Scattering Flaming Sakura Petals
     const numPetals = 6;
+    const stampPetal = getRealisticSakuraStamps()?.petal;
     for (let k = 0; k < numPetals; k++) {
       const pAngle = (k * Math.PI * 2 / numPetals) + (k * 0.35);
       const pDist = (w * 0.12) + easeOut * (w * 0.65);
@@ -1514,16 +1627,10 @@ export const SANHUA_THEME = {
       ctx.save();
       ctx.translate(px, py);
       ctx.rotate(pAngle + p * 3.0);
-
-      ctx.fillStyle = `rgba(244, 63, 94, ${alpha * 0.90})`;
-      ctx.beginPath();
-      ctx.moveTo(0, -pSize);
-      ctx.quadraticCurveTo(pSize * 0.8, -pSize * 0.4, pSize * 0.4, pSize * 0.7);
-      ctx.quadraticCurveTo(0, pSize, -pSize * 0.4, pSize * 0.7);
-      ctx.quadraticCurveTo(-pSize * 0.8, -pSize * 0.4, 0, -pSize);
-      ctx.closePath();
-      ctx.fill();
-
+      ctx.globalAlpha = alpha * 0.90;
+      if (stampPetal) {
+        ctx.drawImage(stampPetal, -pSize, -pSize, pSize * 2, pSize * 2);
+      }
       ctx.restore();
     }
 
@@ -1778,29 +1885,6 @@ export const SANHUA_THEME = {
       initAtmosphereParticles(gw, gh, petalSpawnNodes);
     }
 
-    function drawWood(p1, cp, p2, w1, w2) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
-      ctx.strokeStyle = '#180f15';
-      ctx.lineWidth = (w1 + w2) * 0.5;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      ctx.strokeStyle = '#2d1b26';
-      ctx.lineWidth = Math.max(1.2, (w1 + w2) * 0.35);
-      ctx.stroke();
-
-      ctx.strokeStyle = 'rgba(186, 230, 253, 0.35)';
-      ctx.lineWidth = Math.max(0.7, (w1 + w2) * 0.12);
-      ctx.beginPath();
-      ctx.moveTo(p1.x - (w1 * 0.2), p1.y - (w1 * 0.2));
-      ctx.quadraticCurveTo(cp.x - 1.5, cp.y - 1.5, p2.x - (w2 * 0.2), p2.y - (w2 * 0.2));
-      ctx.stroke();
-      ctx.restore();
-    }
-
     // 1. Background detaching small petals (behind tree)
     const stampPetal = stamps.petal;
     for (let i = 0; i < sanhuaPetals.length; i++) {
@@ -1835,40 +1919,11 @@ export const SANHUA_THEME = {
       ctx.restore();
     }
 
-    // 3. Tree trunk & main branch bones
-    ctx.save();
-    ctx.strokeStyle = '#150d13';
-    ctx.lineWidth = 14;
-    ctx.beginPath();
-    ctx.moveTo(rootBase.x - 24, rootBase.y);
-    ctx.quadraticCurveTo(rootBase.x - 8, rootBase.y - 14, rootBase.x, rootBase.y - 22);
-    ctx.moveTo(rootBase.x + 26, rootBase.y);
-    ctx.quadraticCurveTo(rootBase.x + 12, rootBase.y - 14, rootBase.x, rootBase.y - 22);
-    ctx.stroke();
-    ctx.restore();
-
-    drawWood(rootBase, { x: (rootBase.x + trunkMid.x)*0.5 + 4, y: (rootBase.y + trunkMid.y)*0.5 }, trunkMid, 30, 22);
-    drawWood(trunkMid, { x: (trunkMid.x + trunkFork.x)*0.5 - 3, y: (trunkMid.y + trunkFork.y)*0.5 }, trunkFork, 22, 16);
-
-    drawWood(trunkFork, { x: (trunkFork.x + boughLeftMain.x)*0.5 - 4, y: (trunkFork.y + boughLeftMain.y)*0.5 + 3 }, boughLeftMain, 16, 11);
-    drawWood(boughLeftMain, { x: (boughLeftMain.x + boughFarLeft.x)*0.5 - 4, y: (boughLeftMain.y + boughFarLeft.y)*0.5 + 2 }, boughFarLeft, 11, 7);
-    drawWood(boughFarLeft, { x: (boughFarLeft.x + twigFarLeft1.x)*0.5, y: (boughFarLeft.y + twigFarLeft1.y)*0.5 + 2 }, twigFarLeft1, 6, 2.5);
-    drawWood(boughFarLeft, { x: (boughFarLeft.x + twigLeftDrop.x)*0.5 - 2, y: (boughFarLeft.y + twigLeftDrop.y)*0.5 + 4 }, twigLeftDrop, 5.5, 2.0);
-    drawWood(boughLeftMain, { x: (boughLeftMain.x + boughHighLeft.x)*0.5 + 2, y: (boughLeftMain.y + boughHighLeft.y)*0.5 - 3 }, boughHighLeft, 10, 6);
-    drawWood(boughHighLeft, { x: (boughHighLeft.x + twigHighLeft1.x)*0.5, y: (boughHighLeft.y + twigHighLeft1.y)*0.5 + 2 }, twigHighLeft1, 5.5, 2.2);
-
-    drawWood(trunkFork, { x: (trunkFork.x + boughCenterHigh.x)*0.5 + 2, y: (trunkFork.y + boughCenterHigh.y)*0.5 - 3 }, boughCenterHigh, 14, 9);
-    drawWood(boughCenterHigh, { x: (boughCenterHigh.x + twigCenterTop1.x)*0.5, y: (boughCenterHigh.y + twigCenterTop1.y)*0.5 + 2 }, twigCenterTop1, 6.5, 2.5);
-    drawWood(boughCenterHigh, { x: (boughCenterHigh.x + twigCenterTop2.x)*0.5, y: (boughCenterHigh.y + twigCenterTop2.y)*0.5 - 2 }, twigCenterTop2, 6, 2.2);
-
-    drawWood(trunkFork, { x: (trunkFork.x + boughRightMain.x)*0.5 + 4, y: (trunkFork.y + boughRightMain.y)*0.5 + 3 }, boughRightMain, 15, 10);
-    drawWood(boughRightMain, { x: (boughRightMain.x + boughFarRight.x)*0.5 + 3, y: (boughRightMain.y + boughFarRight.y)*0.5 }, boughFarRight, 10, 6.5);
-    drawWood(boughFarRight, { x: (boughFarRight.x + twigRightDrop1.x)*0.5, y: (boughFarRight.y + twigRightDrop1.y)*0.5 + 3 }, twigRightDrop1, 6, 2.5);
-    drawWood(boughFarRight, { x: (boughFarRight.x + twigRightDrop2.x)*0.5 - 2, y: (boughFarRight.y + twigRightDrop2.y)*0.5 + 4 }, twigRightDrop2, 5.5, 2.0);
-    drawWood(boughRightMain, { x: (boughRightMain.x + twigRightHigh.x)*0.5, y: (boughRightMain.y + twigRightHigh.y)*0.5 - 3 }, twigRightHigh, 6.5, 2.5);
-
-    drawWood(trunkMid, { x: (trunkMid.x + boughLowerLeft.x)*0.5 - 3, y: (trunkMid.y + boughLowerLeft.y)*0.5 + 2 }, boughLowerLeft, 10, 5.5);
-    drawWood(boughLowerLeft, { x: (boughLowerLeft.x + twigLowerDrop.x)*0.5, y: (boughLowerLeft.y + twigLowerDrop.y)*0.5 + 3 }, twigLowerDrop, 5, 2.0);
+    // 3. Tree trunk & main branch bones (rendered once via offscreen canvas)
+    const woodCanvas = getSakuraWoodCanvas(gw, gh);
+    if (woodCanvas) {
+      ctx.drawImage(woodCanvas, 0, 0);
+    }
 
     // 4. Foreground dense billowing bloom clouds
     for (let i = 0; i < clusterPuffs.length; i++) {
