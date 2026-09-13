@@ -421,36 +421,40 @@ export class PixiParticleSystem {
   spawnHit(cx, cy, w, h, isPerfect = true, themeId = 'default', combo = 0, activeTheme = null) {
     if (!this.isReady) return;
 
-    // 1. Acquire next hit slot
-    const slot = this.hitPool[this.hitIndex];
-    this.hitIndex = (this.hitIndex + 1) % this.MAX_HITS;
+    try {
+      // 1. Acquire next hit slot
+      const slot = this.hitPool[this.hitIndex];
+      this.hitIndex = (this.hitIndex + 1) % this.MAX_HITS;
 
-    const { colBlade, colCore, colRipple } = this._getHitColors(themeId, combo, isPerfect, activeTheme);
+      const { colBlade, colCore, colRipple } = this._getHitColors(themeId, combo, isPerfect, activeTheme);
 
-    slot.active = true;
-    slot.startTime = performance.now();
-    slot.duration = 240; // High-velocity responsive burst
-    slot.cx = cx;
-    slot.cy = cy;
-    slot.w = w;
-    slot.h = h;
-    slot.isPerfect = isPerfect;
-    slot.themeId = themeId;
-    slot.combo = combo;
-    slot.colBlade = colBlade;
-    slot.colCore = colCore;
-    slot.colRipple = colRipple;
-    slot.container.visible = true;
+      slot.active = true;
+      slot.startTime = performance.now();
+      slot.duration = 240; // High-velocity responsive burst
+      slot.cx = cx;
+      slot.cy = cy;
+      slot.w = w;
+      slot.h = h;
+      slot.isPerfect = isPerfect;
+      slot.themeId = themeId;
+      slot.combo = combo;
+      slot.colBlade = colBlade;
+      slot.colCore = colCore;
+      slot.colRipple = colRipple;
+      slot.container.visible = true;
 
-    // Reset components visibility
-    slot.ringGfx.clear();
-    slot.slashGfx.clear();
-    slot.starSprite.visible = true;
-    slot.starSprite.position.set(cx, cy);
+      // Reset components visibility
+      slot.ringGfx.clear();
+      slot.slashGfx.clear();
+      slot.starSprite.visible = (themeId !== 'hado99');
+      slot.starSprite.position.set(cx, cy);
 
-    // 2. Launch 8-16 explosive directional sparks into particle pool
-    const sparkCount = isPerfect ? 16 : 8;
-    this.spawnSparks(cx, cy, sparkCount, colBlade, themeId, isPerfect ? 'perfect' : 'good', combo);
+      // 2. Launch 8-16 explosive directional sparks into particle pool
+      const sparkCount = isPerfect ? 16 : 8;
+      this.spawnSparks(cx, cy, sparkCount, colBlade, themeId, isPerfect ? 'perfect' : 'good', combo);
+    } catch (err) {
+      console.warn("[PixiParticleSystem] spawnHit error:", err);
+    }
   }
 
   /**
@@ -547,17 +551,21 @@ export class PixiParticleSystem {
    */
   update(now, combo = 0, activeTheme = null) {
     if (!this.isReady) return;
-    const nowMs = now || performance.now();
+    try {
+      const nowMs = now || performance.now();
 
-    // 1. Update Hit Visualizers
-    this._updateHits(nowMs);
+      // 1. Update Hit Visualizers
+      this._updateHits(nowMs);
 
-    // 2. Update Dynamic Sparks & Shards
-    this._updateParticles();
+      // 2. Update Dynamic Sparks & Shards
+      this._updateParticles();
 
-    // 3. Update Ambient Atmosphere in backgroundLayer
-    if (this.ambientContainer && this.ambientContainer.visible) {
-      this._updateAmbient(nowMs, combo, activeTheme);
+      // 3. Update Ambient Atmosphere in backgroundLayer
+      if (this.ambientContainer && this.ambientContainer.visible) {
+        this._updateAmbient(nowMs, combo, activeTheme);
+      }
+    } catch (err) {
+      console.warn("[PixiParticleSystem] update error:", err);
     }
   }
 
@@ -588,13 +596,7 @@ export class PixiParticleSystem {
 
       // --- 1. Acoustic Resonance Ring Graphics ---
       item.ringGfx.clear();
-      if (item.themeId === 'hado99') {
-        const expandScale = 1.0 + easeOut * 0.28;
-        const bw = item.w * expandScale;
-        const bh = item.h * expandScale;
-        item.ringGfx.roundRect(item.cx - bw / 2, item.cy - bh / 2, bw, bh, 6 * expandScale);
-        item.ringGfx.stroke({ color: item.colRipple, width: Math.max(1, 1.8 * (1 - p * 0.6)), alpha: alpha * 0.85 });
-      } else {
+      if (item.themeId !== 'hado99') {
         const rippleR = (item.w * 0.18) + easeOut * (item.w * 0.52);
         const rippleAlpha = Math.max(0, (1.0 - p) * 0.85);
         const ringWidth = Math.max(1.2, 2.8 * (1.0 - p));
@@ -602,39 +604,41 @@ export class PixiParticleSystem {
         item.ringGfx.stroke({ color: item.colRipple, width: ringWidth, alpha: rippleAlpha });
       }
 
-      // --- 2. Razor-Sharp Cross Lacerations (X-Slash) ---
+      // --- 2. Razor-Sharp Cross Lacerations (X-Slash) (Phrolova Theme Only) ---
       item.slashGfx.clear();
-      const slashLen = (item.w * 0.28) + easeOut * (item.w * 0.55);
-      const slashW = Math.max(1.5, 4.2 * (1.0 - p * 0.7));
-      const cos45 = 0.7071;
-      const sin45 = 0.7071;
+      if (item.themeId === 'phrolova') {
+        const slashLen = (item.w * 0.28) + easeOut * (item.w * 0.55);
+        const slashW = Math.max(1.5, 4.2 * (1.0 - p * 0.7));
+        const cos45 = 0.7071;
+        const sin45 = 0.7071;
 
-      // Diagonal 1: \
-      item.slashGfx.moveTo(item.cx - slashLen * cos45, item.cy - slashLen * sin45);
-      item.slashGfx.lineTo(item.cx - slashLen * 0.4 * cos45 - 3 * sin45, item.cy - slashLen * 0.4 * sin45 + 3 * cos45);
-      item.slashGfx.lineTo(item.cx, item.cy);
-      item.slashGfx.lineTo(item.cx + slashLen * 0.4 * cos45 + 3 * sin45, item.cy + slashLen * 0.4 * sin45 - 3 * cos45);
-      item.slashGfx.lineTo(item.cx + slashLen * cos45, item.cy + slashLen * sin45);
-      item.slashGfx.stroke({ color: item.colBlade, width: slashW, alpha: alpha * 0.95 });
+        // Diagonal 1: \
+        item.slashGfx.moveTo(item.cx - slashLen * cos45, item.cy - slashLen * sin45);
+        item.slashGfx.lineTo(item.cx - slashLen * 0.4 * cos45 - 3 * sin45, item.cy - slashLen * 0.4 * sin45 + 3 * cos45);
+        item.slashGfx.lineTo(item.cx, item.cy);
+        item.slashGfx.lineTo(item.cx + slashLen * 0.4 * cos45 + 3 * sin45, item.cy + slashLen * 0.4 * sin45 - 3 * cos45);
+        item.slashGfx.lineTo(item.cx + slashLen * cos45, item.cy + slashLen * sin45);
+        item.slashGfx.stroke({ color: item.colBlade, width: slashW, alpha: alpha * 0.95 });
 
-      item.slashGfx.moveTo(item.cx - slashLen * 0.85 * cos45, item.cy - slashLen * 0.85 * sin45);
-      item.slashGfx.lineTo(item.cx + slashLen * 0.85 * cos45, item.cy + slashLen * 0.85 * sin45);
-      item.slashGfx.stroke({ color: item.colCore, width: slashW * 0.45, alpha: alpha * 1.0 });
+        item.slashGfx.moveTo(item.cx - slashLen * 0.85 * cos45, item.cy - slashLen * 0.85 * sin45);
+        item.slashGfx.lineTo(item.cx + slashLen * 0.85 * cos45, item.cy + slashLen * 0.85 * sin45);
+        item.slashGfx.stroke({ color: item.colCore, width: slashW * 0.45, alpha: alpha * 1.0 });
 
-      // Diagonal 2: /
-      item.slashGfx.moveTo(item.cx - slashLen * cos45, item.cy + slashLen * sin45);
-      item.slashGfx.lineTo(item.cx - slashLen * 0.4 * cos45 + 3 * sin45, item.cy + slashLen * 0.4 * sin45 + 3 * cos45);
-      item.slashGfx.lineTo(item.cx, item.cy);
-      item.slashGfx.lineTo(item.cx + slashLen * 0.4 * cos45 - 3 * sin45, item.cy - slashLen * 0.4 * sin45 - 3 * cos45);
-      item.slashGfx.lineTo(item.cx + slashLen * cos45, item.cy - slashLen * sin45);
-      item.slashGfx.stroke({ color: item.colBlade, width: slashW, alpha: alpha * 0.95 });
+        // Diagonal 2: /
+        item.slashGfx.moveTo(item.cx - slashLen * cos45, item.cy + slashLen * sin45);
+        item.slashGfx.lineTo(item.cx - slashLen * 0.4 * cos45 + 3 * sin45, item.cy + slashLen * 0.4 * sin45 + 3 * cos45);
+        item.slashGfx.lineTo(item.cx, item.cy);
+        item.slashGfx.lineTo(item.cx + slashLen * 0.4 * cos45 - 3 * sin45, item.cy - slashLen * 0.4 * sin45 - 3 * cos45);
+        item.slashGfx.lineTo(item.cx + slashLen * cos45, item.cy - slashLen * sin45);
+        item.slashGfx.stroke({ color: item.colBlade, width: slashW, alpha: alpha * 0.95 });
 
-      item.slashGfx.moveTo(item.cx - slashLen * 0.85 * cos45, item.cy + slashLen * 0.85 * sin45);
-      item.slashGfx.lineTo(item.cx + slashLen * 0.85 * cos45, item.cy - slashLen * 0.85 * sin45);
-      item.slashGfx.stroke({ color: item.colCore, width: slashW * 0.45, alpha: alpha * 1.0 });
+        item.slashGfx.moveTo(item.cx - slashLen * 0.85 * cos45, item.cy + slashLen * 0.85 * sin45);
+        item.slashGfx.lineTo(item.cx + slashLen * 0.85 * cos45, item.cy - slashLen * 0.85 * sin45);
+        item.slashGfx.stroke({ color: item.colCore, width: slashW * 0.45, alpha: alpha * 1.0 });
+      }
 
       // --- 3. Central 4-point Diamond Star Flash (✦) ---
-      if (p < 0.45) {
+      if (item.themeId !== 'hado99' && p < 0.45) {
         const starP = p / 0.45;
         item.starSprite.visible = true;
         const s = (1.0 - starP) * 1.4;
@@ -646,17 +650,23 @@ export class PixiParticleSystem {
       }
 
       // --- 4. Shattered Glass Crystal Shards (8 sprites) ---
-      for (let s = 0; s < item.shards.length; s++) {
-        const sh = item.shards[s];
-        const ang = (s * Math.PI * 2 / 8) + (s * 0.35);
-        const dist = (item.w * 0.12) + easeOut * (item.w * 0.50);
-        sh.visible = true;
-        sh.position.set(item.cx + Math.cos(ang) * dist, item.cy + Math.sin(ang) * dist);
-        sh.rotation = ang + p * 2.5;
-        const sz = Math.max(0.2, (1.0 - p * 0.6) * 0.7);
-        sh.scale.set(sz);
-        sh.alpha = alpha * 0.9;
-        sh.tint = (s % 2 === 0) ? 0xffffff : item.colBlade;
+      if (item.themeId !== 'hado99') {
+        for (let s = 0; s < item.shards.length; s++) {
+          const sh = item.shards[s];
+          const ang = (s * Math.PI * 2 / 8) + (s * 0.35);
+          const dist = (item.w * 0.12) + easeOut * (item.w * 0.50);
+          sh.visible = true;
+          sh.position.set(item.cx + Math.cos(ang) * dist, item.cy + Math.sin(ang) * dist);
+          sh.rotation = ang + p * 2.5;
+          const sz = Math.max(0.2, (1.0 - p * 0.6) * 0.7);
+          sh.scale.set(sz);
+          sh.alpha = alpha * 0.9;
+          sh.tint = (s % 2 === 0) ? 0xffffff : item.colBlade;
+        }
+      } else {
+        for (let s = 0; s < item.shards.length; s++) {
+          item.shards[s].visible = false;
+        }
       }
 
       // --- 5. Radiating Lycoris Petals (6 sprites for Phrolova) ---

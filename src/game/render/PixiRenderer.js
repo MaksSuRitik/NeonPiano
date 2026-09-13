@@ -129,7 +129,7 @@ export class PixiRenderer {
               this.syncThemeTextures(this.cachedSpriteCache);
             }
             this.isReady = true;
-            this.areNotesHandled = true;
+            this.areNotesHandled = false;
             this.areParticlesHandled = true;
           } catch (err) {
             console.error("[PixiRenderer] Context restoration failed:", err);
@@ -242,8 +242,13 @@ export class PixiRenderer {
   syncThemeTextures(SpriteCache) {
     if (!SpriteCache) return;
     this.cachedSpriteCache = SpriteCache;
-    pixiNotePool.updateTexturesFromCache(SpriteCache);
-    this.areNotesHandled = true;
+    try {
+      pixiNotePool.updateTexturesFromCache(SpriteCache);
+    } catch (err) {
+      console.warn("[PixiRenderer] Texture cache sync warning:", err);
+    }
+    // Canvas 2D handles notes to preserve 100% authentic procedural tails, necks, bodies & overlays
+    this.areNotesHandled = false;
   }
 
   /**
@@ -256,24 +261,28 @@ export class PixiRenderer {
   render(songTime = 0, state = null, config = null, activeTheme = null) {
     if (!this.isReady || !this.app || !this.app.renderer) return;
 
-    // Update Phase 3 advanced note stream with theme visual styling & hold bodies
-    if (state && Array.isArray(state.activeTiles)) {
-      pixiNotePool.update(songTime, state.activeTiles, state, config, activeTheme);
-    }
+    try {
+      // Notes are handled natively on Canvas 2D to preserve authentic theme artwork (tails, necks, overlays)
+      if (this.areNotesHandled && state && Array.isArray(state.activeTiles)) {
+        pixiNotePool.update(songTime, state.activeTiles, state, config, activeTheme);
+      }
 
-    // Update Phase 4 visual effects and particle system
-    if (this.particleSystem && this.areParticlesHandled) {
-      this.particleSystem.update(Date.now(), state ? state.combo : 0, activeTheme);
-    }
+      // Update Phase 4 visual effects and particle system
+      if (this.particleSystem && this.areParticlesHandled) {
+        this.particleSystem.update(Date.now(), state ? state.combo : 0, activeTheme);
+      }
 
-    // Animate status indicator (smooth neon pulse)
-    if (this.statusIndicator) {
-      const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.004);
-      this.statusIndicator.alpha = 0.4 + pulse * 0.45;
-    }
+      // Animate status indicator (smooth neon pulse)
+      if (this.statusIndicator) {
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.004);
+        this.statusIndicator.alpha = 0.4 + pulse * 0.45;
+      }
 
-    // Explicit manual draw call
-    this.app.render();
+      // Explicit manual draw call
+      this.app.render();
+    } catch (err) {
+      console.warn("[PixiRenderer] Render loop warning:", err);
+    }
   }
 
   /**
@@ -296,8 +305,12 @@ export class PixiRenderer {
    * Triggers a cinematic hit explosion with expanding acoustic shockwave, razor lacerations, and diamond shards.
    */
   triggerHitEffect(cx, cy, w, h, isPerfect = true, themeId = 'default', combo = 0, lane = 0, activeTheme = null) {
-    if (this.particleSystem && this.areParticlesHandled) {
-      this.particleSystem.spawnHit(cx, cy, w, h, isPerfect, themeId, combo, activeTheme);
+    try {
+      if (this.particleSystem && this.areParticlesHandled) {
+        this.particleSystem.spawnHit(cx, cy, w, h, isPerfect, themeId, combo, activeTheme);
+      }
+    } catch (err) {
+      console.warn("[PixiRenderer] triggerHitEffect error:", err);
     }
   }
 
@@ -305,8 +318,12 @@ export class PixiRenderer {
    * Spawns directional sparks and shards.
    */
   spawnSparks(cx, cy, count, colorHex, themeId = 'default', type = 'good', combo = 0) {
-    if (this.particleSystem && this.areParticlesHandled) {
-      this.particleSystem.spawnSparks(cx, cy, count, colorHex, themeId, type, combo);
+    try {
+      if (this.particleSystem && this.areParticlesHandled) {
+        this.particleSystem.spawnSparks(cx, cy, count, colorHex, themeId, type, combo);
+      }
+    } catch (err) {
+      console.warn("[PixiRenderer] spawnSparks error:", err);
     }
   }
 
@@ -314,8 +331,12 @@ export class PixiRenderer {
    * Spawns dissolve particles for hold notes.
    */
   spawnDissolve(x, y, w) {
-    if (this.particleSystem && this.areParticlesHandled) {
-      this.particleSystem.spawnDissolve(x, y, w);
+    try {
+      if (this.particleSystem && this.areParticlesHandled) {
+        this.particleSystem.spawnDissolve(x, y, w);
+      }
+    } catch (err) {
+      console.warn("[PixiRenderer] spawnDissolve error:", err);
     }
   }
 

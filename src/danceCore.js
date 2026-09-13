@@ -49,11 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=75.0";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=75.1";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=75.0";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=75.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=75.1";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=75.1";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -3682,6 +3682,7 @@ function update(songTime) {
 function handleInputDown(lane, touchY, touchX) {
         if (!State.isPlaying || State.isPaused) return;
         const now = Date.now();
+        const activeTheme = FieldThemes.getActiveTheme();
         
         // Захист від надмірного спаму / апаратного дребезгу контактів (40 мс)
         if (now - (State.laneLastInputTime[lane] || 0) < 40) return;
@@ -3818,13 +3819,17 @@ function handleInputDown(lane, touchY, touchX) {
 
             // Phase 4: Trigger GPU WebGL Hit Explosion in PixiRenderer
             if (pixiRenderer && pixiRenderer.isReady && pixiRenderer.areParticlesHandled) {
-                const laneW = State.gameWidth / 4;
-                const padding = 6;
-                const w = laneW - (padding * 2);
-                const cx = target.lane * laneW + laneW / 2;
-                const cy = (target.hitVisualY > 0 ? target.hitVisualY : targetY) - CONFIG.noteHeight / 2;
-                const isPerfect = (target.hitRating === 'perfect');
-                pixiRenderer.triggerHitEffect(cx, cy, w, CONFIG.noteHeight, isPerfect, activeTheme ? activeTheme.id : 'default', State.combo, target.lane, activeTheme);
+                try {
+                    const laneW = State.gameWidth / 4;
+                    const padding = 6;
+                    const w = laneW - (padding * 2);
+                    const cx = target.lane * laneW + laneW / 2;
+                    const cy = (target.hitVisualY > 0 ? target.hitVisualY : targetY) - CONFIG.noteHeight / 2;
+                    const isPerfect = (target.hitRating === 'perfect');
+                    pixiRenderer.triggerHitEffect(cx, cy, w, CONFIG.noteHeight, isPerfect, activeTheme ? activeTheme.id : 'default', State.combo, target.lane, activeTheme);
+                } catch (err) {
+                    console.warn("[PixiRenderer] hit effect error:", err);
+                }
             }
 
             // Плавна неонова хвиля на лінії удару без вибуху ноти
