@@ -2969,6 +2969,19 @@ canvas#rhythmCanvas {
       touch-action: none;
 }
 
+canvas#pixiCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 11;
+  pointer-events: none;
+  -ms-touch-action: none;
+      touch-action: none;
+}
+
 /* Меню вибору пісень - центруємо по екрану, а не по контейнеру */
 .song-selection {
   position: fixed;
@@ -3919,7 +3932,7 @@ body[data-theme=light] #game-container {
     opacity: 0.6;
   }
   /* 5. ФІКС КЛІКІВ: Заборона скролу і зуму */
-  #game-container, canvas#rhythmCanvas {
+  #game-container, canvas#rhythmCanvas, canvas#pixiCanvas {
     -ms-touch-action: none !important;
         touch-action: none !important;
   }
@@ -4291,7 +4304,7 @@ body[data-theme=light] #game-container {
    ========================================== */
 @media (max-width: 768px) {
   /* 1. Блокуємо системні дії */
-  html, body, #game-container, canvas#rhythmCanvas {
+  html, body, #game-container, canvas#rhythmCanvas, canvas#pixiCanvas {
     overflow: hidden !important;
     -ms-touch-action: none !important;
         touch-action: none !important;

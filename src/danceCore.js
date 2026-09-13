@@ -49,10 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=73.2";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=74.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=73.2";
+import * as FieldThemes from "./game/fieldThemes.js?v=74.0";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=74.0";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -607,6 +608,19 @@ function bootGame() {
     canvas = document.getElementById('rhythmCanvas');
     ctx = canvas ? canvas.getContext('2d', { alpha: true, desynchronized: true }) : null;
     gameContainer = document.getElementById('game-container');
+
+    // Ініціалізація високопродуктивного графічного шару Pixi.js (Фаза 1: гібридний режим)
+    if (gameContainer) {
+        const initW = gameContainer.clientWidth || window.innerWidth || 400;
+        const initH = gameContainer.clientHeight || window.innerHeight || 800;
+        const initDpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        pixiRenderer.init({
+            container: gameContainer,
+            width: initW,
+            height: initH,
+            dpr: initDpr
+        }).catch(err => console.warn("[PixiRenderer] init error:", err));
+    }
     menuLayer = document.getElementById('menu-layer');
     loader = document.getElementById('loader');
     holdEffectsContainer = document.getElementById('hold-effects-container');
@@ -1975,6 +1989,7 @@ function bootGame() {
         if(ctx) {
             initGradients();
             draw();
+            pixiRenderer.render(0, State);
         }
     }
 
@@ -2564,6 +2579,7 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
         update(songTime);
         draw(songTime);
+        pixiRenderer.render(songTime, State);
         State.animationFrameId = requestAnimationFrame(gameLoop);
     }
 
@@ -4299,7 +4315,10 @@ function updateRipples(dt) {
         if (progressBar) progressBar.style.width = '0%';
         laneElements.forEach(el => { if (el) el.classList.remove('active'); });
         laneKeyElements.forEach(el => { if (el) el.classList.remove('active'); });
-        if (ctx) draw();
+        if (ctx) {
+            draw();
+            pixiRenderer.render(0, State);
+        }
     }
 
     async function endGame(victory) {
@@ -10555,6 +10574,7 @@ function updateRipples(dt) {
             SpriteCache.init(w, CONFIG.noteHeight, laneW, isLight);
             if (!State.glowSprite) createGlowSprite(128);
             gameRect = canvas.getBoundingClientRect();
+            pixiRenderer.resize(containerW, containerH, dpr);
         }
     }
     window.addEventListener('resize', resizeCanvas);
