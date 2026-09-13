@@ -17,15 +17,15 @@ const phrolovaSprites = {
   tipT5:     typeof Image !== 'undefined' ? new Image() : null
 };
 
-if (phrolovaSprites.large)     phrolovaSprites.large.src     = './assets/themes/phrolova_seg_large.png?v=76.0';
-if (phrolovaSprites.small)     phrolovaSprites.small.src     = './assets/themes/phrolova_seg_small.png?v=76.0';
-if (phrolovaSprites.tip)       phrolovaSprites.tip.src       = './assets/themes/phrolova_tail_tip.png?v=76.0';
-if (phrolovaSprites.largeDead) phrolovaSprites.largeDead.src = './assets/themes/phrolova_seg_large_dead.png?v=76.0';
-if (phrolovaSprites.smallDead) phrolovaSprites.smallDead.src = './assets/themes/phrolova_seg_small_dead.png?v=76.0';
-if (phrolovaSprites.tipDead)   phrolovaSprites.tipDead.src   = './assets/themes/phrolova_tail_tip_dead.png?v=76.0';
-if (phrolovaSprites.largeT5)   phrolovaSprites.largeT5.src   = './assets/themes/phrolova_seg_large_t5.png?v=76.0';
-if (phrolovaSprites.smallT5)   phrolovaSprites.smallT5.src   = './assets/themes/phrolova_seg_small_t5.png?v=76.0';
-if (phrolovaSprites.tipT5)     phrolovaSprites.tipT5.src     = './assets/themes/phrolova_tail_tip_t5.png?v=76.0';
+if (phrolovaSprites.large)     phrolovaSprites.large.src     = './assets/themes/phrolova_seg_large.png?v=77.0';
+if (phrolovaSprites.small)     phrolovaSprites.small.src     = './assets/themes/phrolova_seg_small.png?v=77.0';
+if (phrolovaSprites.tip)       phrolovaSprites.tip.src       = './assets/themes/phrolova_tail_tip.png?v=77.0';
+if (phrolovaSprites.largeDead) phrolovaSprites.largeDead.src = './assets/themes/phrolova_seg_large_dead.png?v=77.0';
+if (phrolovaSprites.smallDead) phrolovaSprites.smallDead.src = './assets/themes/phrolova_seg_small_dead.png?v=77.0';
+if (phrolovaSprites.tipDead)   phrolovaSprites.tipDead.src   = './assets/themes/phrolova_tail_tip_dead.png?v=77.0';
+if (phrolovaSprites.largeT5)   phrolovaSprites.largeT5.src   = './assets/themes/phrolova_seg_large_t5.png?v=77.0';
+if (phrolovaSprites.smallT5)   phrolovaSprites.smallT5.src   = './assets/themes/phrolova_seg_small_t5.png?v=77.0';
+if (phrolovaSprites.tipT5)     phrolovaSprites.tipT5.src     = './assets/themes/phrolova_tail_tip_t5.png?v=77.0';
 
 export const PHROLOVA_THEME = {
   id: 'phrolova',

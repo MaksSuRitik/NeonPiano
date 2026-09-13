@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sanhua Glacio Katana Verification — All Combo Tiers</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #020617;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      color: #38bdf8;
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+    }
+    .subtitle {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .canvas-container {
+      position: relative;
+      border: 2px solid rgba(56, 189, 248, 0.4);
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.25);
+      background: #08172e;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sanhua — Katana Scabbard Head (≤ Note Height), Ice Fire Blade & Hilt Tail</h1>
+  <div class="subtitle">Verifying all 6 combo tiers (T0-T5) + Scabbard height constraint</div>
+  <div class="canvas-container">
+    <canvas id="cv" width="700" height="760"></canvas>
+  </div>
+
+  <script type="module">
+    import { SANHUA_THEME } from './src/game/themes/sanhua.js?v=83.0';
+
+    const canvas = document.getElementById('cv');
+    const ctx = canvas.getContext('2d');
+    const W = 700;
+    const H = 760;
+    const numLanes = 6;
+    const laneW = W / numLanes;
+    const recY = 620;
+    const recH = 44;
+
+    const tiers = [
+      { combo: 0,   name: 'T0: Frost Blade (0-49)', col: '#b91c1c' },
+      { combo: 75,  name: 'T1: Glacio Azure (50-99)', col: '#0ea5e9' },
+      { combo: 150, name: 'T2: Sakura Pink (100-199)', col: '#ec4899' },
+      { combo: 250, name: 'T3: Amber Sun (200-399)', col: '#f59e0b' },
+      { combo: 500, name: 'T4: Sapphire Sky (400-799)', col: '#2563eb' },
+      { combo: 850, name: 'T5: Obsidian Blood (800+)', col: '#ff1744' }
+    ];
+
+    window.__LOGS__ = [];
+    function render(now = 0) {
+      try {
+        ctx.fillStyle = '#08172e';
+        ctx.fillRect(0, 0, W, H);
+
+        SANHUA_THEME.updateAndDrawAtmosphere(ctx, now, 1.0, 0, {
+          gameWidth: W,
+          gameHeight: H,
+          bgPulse: Math.sin(now * 0.003) * 0.2 + 0.2,
+          combo: 500
+        });
+
+        // Draw lane lines
+        for (let i = 0; i <= numLanes; i++) {
+          const lx = Math.round(i * laneW);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(lx, 0); ctx.lineTo(lx, H);
+          ctx.stroke();
+        }
+
+        // Draw receptors and labels
+        for (let i = 0; i < numLanes; i++) {
+          const rx = Math.round(i * laneW + 6);
+          const rw = Math.round(laneW - 12);
+          const t = tiers[i];
+
+          SANHUA_THEME.drawReceptor(ctx, rx, recY, rw, recH, true, false);
+
+          // Tier label above receptor
+          ctx.fillStyle = t.col;
+          ctx.font = 'bold 10px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`Tier ${i}`, rx + rw / 2, recY - 14);
+
+          // Draw Hold note
+          const headY = recY;
+          const tailY = 160 + (i % 2) * 30;
+          const tile = { hit: true, holding: true, failed: false };
+
+          SANHUA_THEME.drawHoldBody(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY, false);
+          SANHUA_THEME.drawHoldTail(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY);
+          SANHUA_THEME.drawNeck(ctx, rx, headY, rw, recH, tile, false, t.combo);
+
+          // Also draw a tap note above each lane to verify style and height matching!
+          SANHUA_THEME.bakeTapNote(ctx, rx, 40, rw, recH, false, t.combo);
+        }
+
+        window.__LOGS__.push('render_success');
+      } catch (e) {
+        window.__LOGS__.push('ERROR: ' + e.toString() + ' | ' + e.stack);
+      }
+    }
+
+    function start() {
+      render(1500);
+      let count = 0;
+      function loop() {
+        render(1500 + count * 16);
+        count++;
+        if (count < 25) {
+          requestAnimationFrame(loop);
+        } else {
+          window.__READY__ = true;
+        }
+      }
+      requestAnimationFrame(loop);
+    }
+
+    if (document.readyState === 'complete') {
+      start();
+    } else {
+      window.addEventListener('load', start);
+    }
+  </script>
+</body>
+</html>

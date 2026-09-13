@@ -49,11 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, fetchYouTubeTrackMetadata, fetchMusicTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=76.0";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, fetchYouTubeTrackMetadata, fetchMusicTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=77.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=76.0";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=76.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=83.0";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=77.0";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -1474,6 +1474,12 @@ function bootGame() {
                 themeGold = { black: '#fdf4ff', choco: '#c026d3', glow: 'rgba(217, 70, 239, 0.65)', border: '#f5d0fe', long1: '#c026d3', long2: '#701a75' };
                 themeCosmic = { core: '#ffffff', accent: '#d946ef', glow: 'rgba(232, 121, 249, 0.75)', border: '#ffffff', long1: '#e879f9', long2: '#4a044e' };
                 themeLegendary = { tap1: '#ffffff', tap2: '#f0abfc', glow: 'rgba(255, 255, 255, 0.85)', border: '#ffffff', long1: '#f472b6', long2: '#831843' };
+            } else if (activeFieldTheme.id === 'sanhua') {
+                themeSteel = { light: '#bae6fd', main: '#38bdf8', dark: '#0284c7', glow: 'rgba(56, 189, 248, 0.45)', border: '#38bdf8', long1: '#0284c7', long2: '#082f49' };
+                themeElectric = { tap1: '#e0f2fe', tap2: '#38bdf8', glow: 'rgba(56, 189, 248, 0.55)', border: '#bae6fd', long1: '#38bdf8', long2: '#0369a1' };
+                themeGold = { black: '#ffffff', choco: '#00f5ff', glow: 'rgba(0, 245, 255, 0.65)', border: '#00f5ff', long1: '#00f5ff', long2: '#0c4a6e' };
+                themeCosmic = { core: '#fdf4ff', accent: '#a855f7', glow: 'rgba(168, 85, 247, 0.75)', border: '#a855f7', long1: '#c084fc', long2: '#1e1b4b' };
+                themeLegendary = { tap1: '#ffffff', tap2: '#00f5ff', glow: 'rgba(255, 255, 255, 0.85)', border: '#ffffff', long1: '#ffffff', long2: '#0284c7' };
             }
 
             const styles = [

@@ -10,8 +10,9 @@ import {
   COSMIC_THEME, 
   IUNO_THEME,
   HADO99_THEME,
+  SANHUA_THEME,
   getThemeById 
-} from "./themes/index.js?v=76.0";
+} from "./themes/index.js?v=83.0";
 
 export { 
   FIELD_THEMES, 
@@ -21,6 +22,7 @@ export {
   COSMIC_THEME, 
   IUNO_THEME,
   HADO99_THEME,
+  SANHUA_THEME,
   getThemeById 
 };
 

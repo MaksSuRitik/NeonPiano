@@ -459,6 +459,9 @@ export default {
   themeHado99: "Hadō 99",
   themeHado99Desc: "The ultimate majesty of Sōsuke Aizen: a shattered dimensional abyss unleashing 5 colossal dragons of pure violet Reiatsu, sacred High Kido seals, and the all-seeing amber gaze of the Las Noches sovereign.",
   themeHado99Badge: "★ 100 🪙 • Legendary",
+  themeSanhua: "Glacial Edge",
+  themeSanhuaDesc: "Glacio aesthetics inspired by Sanhua: crystalline katana, ice prisms, and crimson sakura petals dancing in the rhythm of the sword.",
+  themeSanhuaBadge: "Glacio & Sakura",
 
   // Customization & Inventory
   customizationTitle: "Customization",
