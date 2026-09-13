@@ -47,6 +47,7 @@ export class PixiRenderer {
     // Phase 1 verification badge / indicator
     this.statusIndicator = null;
     this.backendName = "Unknown";
+    this.areNotesHandled = false;
   }
 
   /**
@@ -205,17 +206,27 @@ export class PixiRenderer {
   }
 
   /**
+   * Synchronizes baked theme note textures from SpriteCache into GPU textures.
+   */
+  syncThemeTextures(SpriteCache) {
+    if (!SpriteCache) return;
+    pixiNotePool.updateTexturesFromCache(SpriteCache);
+    this.areNotesHandled = true;
+  }
+
+  /**
    * Manual audio-synchronized frame render, called directly from gameLoop().
    * @param {number} songTime - Current track time in milliseconds
    * @param {Object} state - Game state reference
    * @param {Object} config - Game configuration (hitPosition, noteHeight, etc.)
+   * @param {Object} activeTheme - Current active field theme (Phrolova, etc.)
    */
-  render(songTime = 0, state = null, config = null) {
+  render(songTime = 0, state = null, config = null, activeTheme = null) {
     if (!this.isReady || !this.app || !this.app.renderer) return;
 
-    // Update Phase 2 zero-allocation note pool stream
+    // Update Phase 3 advanced note stream with theme visual styling & hold bodies
     if (state && Array.isArray(state.activeTiles)) {
-      pixiNotePool.update(songTime, state.activeTiles, state, config);
+      pixiNotePool.update(songTime, state.activeTiles, state, config, activeTheme);
     }
 
     // Animate status indicator (smooth neon pulse)

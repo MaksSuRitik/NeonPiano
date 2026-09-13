@@ -49,11 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=74.1";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=74.2";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=74.1";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=74.1";
+import * as FieldThemes from "./game/fieldThemes.js?v=74.2";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=74.2";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -1798,6 +1798,7 @@ function bootGame() {
             this.sheen = sheenC;
 
             this.initRatings();
+            pixiRenderer.syncThemeTextures(this);
         },
 
         initRatings() {
@@ -2580,7 +2581,8 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
         update(songTime);
         draw(songTime);
-        pixiRenderer.render(songTime, State, CONFIG);
+        const activeTheme = FieldThemes.getActiveTheme();
+        pixiRenderer.render(songTime, State, CONFIG, activeTheme);
         State.animationFrameId = requestAnimationFrame(gameLoop);
     }
 
@@ -3070,19 +3072,46 @@ function update(songTime) {
         ctx.shadowBlur = 0;
 
         // ==========================================
-        // 4. Рендеринг нот через Sprite Caching (Оптимізовано під 60-120 FPS: прямий drawImage)
+        // 4. Рендеринг нот: PixiJS WebGL (Phase 3) з автоматичним фолбеком на Canvas 2D
         // ==========================================
-        const tapSprite = SpriteCache.getTapSprite(p.name);
-        const longTailSprite = SpriteCache.getLongTailSprite(p.name);
-        const longHeadSprite = SpriteCache.getLongHeadSprite(p.name);
-        const deadTailSprite = SpriteCache.getLongTailSprite('dead');
-        const deadHeadSprite = SpriteCache.getLongHeadSprite('dead');
-        const relTailSprite = SpriteCache.getLongTailSprite('released');
-        const relHeadSprite = SpriteCache.getLongHeadSprite('released');
+        const pixiHandlesNotes = pixiRenderer && pixiRenderer.isReady && pixiRenderer.areNotesHandled;
 
-        for (let i = 0; i < State.activeTiles.length; i++) {
-            const tile = State.activeTiles[i];
-            if (tile.completed) continue;
+        if (pixiHandlesNotes) {
+            // Ноти рендеряться на GPU через Pixi.js. Canvas 2D відмальовує хіт-анімації влучання до Фази 4.
+            for (let i = 0; i < State.activeTiles.length; i++) {
+                const tile = State.activeTiles[i];
+                if (tile.completed || !tile.hit || !tile.hitAnimStart) continue;
+
+                const animDuration = 240;
+                const elapsed = now - tile.hitAnimStart;
+                if (elapsed < animDuration) {
+                    const p = elapsed / animDuration;
+                    const x = tile.lane * laneW + padding;
+                    const progressStart = 1 - (tile.time - songTime) / State.currentSpeed;
+                    const visualY = (tile.hitVisualY > 0) ? tile.hitVisualY : progressStart * hitY;
+                    const yTop = visualY - CONFIG.noteHeight;
+                    const cx = x + w / 2;
+                    const cy = yTop + CONFIG.noteHeight / 2;
+                    const isPerfect = (tile.hitRating === 'perfect');
+
+                    if (activeTheme && typeof activeTheme.drawHitAnimation === 'function') {
+                        activeTheme.drawHitAnimation(ctx, cx, cy, w, CONFIG.noteHeight, p, isPerfect, isLight, now, State.combo);
+                    }
+                }
+            }
+        } else {
+            // Фолбек: повноцінний цикл рендерингу Canvas 2D
+            const tapSprite = SpriteCache.getTapSprite(p.name);
+            const longTailSprite = SpriteCache.getLongTailSprite(p.name);
+            const longHeadSprite = SpriteCache.getLongHeadSprite(p.name);
+            const deadTailSprite = SpriteCache.getLongTailSprite('dead');
+            const deadHeadSprite = SpriteCache.getLongHeadSprite('dead');
+            const relTailSprite = SpriteCache.getLongTailSprite('released');
+            const relHeadSprite = SpriteCache.getLongHeadSprite('released');
+
+            for (let i = 0; i < State.activeTiles.length; i++) {
+                const tile = State.activeTiles[i];
+                if (tile.completed) continue;
 
             const x = tile.lane * laneW + padding;
 
@@ -3353,6 +3382,7 @@ function update(songTime) {
                     ctx.restore();
                 }
             }
+        }
         }
 
         // Пост-рендер оверлей активної теми (парячий попіл Рейсі, глобальні шлейфи)
