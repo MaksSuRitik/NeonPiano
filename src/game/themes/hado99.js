@@ -1720,8 +1720,12 @@ export const HADO99_THEME = {
   _atm: null, _bgGrad: null, _bgKey: '',
 
   updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State) {
-    const W = ctx.canvas?.width || State?.gameWidth || 400;
-    const H = ctx.canvas?.height || State?.gameHeight || 700;
+    const W = (typeof State !== 'undefined' && State && typeof State.gameWidth === 'number' && State.gameWidth > 0)
+      ? State.gameWidth
+      : (ctx.canvas?.clientWidth || (ctx.canvas ? ctx.canvas.width / (window.devicePixelRatio || 1) : 400));
+    const H = (typeof State !== 'undefined' && State && typeof State.gameHeight === 'number' && State.gameHeight > 0)
+      ? State.gameHeight
+      : (ctx.canvas?.clientHeight || (ctx.canvas ? ctx.canvas.height / (window.devicePixelRatio || 1) : 700));
     const t = songTime * 0.001, isMob = State ? State.isMobile : false;
 
     if (!this._atm || this._atm._W !== W || this._atm._H !== H) {

@@ -873,8 +873,12 @@ export const PHROLOVA_THEME = {
   // - Falling fluttering Lycoris petals with 3D rotation
   // ==========================================================================
   updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State) {
-    const gw = ctx.canvas?.width || State?.gameWidth || 400;
-    const gh = ctx.canvas?.height || State?.gameHeight || 700;
+    const gw = (typeof State !== 'undefined' && State && typeof State.gameWidth === 'number' && State.gameWidth > 0)
+      ? State.gameWidth
+      : (ctx.canvas?.clientWidth || (ctx.canvas ? ctx.canvas.width / (window.devicePixelRatio || 1) : 400));
+    const gh = (typeof State !== 'undefined' && State && typeof State.gameHeight === 'number' && State.gameHeight > 0)
+      ? State.gameHeight
+      : (ctx.canvas?.clientHeight || (ctx.canvas ? ctx.canvas.height / (window.devicePixelRatio || 1) : 700));
     const isLight = document.body.getAttribute('data-theme') === 'light';
     const pulse = State.bgPulse || 0;
     const now = songTime || 0;

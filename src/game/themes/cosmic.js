@@ -491,8 +491,12 @@ export const COSMIC_THEME = {
    * twinkling multi-spectral star clusters, and revolving 12-node zodiac constellation map.
    */
   updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State) {
-    const gw = ctx.canvas?.width || State?.gameWidth || 400;
-    const gh = ctx.canvas?.height || State?.gameHeight || 700;
+    const gw = (typeof State !== 'undefined' && State && typeof State.gameWidth === 'number' && State.gameWidth > 0)
+      ? State.gameWidth
+      : (ctx.canvas?.clientWidth || (ctx.canvas ? ctx.canvas.width / (window.devicePixelRatio || 1) : 400));
+    const gh = (typeof State !== 'undefined' && State && typeof State.gameHeight === 'number' && State.gameHeight > 0)
+      ? State.gameHeight
+      : (ctx.canvas?.clientHeight || (ctx.canvas ? ctx.canvas.height / (window.devicePixelRatio || 1) : 700));
     const isLight = document.body.getAttribute('data-theme') === 'light';
     const t = (typeof songTime === 'number' && !isNaN(songTime)) ? songTime : (State?.songTime || 0);
     const bass = (typeof State !== 'undefined' && typeof State?.bgPulse === 'number' && !isNaN(State.bgPulse)) ? State.bgPulse : 0;
