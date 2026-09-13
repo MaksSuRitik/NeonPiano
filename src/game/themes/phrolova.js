@@ -283,9 +283,10 @@ export const PHROLOVA_THEME = {
   },
 
   // Authentic Wuthering Waves Phrolova Soundweave Blade-Whip Segment
-  // - Central faceted ruby resonance nucleus with specular core
-  // - Sinuous double-hooked obsidian sickle talons (prominent curved secondary claw + sweeping curved sickle blade)
-  // - Sharp hooked claw tips ("коготки"), razor border rims, and inner glowing crimson resonance veins
+  // Equidistant alternating thorn pairs along the laser cord:
+  // - idx % 2 === 0: Long Sickle Talon Pair (длинная серповидная пара с базальными зазубринами и крючьями)
+  // - idx % 2 === 1: Small/Medium Hooked Claw Pair (короткая пара с выраженными загнутыми коготками, ~60% размах)
+  // Both types sit equidistant from each other, each with its own faceted ruby nucleus and glowing veins
   _drawSoundweaveSegment(ctx, cx, ly, hw, pal, isDead, isHolding, now = 0, idx = 0) {
     const borderCol = isDead ? '#475569' : pal.border;
     const bodyCol   = isDead ? '#111827' : (pal.obsCol || '#0c0206');
@@ -296,143 +297,203 @@ export const PHROLOVA_THEME = {
 
     const sx = (side, f) => cx + side * (hw * f);
     const sy = (f) => ly + (hw * f);
+    const isSmall = (idx % 2 === 1);
 
-    // 1. Symmetrical Twin Obsidian Sickle-Claw Clusters (left & right)
-    for (const side of [-1, 1]) {
-      // --- 1A. Solid Obsidian Blade Silhouette with Sharp Hooked Claws ---
-      ctx.fillStyle   = bodyCol;
+    if (!isSmall) {
+      // ====================================================================
+      // 1. LONG SICKLE TALON PAIR (Длинная серповидная пара с коготками)
+      // ====================================================================
+      for (const side of [-1, 1]) {
+        ctx.fillStyle   = bodyCol;
+        ctx.strokeStyle = borderCol;
+        ctx.lineWidth   = Math.max(1.3, hw * 0.046);
+        ctx.lineJoin    = 'miter';
+        ctx.miterLimit  = 4;
+
+        ctx.beginPath();
+        // Lower junction anchor
+        ctx.moveTo(sx(side, 0.12), sy(0.20));
+
+        // Basal notch & secondary spur
+        ctx.lineTo(sx(side, 0.28), sy(0.22));
+        ctx.lineTo(sx(side, 0.38), sy(0.04));
+        ctx.lineTo(sx(side, 0.26), sy(-0.06));
+
+        // Outer sweeping sickle arch curving aggressively outwards and curling to sharp hooked claw tip
+        ctx.bezierCurveTo(
+          sx(side, 0.55), sy(-0.25),
+          sx(side, 1.10), sy(-0.55),
+          sx(side, 0.78), sy(-0.95) // Hooked claw tip!
+        );
+        // Inner deeply scooped concave blade returning to upper spine
+        ctx.bezierCurveTo(
+          sx(side, 0.86), sy(-0.75),
+          sx(side, 0.48), sy(-0.48),
+          sx(side, 0.14), sy(-0.20)
+        );
+
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        if (!isDead) {
+          // Chiseled bevel ridge
+          ctx.strokeStyle = borderCol;
+          ctx.lineWidth   = Math.max(0.8, hw * 0.026);
+          ctx.beginPath();
+          ctx.moveTo(sx(side, 0.14), sy(-0.06));
+          ctx.lineTo(sx(side, 0.26), sy(-0.06));
+          ctx.stroke();
+
+          // Luminous crimson resonance vein
+          ctx.strokeStyle = coreCol;
+          ctx.lineWidth   = Math.max(1.1, hw * 0.038);
+          ctx.beginPath();
+          ctx.moveTo(sx(side, 0.18), sy(-0.14));
+          ctx.bezierCurveTo(
+            sx(side, 0.50), sy(-0.42),
+            sx(side, 0.76), sy(-0.65),
+            sx(side, 0.78), sy(-0.90)
+          );
+          ctx.stroke();
+
+          // Needle sheen at tip
+          ctx.strokeStyle = sparkCol;
+          ctx.lineWidth   = Math.max(0.9, hw * 0.030);
+          ctx.beginPath();
+          ctx.moveTo(sx(side, 0.84), sy(-0.84));
+          ctx.lineTo(sx(side, 0.78), sy(-0.95));
+          ctx.lineTo(sx(side, 0.74), sy(-0.86));
+          ctx.stroke();
+        }
+      }
+
+      // Long pair Ruby Nucleus
+      ctx.fillStyle   = isDead ? '#0f172a' : pal.bgTop;
       ctx.strokeStyle = borderCol;
-      ctx.lineWidth   = Math.max(1.3, hw * 0.046);
-      ctx.lineJoin    = 'miter';
-      ctx.miterLimit  = 4;
-
+      ctx.lineWidth   = Math.max(1.2, hw * 0.042);
       ctx.beginPath();
-      // Lower spine junction anchor
-      ctx.moveTo(sx(side, 0.12), sy(0.24));
-
-      // Basal spur / tooth
-      ctx.lineTo(sx(side, 0.22), sy(0.25));
-      ctx.lineTo(sx(side, 0.24), sy(0.12));
-
-      // --- SECONDARY CLAW (коготок: sharp curved hook claw) ---
-      // Outer curve sweeps out and curls backward-inward directly to sharp claw tip
-      ctx.bezierCurveTo(
-        sx(side, 0.38), sy(0.08),
-        sx(side, 0.74), sy(-0.18),
-        sx(side, 0.50), sy(-0.52) // Tip 1
-      );
-      // Inner edge cuts sharply back (acute hook!) down into cleft
-      ctx.bezierCurveTo(
-        sx(side, 0.58), sy(-0.38),
-        sx(side, 0.42), sy(-0.25),
-        sx(side, 0.26), sy(-0.14) // Cleft
-      );
-
-      // --- MAIN SICKLE CLAW (главный загнутый коготь) ---
-      // Outer sweeping sickle arch curving aggressively outwards and curls inward to sharp claw tip
-      ctx.bezierCurveTo(
-        sx(side, 0.56), sy(-0.32),
-        sx(side, 1.10), sy(-0.68),
-        sx(side, 0.75), sy(-1.12) // Tip 2 (sharp needle-hooked claw point!)
-      );
-      // Inner sickle blade scoops deeply back inward to upper spine
-      ctx.bezierCurveTo(
-        sx(side, 0.86), sy(-0.90),
-        sx(side, 0.48), sy(-0.58),
-        sx(side, 0.14), sy(-0.25) // Upper spine socket
-      );
-
+      ctx.moveTo(cx, sy(-0.32));
+      ctx.lineTo(cx + hw * 0.18, sy(-0.10));
+      ctx.lineTo(cx + hw * 0.15, sy(0.18));
+      ctx.lineTo(cx, sy(0.40));
+      ctx.lineTo(cx - hw * 0.15, sy(0.18));
+      ctx.lineTo(cx - hw * 0.18, sy(-0.10));
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      if (!isDead) {
-        // --- 1B. Chiseled Bevel / Blade Facet ---
+      ctx.fillStyle = coreCol;
+      ctx.beginPath();
+      ctx.moveTo(cx, sy(-0.22));
+      ctx.lineTo(cx + hw * 0.12, sy(-0.05));
+      ctx.lineTo(cx, sy(0.28));
+      ctx.lineTo(cx - hw * 0.12, sy(-0.05));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = sparkCol;
+      ctx.beginPath();
+      ctx.arc(cx, ly, Math.max(1.5, hw * 0.048), 0, Math.PI * 2);
+      ctx.fill();
+
+    } else {
+      // ====================================================================
+      // 2. SMALL/MEDIUM HOOKED CLAW PAIR (Короткая пара с выраженными коготками)
+      // Reach ~60% of hw, curved hook claw with sharp tip & basal barb
+      // ====================================================================
+      for (const side of [-1, 1]) {
+        ctx.fillStyle   = bodyCol;
         ctx.strokeStyle = borderCol;
-        ctx.lineWidth   = Math.max(0.8, hw * 0.026);
-        ctx.beginPath();
-        ctx.moveTo(sx(side, 0.14), sy(-0.06));
-        ctx.lineTo(sx(side, 0.26), sy(-0.14));
-        ctx.stroke();
+        ctx.lineWidth   = Math.max(1.2, hw * 0.042);
+        ctx.lineJoin    = 'miter';
+        ctx.miterLimit  = 4;
 
-        // --- 1C. Glowing Crimson Resonance Veins ---
-        // Main claw vein tracing the crescent arc to tip
-        ctx.strokeStyle = coreCol;
-        ctx.lineWidth   = Math.max(1.1, hw * 0.038);
         ctx.beginPath();
-        ctx.moveTo(sx(side, 0.18), sy(-0.18));
+        // Lower junction
+        ctx.moveTo(sx(side, 0.11), sy(0.16));
+
+        // Basal notch / tooth
+        ctx.lineTo(sx(side, 0.22), sy(0.18));
+        ctx.lineTo(sx(side, 0.30), sy(0.02));
+        ctx.lineTo(sx(side, 0.20), sy(-0.06));
+
+        // Outer curve sweeping out and curling backward to sharp claw tip
         ctx.bezierCurveTo(
-          sx(side, 0.48), sy(-0.48),
-          sx(side, 0.76), sy(-0.72),
-          sx(side, 0.75), sy(-1.06)
+          sx(side, 0.38), sy(-0.14),
+          sx(side, 0.68), sy(-0.28),
+          sx(side, 0.52), sy(-0.62) // Sharp hooked claw tip!
         );
+        // Inner concave scoop cutting back to spine
+        ctx.bezierCurveTo(
+          sx(side, 0.56), sy(-0.48),
+          sx(side, 0.36), sy(-0.32),
+          sx(side, 0.12), sy(-0.16)
+        );
+
+        ctx.closePath();
+        ctx.fill();
         ctx.stroke();
 
-        // Secondary claw vein tracing arc to secondary claw tip
-        ctx.beginPath();
-        ctx.moveTo(sx(side, 0.18), sy(0.06));
-        ctx.quadraticCurveTo(
-          sx(side, 0.38), sy(-0.08),
-          sx(side, 0.50), sy(-0.46)
-        );
-        ctx.stroke();
+        if (!isDead) {
+          // Luminous crimson resonance vein
+          ctx.strokeStyle = coreCol;
+          ctx.lineWidth   = Math.max(1.0, hw * 0.034);
+          ctx.beginPath();
+          ctx.moveTo(sx(side, 0.15), sy(-0.04));
+          ctx.quadraticCurveTo(
+            sx(side, 0.38), sy(-0.24),
+            sx(side, 0.52), sy(-0.56)
+          );
+          ctx.stroke();
 
-        // Razor needle sheen along the claw tip edges (preserving sharp point)
-        ctx.strokeStyle = sparkCol;
-        ctx.lineWidth   = Math.max(0.9, hw * 0.030);
-        ctx.beginPath();
-        // Main claw tip sheen
-        ctx.moveTo(sx(side, 0.82), sy(-0.98));
-        ctx.lineTo(sx(side, 0.75), sy(-1.12));
-        ctx.lineTo(sx(side, 0.72), sy(-1.00));
-        // Secondary claw tip sheen
-        ctx.moveTo(sx(side, 0.58), sy(-0.44));
-        ctx.lineTo(sx(side, 0.50), sy(-0.52));
-        ctx.lineTo(sx(side, 0.48), sy(-0.42));
-        ctx.stroke();
+          // Needle sheen at tip
+          ctx.strokeStyle = sparkCol;
+          ctx.lineWidth   = Math.max(0.8, hw * 0.026);
+          ctx.beginPath();
+          ctx.moveTo(sx(side, 0.58), sy(-0.52));
+          ctx.lineTo(sx(side, 0.52), sy(-0.62));
+          ctx.lineTo(sx(side, 0.48), sy(-0.54));
+          ctx.stroke();
+        }
       }
+
+      // Small pair Ruby Nucleus
+      ctx.fillStyle   = isDead ? '#0f172a' : pal.bgTop;
+      ctx.strokeStyle = borderCol;
+      ctx.lineWidth   = Math.max(1.1, hw * 0.038);
+      ctx.beginPath();
+      ctx.moveTo(cx, sy(-0.26));
+      ctx.lineTo(cx + hw * 0.15, sy(-0.08));
+      ctx.lineTo(cx + hw * 0.12, sy(0.14));
+      ctx.lineTo(cx, sy(0.32));
+      ctx.lineTo(cx - hw * 0.12, sy(0.14));
+      ctx.lineTo(cx - hw * 0.15, sy(-0.08));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = coreCol;
+      ctx.beginPath();
+      ctx.moveTo(cx, sy(-0.18));
+      ctx.lineTo(cx + hw * 0.10, sy(-0.05));
+      ctx.lineTo(cx, sy(0.22));
+      ctx.lineTo(cx - hw * 0.10, sy(-0.05));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = sparkCol;
+      ctx.beginPath();
+      ctx.arc(cx, ly, Math.max(1.3, hw * 0.040), 0, Math.PI * 2);
+      ctx.fill();
     }
-
-    // 2. Central Faceted Ruby Resonance Nucleus (Гранёное рубиновое ядро)
-    // 2A. Outer Faceted Bezel Housing
-    ctx.fillStyle   = isDead ? '#0f172a' : pal.bgTop;
-    ctx.strokeStyle = borderCol;
-    ctx.lineWidth   = Math.max(1.2, hw * 0.042);
-
-    ctx.beginPath();
-    ctx.moveTo(cx, sy(-0.36));               // Top socket point
-    ctx.lineTo(cx + hw * 0.19, sy(-0.12));   // Upper right shoulder
-    ctx.lineTo(cx + hw * 0.16, sy(0.20));    // Lower right hip
-    ctx.lineTo(cx, sy(0.44));                // Bottom arrow tip pointing forward
-    ctx.lineTo(cx - hw * 0.16, sy(0.20));    // Lower left hip
-    ctx.lineTo(cx - hw * 0.19, sy(-0.12));   // Upper left shoulder
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // 2B. Inner Glowing Ruby Crystalline Facet
-    ctx.fillStyle = coreCol;
-    ctx.beginPath();
-    ctx.moveTo(cx, sy(-0.25));
-    ctx.lineTo(cx + hw * 0.13, sy(-0.06));
-    ctx.lineTo(cx, sy(0.30));
-    ctx.lineTo(cx - hw * 0.13, sy(-0.06));
-    ctx.closePath();
-    ctx.fill();
-
-    // 2C. Center Sparkling Specular Star Point
-    ctx.fillStyle = sparkCol;
-    const coreR = Math.max(1.5, hw * 0.048);
-    ctx.beginPath();
-    ctx.arc(cx, ly, coreR, 0, Math.PI * 2);
-    ctx.fill();
 
     // Holding energetic micro-spark
     if (isHolding && !isDead) {
       const pulse = Math.sin((now || 0) * 0.012 + idx * 0.8) * 0.5 + 0.5;
       ctx.strokeStyle = sparkCol;
       ctx.lineWidth   = Math.max(0.8, hw * 0.026);
-      const rRay = Math.max(3.6, hw * 0.12) + pulse * (hw * 0.06);
+      const rRay = Math.max(3.2, hw * 0.10) + pulse * (hw * 0.05);
       ctx.beginPath();
       ctx.moveTo(cx - rRay, ly); ctx.lineTo(cx + rRay, ly);
       ctx.moveTo(cx, ly - rRay); ctx.lineTo(cx, ly + rRay);
@@ -477,12 +538,12 @@ export const PHROLOVA_THEME = {
     ctx.moveTo(cx, 0); ctx.lineTo(cx, tailH);
     ctx.stroke();
 
-    // 3. Repeating Soundweave Barbed Scythe Segments
-    const linkSpacing = 38;
-    const numLinks = Math.max(1, Math.floor(tailH / linkSpacing));
-    const effectiveSpacing = tailH / numLinks;
+    // 3. Repeating Soundweave Barbed Scythe Segments (Equidistant Alternating Long & Small Pairs)
+    const nodeSpacing = 24;
+    const numNodes = Math.max(1, Math.floor(tailH / nodeSpacing));
+    const effectiveSpacing = tailH / numNodes;
 
-    for (let i = 0; i <= numLinks; i++) {
+    for (let i = 0; i <= numNodes; i++) {
       const ly = i * effectiveSpacing;
       this._drawSoundweaveSegment(ctx, cx, ly, hw, pal, false, false, 0, i);
     }
@@ -578,16 +639,16 @@ export const PHROLOVA_THEME = {
     ctx.lineTo(cx, headTopY);
     ctx.stroke();
 
-    // 3. Repeating Authentic Soundweave Barbed Scythe Segments
-    const linkSpacing = 38;
-    const startY = headTopY - 20;
-    const endY = yTail + 14;
+    // 3. Repeating Authentic Soundweave Barbed Scythe Segments (Equidistant Alternating Long & Small Pairs)
+    const nodeSpacing = 24;
+    const startY = headTopY - 18;
+    const endY = yTail + 12;
 
     if (startY > endY) {
-      const numLinks = Math.max(1, Math.floor((startY - endY) / linkSpacing));
-      const effectiveSpacing = (startY - endY) / numLinks;
+      const numNodes = Math.max(1, Math.floor((startY - endY) / nodeSpacing));
+      const effectiveSpacing = (startY - endY) / numNodes;
 
-      for (let i = 0; i <= numLinks; i++) {
+      for (let i = 0; i <= numNodes; i++) {
         const ly = startY - i * effectiveSpacing;
         this._drawSoundweaveSegment(ctx, cx, ly, hw, pal, dead, holding, now, i);
       }
@@ -597,7 +658,7 @@ export const PHROLOVA_THEME = {
         const pulseOffset = ((now || 0) * 0.16) % effectiveSpacing;
         ctx.fillStyle = pal.core || '#ffffff';
         ctx.beginPath();
-        for (let i = 0; i <= numLinks; i++) {
+        for (let i = 0; i <= numNodes; i++) {
           const py = startY - i * effectiveSpacing - pulseOffset;
           if (py >= yTail && py <= headTopY) {
             ctx.moveTo(cx + 2.5, py);
