@@ -3,7 +3,7 @@
 // ==========================================
 import { getAudioFromIndexedDB } from "../services/localAudioStorage.js";
 
-class AudioEngine {
+export class AudioEngine {
   constructor() {
     this.audioCtx = null;
     this.masterGain = null;
@@ -46,6 +46,7 @@ class AudioEngine {
 
       // Real-time audio spectrum analyser for the in-game equalizer
       this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.connect(this.masterGain);
       this.analyser.fftSize = 64;
       this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     }
@@ -123,16 +124,20 @@ class AudioEngine {
 
     // Route: Source -> Analyser -> MasterGain -> Destination
     this.activeSource.connect(this.analyser);
-    this.analyser.connect(this.masterGain);
 
     this.onEndedCallback = onEnded;
+    const source = this.activeSource;
     this.activeSource.onended = () => {
-      if (this.isPlaying && !this.isPaused) {
+      source.disconnect();
+      if (this.activeSource === source && this.isPlaying && !this.isPaused) {
+        this.activeSource = null;
         this.isPlaying = false;
         if (this.onEndedCallback) this.onEndedCallback();
       }
     };
 
+    offset = Number.isFinite(offset) ? Math.min(Math.max(0, offset), audioBuffer.duration) : 0;
+    delay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
     const scheduledStartTime = this.audioCtx.currentTime + delay;
     this.startTime = scheduledStartTime - offset;
     this.pauseOffset = 0;
@@ -162,7 +167,9 @@ class AudioEngine {
     this.isPaused = true;
     if (this.activeSource) {
       try {
+        this.activeSource.onended = null;
         this.activeSource.stop();
+        this.activeSource.disconnect();
       } catch (e) {}
       this.activeSource = null;
     }
@@ -175,7 +182,7 @@ class AudioEngine {
     if (!this.isPaused || !audioBuffer) return;
     this.play(audioBuffer, {
       offset: Math.max(0, this.pauseOffset),
-      delay: 0,
+      delay: Math.max(0, -this.pauseOffset),
       onEnded: this.onEndedCallback
     });
   }
@@ -188,6 +195,7 @@ class AudioEngine {
       try {
         this.activeSource.onended = null;
         this.activeSource.stop();
+        this.activeSource.disconnect();
       } catch (e) {}
       this.activeSource = null;
     }

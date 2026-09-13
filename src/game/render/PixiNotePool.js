@@ -55,6 +55,7 @@ export class PixiNotePool {
    * Initializes pools and adds inactive display objects to notesLayer.
    */
   init(PIXI, app, notesLayer, dims = {}) {
+    if (this.isInitialized) this.destroy();
     this.PIXI = PIXI;
     this.app = app;
     this.notesLayer = notesLayer;
@@ -77,41 +78,51 @@ export class PixiNotePool {
   updateTexturesFromCache(SpriteCache) {
     if (!this.PIXI || !SpriteCache) return;
 
+    const previous = new Set(Object.values(this.tierTextures).flatMap(map => [...map.values()]));
+    const next = { tap: new Map(), head: new Map(), tail: new Map() };
     try {
-      // 1. Tap notes
-      if (SpriteCache.tap && typeof SpriteCache.tap === 'object') {
-        for (const [key, canvas] of Object.entries(SpriteCache.tap)) {
-          if (canvas) {
-            const tex = this.PIXI.Texture.from(canvas);
-            this.tierTextures.tap.set(key, tex);
-          }
+      for (const [kind, source] of [['tap', SpriteCache.tap], ['head', SpriteCache.longHead], ['tail', SpriteCache.longTail]]) {
+        for (const [key, canvas] of Object.entries(source || {})) {
+          if (canvas) next[kind].set(key, this.PIXI.Texture.from(canvas));
         }
       }
-
-      // 2. Hold heads
-      if (SpriteCache.longHead && typeof SpriteCache.longHead === 'object') {
-        for (const [key, canvas] of Object.entries(SpriteCache.longHead)) {
-          if (canvas) {
-            const tex = this.PIXI.Texture.from(canvas);
-            this.tierTextures.head.set(key, tex);
-          }
-        }
-      }
-
-      // 3. Hold tails
-      if (SpriteCache.longTail && typeof SpriteCache.longTail === 'object') {
-        for (const [key, canvas] of Object.entries(SpriteCache.longTail)) {
-          if (canvas) {
-            const tex = this.PIXI.Texture.from(canvas);
-            this.tierTextures.tail.set(key, tex);
-          }
-        }
-      }
-
-      console.log(`[PixiNotePool] Synchronized theme textures: ${this.tierTextures.tap.size} tap tiers, ${this.tierTextures.head.size} head tiers.`);
     } catch (err) {
+      const created = new Set(Object.values(next).flatMap(map => [...map.values()]));
+      for (const texture of created) if (!previous.has(texture)) texture.destroy(true);
       console.warn("[PixiNotePool] Failed to sync theme textures:", err);
+      return;
     }
+    this.reset();
+    // Detach pooled sprites before disposing textures they may still reference.
+    this._useFallbackTextures();
+    this.tierTextures = next;
+    const retained = new Set(Object.values(next).flatMap(map => [...map.values()]));
+    for (const texture of previous) if (!retained.has(texture)) texture.destroy(true);
+  }
+
+  _useFallbackTextures() {
+    for (const item of this.tapPool) item.sprite.texture = this.defaultTextures.tap;
+    for (const item of this.holdPool) {
+      item.headSprite.texture = this.defaultTextures.holdHead;
+      item.tailSprite.texture = this.defaultTextures.holdTail;
+    }
+  }
+
+  destroy() {
+    this.reset();
+    for (const item of this.tapPool) item.sprite.destroy();
+    for (const item of this.holdPool) item.container.destroy({ children: true });
+    const textures = new Set([
+      ...Object.values(this.defaultTextures),
+      ...Object.values(this.tierTextures).flatMap(map => [...map.values()])
+    ]);
+    for (const texture of textures) if (texture) texture.destroy(true);
+    for (const map of Object.values(this.tierTextures)) map.clear();
+    for (const key of Object.keys(this.defaultTextures)) this.defaultTextures[key] = null;
+    this.tapPool = [];
+    this.holdPool = [];
+    this.notesLayer = this.app = this.PIXI = null;
+    this.isInitialized = false;
   }
 
   /**
@@ -234,7 +245,7 @@ export class PixiNotePool {
     this.noteHeight = noteHeight;
     this.padding = padding;
 
-    this._generateFallbackTextures();
+    // Fallback artwork scales with the sprites; resizing needs no new GPU textures.
 
     // Update sprite sizes in pool
     for (const item of this.tapPool) {

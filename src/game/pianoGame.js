@@ -48,6 +48,9 @@ export class NeonPianoGame {
     this.onGameEnd = options.onGameEnd || (() => {});
 
     this.animationFrameId = null;
+    this._boundLoop = this.loop.bind(this);
+    this._loadGeneration = 0;
+    this._destroyed = false;
     this._boundKeyDown = this.handleKeyDown.bind(this);
     this._boundKeyUp = this.handleKeyUp.bind(this);
     this._boundResize = this.resize.bind(this);
@@ -97,13 +100,15 @@ export class NeonPianoGame {
    * Generates rhythmic patterns tuned to the track duration.
    */
   generateBeatmap(duration, bpm = 128) {
+    if (!Number.isFinite(duration) || duration <= 2) return [];
+    if (!Number.isFinite(bpm) || bpm <= 0) bpm = 128;
     const beatInterval = 60 / bpm; // In seconds
     const notes = [];
     let id = 0;
 
     // Start 2 seconds in to give player prep time
     let currentTime = 2.0;
-    const endTime = Math.max(10, duration - 1.0);
+    const endTime = Math.max(2, duration - 1.0);
 
     let lastLane = -1;
 
@@ -153,6 +158,10 @@ export class NeonPianoGame {
    * Loads track and prepares game
    */
   async loadTrack(track) {
+    if (this._destroyed) return;
+    this.stop();
+    const generation = ++this._loadGeneration;
+    this.audioBuffer = null;
     this.currentTrack = track;
     this.tiles = [];
     this.particles = [];
@@ -165,17 +174,19 @@ export class NeonPianoGame {
     this.missCount = 0;
 
     // Pre-decode audio buffer with zero latency
-    this.audioBuffer = await audioEngine.loadTrackBuffer(track.audioUrl, track.id);
+    const buffer = await audioEngine.loadTrackBuffer(track.audioUrl, track.id);
+    if (this._destroyed || generation !== this._loadGeneration) return;
+    this.audioBuffer = buffer;
     
     // Generate beatmap
-    const duration = track.duration || this.audioBuffer.duration || 60;
+    const duration = this.audioBuffer.duration;
     this.tiles = this.generateBeatmap(duration, 128);
     this.totalNotes = this.tiles.length;
     this.onScoreUpdate(this.getStatsSnapshot());
   }
 
   start() {
-    if (!this.audioBuffer) return;
+    if (!this.audioBuffer || this.isRunning || this._destroyed) return;
     this.isRunning = true;
     this.isPaused = false;
 
@@ -193,6 +204,8 @@ export class NeonPianoGame {
   pause() {
     if (!this.isRunning || this.isPaused) return;
     this.isPaused = true;
+    this._cancelFrame();
+    this.activeKeyLanes.fill(false);
     audioEngine.pause();
   }
 
@@ -206,15 +219,24 @@ export class NeonPianoGame {
   stop() {
     this.isRunning = false;
     this.isPaused = false;
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
+    this._cancelFrame();
+    this.activeKeyLanes.fill(false);
     audioEngine.stop();
   }
 
+  _cancelFrame() {
+    if (this.animationFrameId !== null) cancelAnimationFrame(this.animationFrameId);
+    this.animationFrameId = null;
+  }
+
   destroy() {
+    this._destroyed = true;
+    ++this._loadGeneration;
     this.stop();
+    this.audioBuffer = null;
+    this.tiles = [];
+    this.particles = [];
+    this.judgments = [];
     window.removeEventListener("resize", this._boundResize);
     window.removeEventListener("keydown", this._boundKeyDown);
     window.removeEventListener("keyup", this._boundKeyUp);
@@ -228,12 +250,15 @@ export class NeonPianoGame {
    * Main game loop running on requestAnimationFrame
    */
   loop() {
+    this.animationFrameId = null;
     if (!this.isRunning || this.isPaused) return;
 
     this.update();
     this.render();
 
-    this.animationFrameId = requestAnimationFrame(() => this.loop());
+    if (this.isRunning && !this.isPaused) {
+      this.animationFrameId = requestAnimationFrame(this._boundLoop);
+    }
   }
 
   update() {
@@ -428,6 +453,23 @@ export class NeonPianoGame {
   /**
    * Registers player hit judgment
    */
+  playJudgmentSound(lane, perfect, missed = false) {
+    const ctx = audioEngine.audioCtx;
+    if (!ctx || ctx.state !== 'running' || audioEngine.isMuted) return;
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    oscillator.type = missed ? 'triangle' : 'sine';
+    oscillator.frequency.setValueAtTime(missed ? 110 : [523.25, 659.25, 783.99, 1046.5][lane], now);
+    gain.gain.setValueAtTime(perfect ? 0.09 : 0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    oscillator.connect(gain);
+    gain.connect(audioEngine.masterGain);
+    oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+    oscillator.start(now);
+    oscillator.stop(now + 0.13);
+  }
+
   registerHit(type, laneIndex) {
     const laneX = laneIndex * this.laneWidth + this.laneWidth / 2;
 
@@ -435,21 +477,21 @@ export class NeonPianoGame {
       this.score += 100 + Math.min(this.combo * 2, 50);
       this.combo++;
       this.perfectCount++;
-      audioEngine.playHitSound(laneIndex, true);
+      this.playJudgmentSound(laneIndex, true);
       this.spawnParticles(laneX, this.hitLineY, this.laneColors[laneIndex].hit);
       this.judgments.push({ text: "PERFECT! 🔥", x: laneX, y: this.hitLineY - 20, color: "#ffe600", alpha: 1.0 });
     } else if (type === "GOOD") {
       this.score += 50 + Math.min(this.combo, 25);
       this.combo++;
       this.goodCount++;
-      audioEngine.playHitSound(laneIndex, false);
+      this.playJudgmentSound(laneIndex, false);
       this.spawnParticles(laneX, this.hitLineY, this.laneColors[laneIndex].main);
       this.judgments.push({ text: "GOOD", x: laneX, y: this.hitLineY - 20, color: "#00f0ff", alpha: 1.0 });
     } else {
       // MISS
       this.combo = 0;
       this.missCount++;
-      audioEngine.playMissSound();
+      this.playJudgmentSound(laneIndex, false, true);
       this.judgments.push({ text: "MISS", x: laneX, y: this.hitLineY - 20, color: "#ff0055", alpha: 1.0 });
     }
 
@@ -560,6 +602,8 @@ export class NeonPianoGame {
   }
 
   async finishGame() {
+    if (!this.isRunning || this._destroyed) return;
+    const generation = this._loadGeneration;
     this.stop();
     const stats = this.getStatsSnapshot();
     const result = {
@@ -577,6 +621,6 @@ export class NeonPianoGame {
       console.warn("Stats could not be saved to Firestore (guest or network):", err.message);
     }
 
-    this.onGameEnd(result);
+    if (!this._destroyed && generation === this._loadGeneration) this.onGameEnd(result);
   }
 }

@@ -3262,7 +3262,7 @@ function update(songTime) {
 
                 if (tile.released) {
                     // Рендеринг відпущеної довгої ноти: попелясто-сіра, що продовжує плавний рух униз крізь струни
-                    const elapsedFade = now - (tile.fadeStartTime || now);
+                    const elapsedFade = now - (tile.fadeStartTime ?? now);
                     const overallAlpha = Math.max(0, 1.0 - elapsedFade / 1600);
                     if (overallAlpha <= 0.01) continue;
 
@@ -3284,8 +3284,10 @@ function update(songTime) {
                             Math.round(x + 8), Math.round(yTail), Math.round(w - 16), Math.round(tailH + Math.round(headH * 0.4)));
                     }
 
-                    // NOTE: drawHoldTail is intentionally NOT called for released tiles —
-                    // the arrow tip and neck collar should not show during the fade-out animation.
+                    // Themes with connected silhouettes retain every piece during release.
+                    if (activeTheme?.retainReleasedTail && typeof activeTheme.drawHoldTail === 'function') {
+                        activeTheme.drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH, 0, actualYHeadTop);
+                    }
 
                     // Попелясто-сіра голова, що летить далі вниз
                     if (relHeadSprite && actualYHeadTop > -headH - 20 && actualYHeadTop < State.gameHeight + 40) {
@@ -3298,6 +3300,13 @@ function update(songTime) {
                     ctx.restore();
                     continue;
                 }
+
+                // One envelope for the complete hold silhouette, including baked head and glow.
+                const holdOpacity = typeof activeTheme?.getHoldOpacity === 'function'
+                    ? activeTheme.getHoldOpacity(tile, Math.max(0, yHead - yTail)) : 1;
+                if (holdOpacity <= 0) continue;
+                ctx.save();
+                ctx.globalAlpha *= holdOpacity;
 
                 const curTailSprite = tile.failed ? deadTailSprite : longTailSprite;
                 const curHeadSprite = tile.failed ? deadHeadSprite : longHeadSprite;
@@ -3347,7 +3356,7 @@ function update(songTime) {
                 if (activeTheme && typeof activeTheme.drawHeadOverlay === 'function' && actualYHeadTop > -headH + 4 && actualYHeadTop < State.gameHeight + 40) {
                     activeTheme.drawHeadOverlay(ctx, x, actualYHeadTop, w, headH, tile, isLight, now, State.combo);
                 }
-                ctx.globalAlpha = 1.0;
+
 
                 // Сяйво при активному утриманні довгої ноти
                 if (tile.hit && tile.holding && State.glowSprite) {
@@ -3359,10 +3368,12 @@ function update(songTime) {
                     if (!State.isMobile) {
                         ctx.globalCompositeOperation = 'screen';
                     }
-                    ctx.globalAlpha = State.isMobile ? 0.22 : 0.35;
+                    ctx.globalAlpha *= State.isMobile ? 0.22 : 0.35;
                     ctx.drawImage(State.glowSprite, headCenterX - glowW / 2, headCenterY - glowH / 2, glowW, glowH);
                     ctx.restore();
                 }
+
+                ctx.restore();
 
                 // Візуальне відображення хітбокса довгої ноти (+30% зверху та знизу)
                 if (CONFIG.showHitbox && !tile.completed && !tile.failed) {
@@ -5778,11 +5789,12 @@ function updateRipples(dt) {
         window.addEventListener('keydown', e => {
             const active = document.activeElement;
             const target = e.target;
-            const isTyping = (active && (['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable)) ||
-                             (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable));
-            if (isTyping && !State.isPlaying) return;
+            const isUIControl = element => element && (element.isContentEditable ||
+                element.closest?.('input, textarea, select, button, a[href], [role="button"], [role="dialog"], [contenteditable="true"]'));
+            if (e.defaultPrevented || isUIControl(active) || isUIControl(target)) return;
 
             if (e.code === 'Space') {
+                if (!State.isPlaying || e.repeat) return;
                 e.preventDefault(); togglePauseGame(); return;
             }
             if (!e.repeat) {
@@ -5799,9 +5811,9 @@ function updateRipples(dt) {
         window.addEventListener('keyup', e => {
             const active = document.activeElement;
             const target = e.target;
-            const isTyping = (active && (['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable)) ||
-                             (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable));
-            if (isTyping && !State.isPlaying) return;
+            const isUIControl = element => element && (element.isContentEditable ||
+                element.closest?.('input, textarea, select, button, a[href], [role="button"], [role="dialog"], [contenteditable="true"]'));
+            if (e.defaultPrevented || isUIControl(active) || isUIControl(target)) return;
 
             let lane = KEYS.indexOf(e.code);
             if (lane === -1) {

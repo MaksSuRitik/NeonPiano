@@ -52,6 +52,7 @@ export class PixiRenderer {
     this.areParticlesHandled = false;
     this.particleSystem = pixiParticleSystem;
     this.cachedSpriteCache = null;
+    this._initGeneration = 0;
   }
 
   /**
@@ -65,18 +66,22 @@ export class PixiRenderer {
   async init({ container, width, height, dpr = 1 }) {
     if (this.isReady || this.isInitializing) return;
     this.isInitializing = true;
+    const generation = ++this._initGeneration;
+    let pendingApp = null;
 
     try {
-      this.PIXI = await loadPixiEngine();
+      const PIXI = await loadPixiEngine();
+      if (generation !== this._initGeneration) return;
+      this.PIXI = PIXI;
       this.containerEl = container;
       this.width = width || 400;
       this.height = height || 800;
       this.dpr = Math.min(dpr || (typeof window !== 'undefined' ? window.devicePixelRatio : 1), 1.5);
 
-      this.app = new this.PIXI.Application();
+      const app = pendingApp = new this.PIXI.Application();
 
       // Async initialization in Pixi.js v8
-      await this.app.init({
+      await app.init({
         width: this.width,
         height: this.height,
         resolution: this.dpr,
@@ -85,6 +90,12 @@ export class PixiRenderer {
         antialias: true,
         powerPreference: 'high-performance'
       });
+
+      if (generation !== this._initGeneration) {
+        app.destroy(true, { children: true });
+        return;
+      }
+      this.app = app;
 
       // Stop automatic ticker: we render strictly from the game's audio-synced gameLoop()
       if (this.app.ticker) {
@@ -197,6 +208,11 @@ export class PixiRenderer {
         'color: inherit;'
       );
     } catch (error) {
+      if (pendingApp && pendingApp !== this.app) {
+        try { pendingApp.destroy(true, { children: true }); } catch (_) {}
+      }
+      if (generation !== this._initGeneration) return;
+      this.destroy();
       this.isInitializing = false;
       console.error("[PixiRenderer] Initialization error:", error);
     }
@@ -243,7 +259,8 @@ export class PixiRenderer {
     if (!SpriteCache) return;
     this.cachedSpriteCache = SpriteCache;
     try {
-      pixiNotePool.updateTexturesFromCache(SpriteCache);
+      // Notes use Canvas; defer GPU texture uploads until GPU notes are enabled.
+      if (this.areNotesHandled) pixiNotePool.updateTexturesFromCache(SpriteCache);
     } catch (err) {
       console.warn("[PixiRenderer] Texture cache sync warning:", err);
     }
@@ -406,9 +423,20 @@ export class PixiRenderer {
    * Cleans up Pixi resources.
    */
   destroy() {
+    ++this._initGeneration;
+    this.isInitializing = false;
+    this.isReady = false;
+    pixiNotePool.destroy();
+    this.particleSystem.destroy();
+    this.areNotesHandled = false;
+    this.areParticlesHandled = false;
+    this.cachedSpriteCache = null;
+    this.canvas = null;
+    this.stage = this.backgroundLayer = this.fieldLayer = this.notesLayer = this.effectsLayer = this.uiLayer = null;
+    this.statusIndicator = null;
     if (this.app) {
       try {
-        this.app.destroy(true, { children: true, texture: true });
+        this.app.destroy(true, { children: true });
       } catch (e) {
         console.warn("[PixiRenderer] Destroy error:", e);
       }

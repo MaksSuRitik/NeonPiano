@@ -267,8 +267,8 @@ function getRealisticSakuraStamps() {
 
       const tone = rnd();
       let pCol = (tone < 0.4) ? 'rgba(244, 114, 182, 0.85)'
-               : (tone < 0.75) ? 'rgba(253, 164, 175, 0.88)'
-               : 'rgba(255, 241, 242, 0.90)';
+      : (tone < 0.75) ? 'rgba(253, 164, 175, 0.88)'
+      : 'rgba(255, 241, 242, 0.90)';
 
       g.fillStyle = pCol;
       g.beginPath();
@@ -291,69 +291,73 @@ function getRealisticSakuraStamps() {
   return _realisticSakuraStamps;
 }
 
-// Caches for performance optimization
-let _flameCanvases = null;
+// Six small thermal stamps, created once; the draw path allocates no particles.
+const FLAME_COLORS = ['#38bdf8', '#818cf8', '#f472b6', '#fb923c', '#c084fc', '#ff1744'];
+const FLAME_MULTIPLIERS = [1, 2, 4, 6, 8, 10];
+let flameStamps = null;
+let flameMotionQuery;
+const spiralPetalPool = Array.from({ length: 10 }, (_, p) => ({ px: 0, py: 0, z: 0, theta: 0, p }));
 
-function getFlameCanvases() {
-  if (_flameCanvases) return _flameCanvases;
+function comboIndex(combo) {
+  return combo >= 800 ? 5 : combo >= 400 ? 4 : combo >= 200 ? 3 : combo >= 100 ? 2 : combo >= 50 ? 1 : 0;
+}
+
+function getFlameStamps() {
+  if (flameStamps) return flameStamps;
   if (typeof document === 'undefined') return null;
+  flameStamps = FLAME_COLORS.map(color => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 48; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    const glow = ctx.createRadialGradient(24, 44, 1, 24, 36, 29);
+    glow.addColorStop(0, '#fff8eb');
+    glow.addColorStop(0.30, '#e0f2fe'); // Расширяем белую сердцевину (было 0.18)
+    glow.addColorStop(0.60, color + 'ff'); // Убираем прозрачность 'df', делаем цвет плотнее (было 0.43)
+    glow.addColorStop(0.85, color + '90'); // Расширяем цветную зону (было 0.75)
+    glow.addColorStop(1, color + '00');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(24, 1);
+    ctx.bezierCurveTo(33, 20, 44, 29, 43, 44);
+    ctx.bezierCurveTo(42, 65, 5, 65, 5, 44);
+    ctx.bezierCurveTo(4, 28, 19, 20, 24, 1);
+    ctx.fill();
+    return canvas;
+  });
+  return flameStamps;
+}
 
-  const size = 64;
-  const half = size / 2;
-
-  // 1. T5 Outer Crimson Flame
-  const cT5Outer = document.createElement('canvas');
-  cT5Outer.width = size; cT5Outer.height = size;
-  const gT5O = cT5Outer.getContext('2d');
-  const gradT5O = gT5O.createRadialGradient(half, half, 2, half, half, half);
-  gradT5O.addColorStop(0,    'rgba(255, 77, 77, 0.85)');
-  gradT5O.addColorStop(0.45, 'rgba(255, 23, 68, 0.55)');
-  gradT5O.addColorStop(0.8,  'rgba(153, 27, 27, 0.20)');
-  gradT5O.addColorStop(1,    'rgba(0, 0, 0, 0)');
-  gT5O.fillStyle = gradT5O;
-  gT5O.fillRect(0, 0, size, size);
-
-  // 2. T5 Inner Core Flame
-  const cT5Core = document.createElement('canvas');
-  cT5Core.width = size; cT5Core.height = size;
-  const gT5C = cT5Core.getContext('2d');
-  const gradT5C = gT5C.createRadialGradient(half, half, 1, half, half, half);
-  gradT5C.addColorStop(0,   'rgba(255, 255, 255, 0.90)');
-  gradT5C.addColorStop(0.5, 'rgba(255, 77, 77, 0.60)');
-  gradT5C.addColorStop(1,   'rgba(220, 38, 38, 0)');
-  gT5C.fillStyle = gradT5C;
-  gT5C.fillRect(0, 0, size, size);
-
-  // 3. Glacio Cold Ice Outer Flame
-  const cIceOuter = document.createElement('canvas');
-  cIceOuter.width = size; cIceOuter.height = size;
-  const gIceO = cIceOuter.getContext('2d');
-  const gradIceO = gIceO.createRadialGradient(half, half, 2, half, half, half);
-  gradIceO.addColorStop(0,    'rgba(224, 242, 254, 0.80)');
-  gradIceO.addColorStop(0.4,  'rgba(56, 189, 248, 0.50)');
-  gradIceO.addColorStop(0.75, 'rgba(14, 165, 233, 0.20)');
-  gradIceO.addColorStop(1,    'rgba(2, 132, 199, 0)');
-  gIceO.fillStyle = gradIceO;
-  gIceO.fillRect(0, 0, size, size);
-
-  // 4. Glacio Cold Ice Core Flame
-  const cIceCore = document.createElement('canvas');
-  cIceCore.width = size; cIceCore.height = size;
-  const gIceC = cIceCore.getContext('2d');
-  const gradIceC = gIceC.createRadialGradient(half, half, 1, half, half, half);
-  gradIceC.addColorStop(0,   'rgba(255, 255, 255, 0.90)');
-  gradIceC.addColorStop(0.5, 'rgba(186, 230, 253, 0.55)');
-  gradIceC.addColorStop(1,   'rgba(56, 189, 248, 0)');
-  gIceC.fillStyle = gradIceC;
-  gIceC.fillRect(0, 0, size, size);
-
-  _flameCanvases = {
-    t5Outer: cT5Outer,
-    t5Core: cT5Core,
-    iceOuter: cIceOuter,
-    iceCore: cIceCore
-  };
-  return _flameCanvases;
+// Analytic particle ages avoid mutable per-note pools and advance by elapsed time,
+// so refresh rate, note count and paused frames cannot change simulation speed.
+function drawScabbardFlame(ctx, cx, baseY, width, height, combo, holding, now) {
+  const stamps = getFlameStamps();
+  if (!stamps) return;
+  const tier = comboIndex(combo);
+  const power = (FLAME_MULTIPLIERS[tier] - 1) / 9;
+  const mobile = typeof window !== 'undefined' && window.GameState?.isMobile;
+  if (flameMotionQuery === undefined) {
+    flameMotionQuery = typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  }
+  const reduced = flameMotionQuery?.matches;
+  const count = reduced ? 5 : mobile ? 90 : 90;
+  const time = reduced ? 0.35 : Math.max(0, now) * 0.001;
+  const reach = height * (1.15 + power * 1.15) * (holding ? 1.2 : 1);
+  const inheritedAlpha = ctx.globalAlpha;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < count; i++) {
+    const seed = i * 2.399963;
+    const age = (time * (0.85 + power * 0.4) + i / count) % 1;
+    const lift = age * reach;
+    const taper = 1 - age;
+    const drift = Math.sin(seed) * width * (0.25 + age * 0.35) + Math.sin(time * 4.2 + seed + age * 5) * width * age * 0.30;
+    const plumeW = width * (0.60 + power * 0.22) * (0.3 + taper * 0.7);
+    const plumeH = height * (0.75 + power * 0.2) * (0.45 + taper * 0.25);
+    ctx.globalAlpha = inheritedAlpha * Math.sin(age * Math.PI) * (0.24 + power * 0.19) * (holding ? 1 : 0.65);
+    ctx.drawImage(stamps[tier], cx + drift - plumeW / 2, baseY - lift - plumeH, plumeW, plumeH);
+  }
+  ctx.restore();
 }
 
 let _cachedWoodCanvas = null;
@@ -466,8 +470,8 @@ function initAtmosphereParticles(gw, gh, blossomNodes) {
   if (sanhuaPetals.length === 0) {
     for (let i = 0; i < 35; i++) {
       const node = (blossomNodes && blossomNodes.length > 0)
-        ? blossomNodes[i % blossomNodes.length]
-        : { x: gw * 0.65, y: gh * 0.35 };
+      ? blossomNodes[i % blossomNodes.length]
+      : { x: gw * 0.65, y: gh * 0.35 };
       const progress = Math.random();
       const startX = node.x - progress * (gw * 1.25);
       const startY = node.y + progress * (gh * 0.85);
@@ -476,17 +480,17 @@ function initAtmosphereParticles(gw, gh, blossomNodes) {
         x: startX,
         y: startY,
         baseVx: -(2.4 + Math.random() * 2.8),
-        baseVy: 0.9 + Math.random() * 1.5,
-        rotZ: Math.random() * Math.PI * 2,
-        rotSpeedZ: (Math.random() - 0.5) * 0.08,
-        flipY: Math.random() * Math.PI * 2,
-        flipSpeedY: 0.04 + Math.random() * 0.05,
-        tiltX: Math.random() * Math.PI * 2,
-        tiltSpeedX: 0.03 + Math.random() * 0.04,
-        sz: 3.2 + Math.random() * 4.0, // Small petals: 3px to 7px
-        alpha: 0.60 + Math.random() * 0.38,
-        seed: Math.random() * 100,
-        isFront: Math.random() > 0.45
+                        baseVy: 0.9 + Math.random() * 1.5,
+                        rotZ: Math.random() * Math.PI * 2,
+                        rotSpeedZ: (Math.random() - 0.5) * 0.08,
+                        flipY: Math.random() * Math.PI * 2,
+                        flipSpeedY: 0.04 + Math.random() * 0.05,
+                        tiltX: Math.random() * Math.PI * 2,
+                        tiltSpeedX: 0.03 + Math.random() * 0.04,
+                        sz: 3.2 + Math.random() * 4.0, // Small petals: 3px to 7px
+                        alpha: 0.60 + Math.random() * 0.38,
+                        seed: Math.random() * 100,
+                        isFront: Math.random() > 0.45
       });
     }
   }
@@ -495,12 +499,12 @@ function initAtmosphereParticles(gw, gh, blossomNodes) {
     for (let i = 0; i < 30; i++) {
       sanhuaSnowflakes.push({
         x: Math.random() * gw,
-        y: Math.random() * gh,
-        sz: 1.5 + Math.random() * 3.5,
-        speedY: 0.4 + Math.random() * 0.8,
-        speedX: (Math.random() - 0.5) * 0.3,
-        alpha: 0.3 + Math.random() * 0.6,
-        phase: Math.random() * Math.PI * 2
+                            y: Math.random() * gh,
+                            sz: 1.5 + Math.random() * 3.5,
+                            speedY: 0.4 + Math.random() * 0.8,
+                            speedX: (Math.random() - 0.5) * 0.3,
+                            alpha: 0.3 + Math.random() * 0.6,
+                            phase: Math.random() * Math.PI * 2
       });
     }
   }
@@ -509,15 +513,15 @@ function initAtmosphereParticles(gw, gh, blossomNodes) {
     for (let i = 0; i < 12; i++) {
       sanhuaShards.push({
         x: Math.random() * gw,
-        y: Math.random() * gh,
-        sz: 4 + Math.random() * 8,
-        aspect: 1.8 + Math.random() * 1.5,
-        speedY: 0.2 + Math.random() * 0.5,
-        speedX: (Math.random() - 0.5) * 0.2,
-        rot: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 0.015,
-        alpha: 0.2 + Math.random() * 0.35,
-        glint: Math.random() * Math.PI * 2
+                        y: Math.random() * gh,
+                        sz: 4 + Math.random() * 8,
+                        aspect: 1.8 + Math.random() * 1.5,
+                        speedY: 0.2 + Math.random() * 0.5,
+                        speedX: (Math.random() - 0.5) * 0.2,
+                        rot: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * 0.015,
+                        alpha: 0.2 + Math.random() * 0.35,
+                        glint: Math.random() * Math.PI * 2
       });
     }
   }
@@ -724,7 +728,7 @@ export const SANHUA_THEME = {
       ctx.fillRect(x - 10, yTop - 10, w + 20, h + 20);
 
       // Draw rectangular sprite
-      ctx.drawImage(sprite, Math.round(x + 2), Math.round(yTop + 2), Math.round(w - 4), Math.round(h - 4));
+      ctx.drawImage(sprite, Math.round(x - 5), Math.round(yTop - 5), Math.round(w + 10), Math.round(h + 30));
 
       // Central specular diamond pulse
       ctx.fillStyle = pal.core || '#ffffff';
@@ -857,16 +861,16 @@ export const SANHUA_THEME = {
   drawNeck(ctx, x, junctionY, w, headH, tile, isReleased = false, currentCombo = 0) {
     const dead = isReleased || Boolean(tile && tile.failed);
     const holding = Boolean(tile && tile.holding && tile.hit);
-    const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
-      ? currentCombo
-      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
+    const liveCombo = (Number.isFinite(currentCombo) && currentCombo >= 0)
+    ? currentCombo
+    : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
 
     const tier = dead ? 0 : liveCombo;
     const pal = this._getPalette(tier, dead);
 
     const cx = Math.round(x + w / 2);
     // Slender blade width: proportional to scabbard mouth
-    const bladeW = Math.max(14, Math.round(w * 0.20));
+    const bladeW = Math.max(14, Math.round(w * 0.30));
 
     ctx.save();
 
@@ -882,8 +886,11 @@ export const SANHUA_THEME = {
     // Mouth collar sits right at junctionY so blade inserts directly into it
     const scabY = Math.round(junctionY - 1);
 
+
+
+
     if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-      // 1. Scabbard mouth aura: Black & Red for T5, Sakura/Glacio for other tiers
+      // 1. Scabbard mouth aura
       if (!dead) {
         const glowGrad = ctx.createRadialGradient(cx, junctionY, 2, cx, junctionY, bladeW * 1.6);
         const glowRGB = (tier >= 800) ? '255, 23, 68' : ((tier >= 100) ? '244, 63, 94' : '56, 189, 248');
@@ -894,10 +901,16 @@ export const SANHUA_THEME = {
         ctx.fillRect(cx - bladeW * 2.0, junctionY - bladeW * 1.0, bladeW * 4.0, bladeW * 2.0);
       }
 
-      // 2. Draw photorealistic 3D Katana Scabbard (combo tier adapted, strictly <= headH)
+      // 2. СНАЧАЛА рисуем текстуру ножен
       ctx.drawImage(sprite, scabX, scabY, scabW, scabH);
 
-      // 3. Active holding & combo pulse on the scabbard's center ruby diamond
+      // 3. ПОТОМ рисуем пламя ПОВЕРХ ножен
+      if (!dead) {
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        drawScabbardFlame(ctx, cx, scabY + scabH + 80, scabW * 1.7, scabH, liveCombo, holding, now);
+      }
+
+      // 4. Active holding & combo pulse on the scabbard's center ruby diamond
       if (!dead) {
         const crestY = scabY + Math.round(scabH * 0.50);
         const pulse = Math.sin(Date.now() * 0.008) * 0.25 + 0.75;
@@ -969,24 +982,24 @@ export const SANHUA_THEME = {
   drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0, currentCombo = 0, actualYHeadTop = null, nextTileDist = 9999) {
     const dead = Boolean(tile && tile.failed);
     const holding = Boolean(tile && tile.holding && tile.hit);
-    const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
-      ? currentCombo
-      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
+    const liveCombo = (Number.isFinite(currentCombo) && currentCombo >= 0)
+    ? currentCombo
+    : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
 
     const tier = dead ? 0 : liveCombo;
     const pal = this._getPalette(tier, dead);
 
     const cx = Math.round(x + w / 2);
     // Slender blade width: proportional to scabbard mouth
-    const bladeW = Math.max(14, Math.round(w * 0.20));
+    const bladeW = Math.max(14, Math.round(w * 0.30));
 
     ctx.save();
 
     // Safety & Sheathing Docking:
     // The hilt collar must dock against the scabbard mouth (actualYHeadTop) and NEVER fly through it!
     const effectiveCollarY = (actualYHeadTop !== null && actualYHeadTop !== undefined)
-      ? Math.min(yTail, actualYHeadTop)
-      : yTail;
+    ? Math.min(yTail, actualYHeadTop)
+    : yTail;
     const isDocked = (actualYHeadTop !== null && actualYHeadTop !== undefined) && (yTail >= actualYHeadTop - 4);
 
     // Sizing calibrated so clean hilt collar exactly matches blade steel width at yTail:
@@ -1008,47 +1021,47 @@ export const SANHUA_THEME = {
         const guardGlowY = hiltY + Math.round(335 * hiltScale);
         // Tier-specific guard glow color
         const guardRGB = tier >= 800 ? '255, 23, 68'  :  // vivid crimson-red (Black & Red)
-                         tier >= 400 ? '168, 85, 247' :  // electric purple
-                         tier >= 200 ? '251, 113, 133' : // coral rose
-                         tier >= 100 ? '244, 63, 94'  :  // sakura pink
-                         tier >= 50  ? '236, 72, 153' :  // fuchsia
-                                       '244, 63, 94';    // default pink
-        // Alpha scales with tier: subtle at T0, grows at T4+
-        const guardAlphaInner = tier >= 400 ? (holding ? 0.72 : 0.45) :
-                                tier >= 200 ? (holding ? 0.62 : 0.38) :
-                                             (holding ? 0.55 : 0.28);
-        const guardGrad = ctx.createRadialGradient(cx, guardGlowY, bladeW * 0.25, cx, guardGlowY, bladeW * (tier >= 400 ? 2.2 : 1.8));
-        guardGrad.addColorStop(0,   `rgba(${guardRGB}, ${guardAlphaInner})`);
-        guardGrad.addColorStop(0.7, `rgba(${guardRGB}, 0.06)`);
-        guardGrad.addColorStop(1,   'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = guardGrad;
-        ctx.fillRect(cx - bladeW * 2.2, guardGlowY - bladeW * 1.5, bladeW * 4.4, bladeW * 3.0);
+        tier >= 400 ? '168, 85, 247' :  // electric purple
+        tier >= 200 ? '251, 113, 133' : // coral rose
+        tier >= 100 ? '244, 63, 94'  :  // sakura pink
+        tier >= 50  ? '236, 72, 153' :  // fuchsia
+        '244, 63, 94';    // default pink
+      // Alpha scales with tier: subtle at T0, grows at T4+
+      const guardAlphaInner = tier >= 400 ? (holding ? 0.72 : 0.45) :
+      tier >= 200 ? (holding ? 0.62 : 0.38) :
+      (holding ? 0.55 : 0.28);
+      const guardGrad = ctx.createRadialGradient(cx, guardGlowY, bladeW * 0.25, cx, guardGlowY, bladeW * (tier >= 400 ? 2.2 : 1.8));
+      guardGrad.addColorStop(0,   `rgba(${guardRGB}, ${guardAlphaInner})`);
+      guardGrad.addColorStop(0.7, `rgba(${guardRGB}, 0.06)`);
+      guardGrad.addColorStop(1,   'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = guardGrad;
+      ctx.fillRect(cx - bladeW * 2.2, guardGlowY - bladeW * 1.5, bladeW * 4.4, bladeW * 3.0);
 
-        // Sweeping glowing pink crescent ribbons & floating sakura blossoms curling around the tsuba collar (matching reference image)
-        const ribbonY = hiltY + Math.round(330 * hiltScale);
-        const ribbonSpread = bladeW * 2.2;
-        const ribbonPulse = Math.sin((now || 0) * 0.004) * 0.15 + 0.85;
+      // Sweeping glowing pink crescent ribbons & floating sakura blossoms curling around the tsuba collar (matching reference image)
+      const ribbonY = hiltY + Math.round(330 * hiltScale);
+      const ribbonSpread = bladeW * 2.2;
+      const ribbonPulse = Math.sin((now || 0) * 0.004) * 0.15 + 0.85;
 
-        // Left curving pink ribbon
-        ctx.strokeStyle = (tier >= 800) ? 'rgba(255, 23, 68, 0.70)' : 'rgba(244, 63, 94, 0.70)';
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.moveTo(cx - bladeW * 0.5, ribbonY);
-        ctx.quadraticCurveTo(cx - ribbonSpread * 0.65, ribbonY - 7 * ribbonPulse, cx - ribbonSpread, ribbonY - 2);
-        ctx.stroke();
+      // Left curving pink ribbon
+      ctx.strokeStyle = (tier >= 800) ? 'rgba(255, 23, 68, 0.70)' : 'rgba(244, 63, 94, 0.70)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(cx - bladeW * 0.5, ribbonY);
+      ctx.quadraticCurveTo(cx - ribbonSpread * 0.65, ribbonY - 7 * ribbonPulse, cx - ribbonSpread, ribbonY - 2);
+      ctx.stroke();
 
-        // Right curving pink ribbon
-        ctx.beginPath();
-        ctx.moveTo(cx + bladeW * 0.5, ribbonY);
-        ctx.quadraticCurveTo(cx + ribbonSpread * 0.65, ribbonY - 7 * ribbonPulse, cx + ribbonSpread, ribbonY - 2);
-        ctx.stroke();
+      // Right curving pink ribbon
+      ctx.beginPath();
+      ctx.moveTo(cx + bladeW * 0.5, ribbonY);
+      ctx.quadraticCurveTo(cx + ribbonSpread * 0.65, ribbonY - 7 * ribbonPulse, cx + ribbonSpread, ribbonY - 2);
+      ctx.stroke();
 
-        // Delicate sakura petal accents at ribbon tips
-        ctx.fillStyle = '#f43f5e';
-        ctx.beginPath();
-        ctx.arc(cx - ribbonSpread - 2, ribbonY - 3, 2.2, 0, Math.PI * 2);
-        ctx.arc(cx + ribbonSpread + 2, ribbonY - 3, 2.2, 0, Math.PI * 2);
-        ctx.fill();
+      // Delicate sakura petal accents at ribbon tips
+      ctx.fillStyle = '#f43f5e';
+      ctx.beginPath();
+      ctx.arc(cx - ribbonSpread - 2, ribbonY - 3, 2.2, 0, Math.PI * 2);
+      ctx.arc(cx + ribbonSpread + 2, ribbonY - 3, 2.2, 0, Math.PI * 2);
+      ctx.fill();
       }
 
       // 2. Draw photorealistic 3D Katana Hilt (Prismatic, clean without horns)
@@ -1063,10 +1076,10 @@ export const SANHUA_THEME = {
         const eyeR = Math.max(2.0, bladeW * (tier >= 400 ? 0.17 : 0.14) * eyePulse);
         // Eye color per tier
         const eyeCol = tier >= 800 ? '#ff1744' :
-                       tier >= 400 ? '#a855f7' :
-                       tier >= 200 ? '#f59e0b' :
-                       tier >= 100 ? '#f43f5e' :
-                       tier >= 50  ? '#e11d48' : '#ff1744';
+        tier >= 400 ? '#a855f7' :
+        tier >= 200 ? '#f59e0b' :
+        tier >= 100 ? '#f43f5e' :
+        tier >= 50  ? '#e11d48' : '#ff1744';
 
         // Radiant eye core
         ctx.fillStyle = eyeCol;
@@ -1175,16 +1188,16 @@ export const SANHUA_THEME = {
 
     const dead = isReleased || Boolean(tile && tile.failed);
     const holding = Boolean(tile && tile.holding && tile.hit);
-    const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
-      ? currentCombo
-      : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
+    const liveCombo = (Number.isFinite(currentCombo) && currentCombo >= 0)
+    ? currentCombo
+    : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
 
     const tier = dead ? 0 : liveCombo;
     const pal = this._getPalette(tier, dead);
 
     const cx = Math.round(x + w / 2);
     // Slender blade width: proportional to scabbard mouth and hilt
-    const bladeW = Math.max(14, Math.round(w * 0.20));
+    const bladeW = Math.max(14, Math.round(w * 0.30));
     const halfW = bladeW / 2;
 
     ctx.save();
@@ -1202,10 +1215,10 @@ export const SANHUA_THEME = {
       const hazeAlpha = holding ? Math.min(0.55, tierAlphaBase + 0.14) : tierAlphaBase;
 
       const hazeCol = isT5          ? '180, 10, 30'  : // Black & Red deep crimson smoke
-                      (tier >= 400) ? '126, 34, 206' : // Twilight purple
-                      (tier >= 200) ? '99, 102, 241' : // Crystal azure-indigo
-                      (tier >= 100) ? '79, 70, 229'  : // Glacio deep blue
-                                      '56, 56, 180';   // Frost indigo
+      (tier >= 400) ? '126, 34, 206' : // Twilight purple
+      (tier >= 200) ? '99, 102, 241' : // Crystal azure-indigo
+      (tier >= 100) ? '79, 70, 229'  : // Glacio deep blue
+      '56, 56, 180';   // Frost indigo
       hazeGrad.addColorStop(0,    `rgba(${hazeCol}, 0)`);
       hazeGrad.addColorStop(0.25, `rgba(${hazeCol}, ${hazeAlpha * 0.5})`);
       hazeGrad.addColorStop(0.5,  `rgba(${hazeCol}, ${hazeAlpha})`);
@@ -1225,7 +1238,9 @@ export const SANHUA_THEME = {
       const shardLen = bladeW * 0.85;
       ctx.lineWidth = 1.1;
 
-      for (let sy = yTail + 35; sy < headTopY - 20; sy += shardStep) {
+      const shardStart = yTail + 35 + Math.max(0, Math.ceil((-40 - yTail - 35) / shardStep)) * shardStep;
+      const viewportBottom = ctx.canvas?.clientHeight || (typeof window !== 'undefined' && window.GameState?.gameHeight) || 1000;
+      for (let sy = shardStart; sy < Math.min(headTopY - 20, viewportBottom + 40); sy += shardStep) {
         const shardGlint = Math.sin((now || 0) * 0.003 + sy * 0.05) * 0.25 + 0.75;
         const shardAlpha = (holding ? 0.45 : 0.28) * shardGlint;
         const shardCol = isT5 ? `rgba(255, 23, 68, ${shardAlpha})` : `rgba(186, 230, 253, ${shardAlpha})`;
@@ -1261,11 +1276,11 @@ export const SANHUA_THEME = {
     // FRONT petals (z >= 0, drawn after blade) for authentic 3D wrapping!
     // All petals are strictly pink in color.
     // ========================================================================
-    const spiralPetals = [];
+    let spiralPetalCount = 0;
     if (!dead && bodyLen > 30) {
       const tierPetalBonus = isT5 ? 4 : (tier >= 400 ? 3 : (tier >= 200 ? 2 : 0));
       const numPetals = Math.min(10, Math.max(5, Math.floor(bodyLen / 36)) + tierPetalBonus);
-      const pinkCols = ['#f43f5e', '#fb7185', '#fda4af', '#ff69b4', '#ff85a1'];
+
 
       for (let p = 0; p < numPetals; p++) {
         const drift = ((now || 0) * 0.040 + p * (bodyLen / numPetals)) % bodyLen;
@@ -1277,9 +1292,10 @@ export const SANHUA_THEME = {
         const rSpiral = halfW + 6.5 + Math.sin(p * 2.1) * 2.5;
         const px = cx + Math.sin(theta) * rSpiral;
         const z = Math.cos(theta); // -1 (behind) to +1 (in front)
-        const col = pinkCols[p % pinkCols.length];
 
-        spiralPetals.push({ px, py, z, theta, col, p });
+
+        const pet = spiralPetalPool[spiralPetalCount++];
+        pet.px = px; pet.py = py; pet.z = z; pet.theta = theta; pet.p = p;
       }
     }
 
@@ -1295,7 +1311,7 @@ export const SANHUA_THEME = {
       ctx.translate(px, py);
       ctx.rotate(theta * 0.4 + p * 0.8);
       ctx.scale(flip, 1);
-      ctx.globalAlpha = pAlpha;
+      ctx.globalAlpha *= pAlpha;
       const stampPetal = getRealisticSakuraStamps()?.petal;
       if (stampPetal) {
         ctx.drawImage(stampPetal, -pSize, -pSize, pSize * 2, pSize * 2);
@@ -1307,63 +1323,11 @@ export const SANHUA_THEME = {
     // LAYER 3: VOLUMETRIC HELICAL COLD FLAME (Пламя што крутиться вокруг клинка)
     // Twisting counter-phase helical flame plumes winding around the blade cylinder
     // ========================================================================
-    const timeOffset = (now || 0) * 0.055;
-    const flameStep = 10;
-    const flameAlphaBase = isT5 ? 0.45 :
-                           (tier >= 400 ? 0.38 : (tier >= 200 ? 0.30 : (tier >= 100 ? 0.25 : 0.18)));
-    const baseAlpha = holding ? Math.min(0.58, flameAlphaBase + 0.14) : flameAlphaBase;
-    const swell = holding ? 1.25 : 1.0;
-    const spiralOrbit = (halfW + 8) * swell;
-
-    // Draw flame plumes function (can be drawn in back or front pass)
-    const drawFlamePass = (targetDepth) => {
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      const flameCanvases = getFlameCanvases();
-      if (!flameCanvases) { ctx.restore(); return; }
-      const outerCanvas = isT5 ? flameCanvases.t5Outer : flameCanvases.iceOuter;
-      const coreCanvas  = isT5 ? flameCanvases.t5Core  : flameCanvases.iceCore;
-
-      ctx.globalAlpha = baseAlpha;
-
-      for (let sy = yTail - 10; sy < headTopY + 10; sy += flameStep) {
-        // Strand 1 phase and depth
-        const phi1 = (sy * 0.026 - timeOffset * 0.08);
-        const z1 = Math.cos(phi1);
-        const disp1 = Math.sin(phi1) * spiralOrbit;
-
-        // Strand 2 phase and depth (counter-strand)
-        const phi2 = phi1 + Math.PI;
-        const z2 = Math.cos(phi2);
-        const disp2 = Math.sin(phi2) * spiralOrbit;
-
-        const lobeL = (Math.max(0, Math.sin(sy * 0.045 - timeOffset * 0.07)) * 10 + 8) * swell;
-        const rOuter = (14 + lobeL * 0.35) * swell;
-        const rInner = (6 + lobeL * 0.20) * swell;
-
-        // Draw Strand 1 if it matches target depth
-        if ((targetDepth === 'back' && z1 < 0) || (targetDepth === 'front' && z1 >= 0)) {
-          const lx = cx + disp1;
-          ctx.drawImage(outerCanvas, lx - rOuter, sy - rOuter, rOuter * 2, rOuter * 2);
-          ctx.drawImage(coreCanvas, lx - rInner, sy - rInner, rInner * 2, rInner * 2);
-        }
-
-        // Draw Strand 2 if it matches target depth
-        if ((targetDepth === 'back' && z2 < 0) || (targetDepth === 'front' && z2 >= 0)) {
-          const rx = cx + disp2;
-          ctx.drawImage(outerCanvas, rx - rOuter, sy - rOuter, rOuter * 2, rOuter * 2);
-          ctx.drawImage(coreCanvas, rx - rInner, sy - rInner, rInner * 2, rInner * 2);
-        }
-      }
-      ctx.restore();
-    };
-
     if (!dead) {
-      // 1. Draw BACK flame passes (behind the blade)
-      drawFlamePass('back');
 
       // 2. Draw BACK sakura petals (swirling behind the blade)
-      for (const pet of spiralPetals) {
+      for (let i = 0; i < spiralPetalCount; i++) {
+        const pet = spiralPetalPool[i];
         if (pet.z < 0) drawSpiralPetal(pet);
       }
     }
@@ -1392,7 +1356,9 @@ export const SANHUA_THEME = {
         ctx.lineWidth = 1.0;
         const chevStep = 44;
         const chevSize = bladeW * 0.24;
-        for (let cy = yTail + 24; cy < headTopY - 15; cy += chevStep) {
+        const chevStart = yTail + 24 + Math.max(0, Math.ceil((-20 - yTail - 24) / chevStep)) * chevStep;
+        const chevBottom = ctx.canvas?.clientHeight || (typeof window !== 'undefined' && window.GameState?.gameHeight) || 1000;
+        for (let cy = chevStart; cy < Math.min(headTopY - 15, chevBottom + 20); cy += chevStep) {
           ctx.beginPath();
           ctx.moveTo(cx - chevSize, cy + chevSize * 0.6);
           ctx.lineTo(cx, cy);
@@ -1435,11 +1401,10 @@ export const SANHUA_THEME = {
     // LAYER 5: FRONT PASSES (Twisting flame & spiraling sakura in front of blade!)
     // ========================================================================
     if (!dead) {
-      // 1. Draw FRONT flame passes (translucent fire twisting across the blade face)
-      drawFlamePass('front');
 
       // 2. Draw FRONT sakura petals (dancing across the front of the blade!)
-      for (const pet of spiralPetals) {
+      for (let i = 0; i < spiralPetalCount; i++) {
+        const pet = spiralPetalPool[i];
         if (pet.z >= 0) drawSpiralPetal(pet);
       }
     }
@@ -1457,26 +1422,6 @@ export const SANHUA_THEME = {
         const ex = cx + Math.sin((now || 0) * 0.004 + e * 2.1) * (halfW + 12);
         const er = 1.4 + Math.sin(now * 0.005 + e) * 0.6;
         ctx.fillStyle = isT5 ? '#ff1744' : ((liveCombo >= 400) ? '#c084fc' : ((liveCombo >= 200) ? '#38bdf8' : '#fda4af'));
-        ctx.beginPath();
-        ctx.arc(ex, ey, er, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    // ========================================================================
-    // LAYER 6: COMBO EVOLUTION EMBER PARTICLES (Tiers 100+, 200+, 400+, 800+)
-    // ========================================================================
-    if (!dead && liveCombo >= 100 && bodyLen > 50) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      const numEmbers = Math.min(6, Math.floor(liveCombo / 100));
-      for (let e = 0; e < numEmbers; e++) {
-        const eDrift = ((now || 0) * 0.06 + e * 45) % bodyLen;
-        const ey = headTopY - eDrift;
-        const ex = cx + Math.sin((now || 0) * 0.004 + e * 2.1) * (halfW + 14);
-        const er = 1.5 + Math.sin(now * 0.005 + e) * 0.8;
-        ctx.fillStyle = (liveCombo >= 400) ? '#c084fc' : ((liveCombo >= 200) ? '#38bdf8' : '#fda4af');
         ctx.beginPath();
         ctx.arc(ex, ey, er, 0, Math.PI * 2);
         ctx.fill();
@@ -1642,11 +1587,11 @@ export const SANHUA_THEME = {
   // ==========================================================================
   updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State) {
     const gw = (typeof State !== 'undefined' && State && typeof State.gameWidth === 'number' && State.gameWidth > 0)
-      ? State.gameWidth
-      : (ctx.canvas?.clientWidth || (ctx.canvas ? ctx.canvas.width / (window.devicePixelRatio || 1) : 400));
+    ? State.gameWidth
+    : (ctx.canvas?.clientWidth || (ctx.canvas ? ctx.canvas.width / (window.devicePixelRatio || 1) : 400));
     const gh = (typeof State !== 'undefined' && State && typeof State.gameHeight === 'number' && State.gameHeight > 0)
-      ? State.gameHeight
-      : (ctx.canvas?.clientHeight || (ctx.canvas ? ctx.canvas.height / (window.devicePixelRatio || 1) : 700));
+    ? State.gameHeight
+    : (ctx.canvas?.clientHeight || (ctx.canvas ? ctx.canvas.height / (window.devicePixelRatio || 1) : 700));
 
     const isLight = document.body.getAttribute('data-theme') === 'light';
     const pulse = State?.bgPulse || 0;
@@ -1786,9 +1731,9 @@ export const SANHUA_THEME = {
     const t = now * 0.001;
 
     // Wind gust dynamics (multi-harmonic breeze peaks and lulls)
-    const windGust = Math.sin(t * 0.85) * 0.45 
-                   + Math.sin(t * 2.2 + 1.2) * 0.35 
-                   + Math.sin(t * 5.1 + 0.5) * 0.15 + 0.95; // 0.35 to 1.9
+    const windGust = Math.sin(t * 0.85) * 0.45
+    + Math.sin(t * 2.2 + 1.2) * 0.35
+    + Math.sin(t * 5.1 + 0.5) * 0.15 + 0.95; // 0.35 to 1.9
 
     // Multi-harmonic swaying of trunk, crown and limbs
     const swayTrunk_x = Math.sin(t * 1.05) * (3.0 * windGust);

@@ -561,7 +561,7 @@ export class PixiParticleSystem {
       this._updateParticles();
 
       // 3. Update Ambient Atmosphere in backgroundLayer
-      if (this.ambientContainer && this.ambientContainer.visible) {
+      if (this.ambientContainer) {
         this._updateAmbient(nowMs, combo, activeTheme);
       }
     } catch (err) {
@@ -765,6 +765,23 @@ export class PixiParticleSystem {
   /**
    * Resets all visual effects and returns all objects to pool.
    */
+  destroy() {
+    this.reset();
+    for (const container of [this.particlesContainer, this.hitsContainer, this.ambientContainer]) {
+      if (container) container.destroy({ children: true });
+    }
+    for (const key of Object.keys(this.textures)) {
+      if (this.textures[key]) this.textures[key].destroy(true);
+      this.textures[key] = null;
+    }
+    this.particlePool = [];
+    this.hitPool = [];
+    this.ambientPool = [];
+    this.particlesContainer = this.hitsContainer = this.ambientContainer = null;
+    this.effectsLayer = this.backgroundLayer = this.app = this.PIXI = null;
+    this.isReady = false;
+  }
+
   reset() {
     for (let i = 0; i < this.MAX_PARTICLES; i++) {
       const pt = this.particlePool[i];

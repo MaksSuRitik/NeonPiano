@@ -46,9 +46,25 @@ if (dragon5HeadsSprites.tier4) dragon5HeadsSprites.tier4.src = './assets/themes/
 if (dragon5HeadsSprites.tier5) dragon5HeadsSprites.tier5.src = './assets/themes/hado99_dragon_5heads_tier5.png?v=75.4';
 if (dragon5HeadsSprites.dead)  dragon5HeadsSprites.dead.src  = './assets/themes/hado99_dragon_5heads_dead.png?v=75.4';
 
+const CROWN_EYES = [
+  [0.485, 0.22], [0.515, 0.22], [0.29, 0.28], [0.32, 0.28],
+  [0.68, 0.28], [0.71, 0.28], [0.15, 0.48], [0.175, 0.48],
+  [0.825, 0.48], [0.85, 0.48]
+];
+const PALETTES = new Array(13);
+
 export const HADO99_THEME = {
   id: 'hado99',
   nameKey: 'themeHado99',
+  retainReleasedTail: true,
+
+  // Renderer applies this once to every dragon part, including the cached head.
+  // remainingPixels includes the head so the dragon stays visible to the hold end.
+  getHoldOpacity(tile, remainingPixels) {
+    if (!tile?.holding || !tile.hit || tile.released || tile.failed) return 1;
+    const progress = Math.max(0, Math.min(1, remainingPixels / 120));
+    return progress * progress * (3 - 2 * progress);
+  },
   descKey: 'themeHado99Desc',
   badgeKey: 'themeHado99Badge',
   price: 100,
@@ -106,6 +122,11 @@ export const HADO99_THEME = {
 
   // Multi-tonal color palette for body, tail, volume, and effects by combo tier
   _getTierPalette(tier, isDead, isHolding) {
+    const index = isDead ? 12 : (tier >= 800 ? 5 : tier >= 400 ? 4 : tier >= 200 ? 3 : tier >= 100 ? 2 : tier >= 50 ? 1 : 0) * 2 + (isHolding ? 1 : 0);
+    return PALETTES[index] || (PALETTES[index] = this._createTierPalette(tier, isDead, isHolding));
+  },
+
+  _createTierPalette(tier, isDead, isHolding) {
     if (isDead) {
       return {
         bgTop: '#0f172a', bgBot: '#1e293b', darkShade: '#050811',
@@ -211,6 +232,7 @@ export const HADO99_THEME = {
   })),
   _ashIdx: 0,
   _lastAshSpawn: 0,
+  _lastAshUpdate: null,
 
   _spawnReishiAsh(cx, yTail, hw, pal, now) {
     if (now - this._lastAshSpawn < 28) return;
@@ -239,7 +261,11 @@ export const HADO99_THEME = {
   },
 
 
-  _updateAndDrawReishiAsh(ctx, pal) {
+  _updateAndDrawReishiAsh(ctx, pal, now) {
+    // Called only by the post-notes pass. Multiple holds must not speed up ash.
+    const elapsed = this._lastAshUpdate === null ? 1000 / 60 : Math.max(0, now - this._lastAshUpdate);
+    this._lastAshUpdate = now;
+    const step = Math.min(elapsed, 50) / (1000 / 60);
     let hasAsh = false;
     let hasSparks = false;
 
@@ -248,10 +274,10 @@ export const HADO99_THEME = {
     for (let i = 0; i < poolLen; i++) {
       const p = this._ashPool[i];
       if (!p.active) continue;
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy -= 0.022; // buoyant spiritual updraft
-      p.life -= 0.026;
+      p.x += p.vx * step;
+      p.y += p.vy * step;
+      p.vy -= 0.022 * step; // buoyant spiritual updraft
+      p.life -= 0.026 * elapsed / (1000 / 60);
       if (p.life <= 0.01) {
         p.active = false;
         continue;
@@ -285,6 +311,7 @@ export const HADO99_THEME = {
         const p = this._ashPool[i];
         if (!p.active || !p.isSpark) continue;
         const sz = p.size * (0.6 + p.life * 0.4);
+        ctx.moveTo(p.x + sz, p.y);
         ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
       }
       ctx.fill();
@@ -409,7 +436,7 @@ export const HADO99_THEME = {
   // Layered, sweeping dragon dorsal spines and Reiatsu flames along the back ridge
   _drawSerpentFinSpikes(ctx, headTopY, yTail, tailH, numCoils, maxAmp, bodyCenterX, getHW, pal, waveAnim = 0) {
     ctx.save();
-    const numSpikes = Math.max(5, Math.floor(tailH / 22));
+    const numSpikes = Math.min(48, Math.max(5, Math.floor(tailH / 22)));
 
     for (let s = 1; s < numSpikes; s++) {
       const prog = s / numSpikes;
@@ -457,6 +484,7 @@ export const HADO99_THEME = {
   _drawDragonHead(ctx, cx, cy, w, h, tier, isDead) {
     const pal = this._getTierPalette(tier, isDead, false);
     const sprite = this._getDragonSprite(tier, isDead);
+    const inheritedAlpha = ctx.globalAlpha;
     const isGold = (pal.borderCol === '#ffd700');
 
     ctx.save();
@@ -556,6 +584,25 @@ export const HADO99_THEME = {
       ctx.restore();
     }
 
+    // Engraved cheek armor and brow ridges are baked with the head sprite.
+    // Batched strokes add readable facets without work in the animation loop.
+    ctx.strokeStyle = pal.chevronCol;
+    ctx.lineWidth = Math.max(0.7, headW * 0.012);
+    ctx.beginPath();
+    for (let side = -1; side <= 1; side += 2) {
+      for (let row = 0; row < 5; row++) {
+        const py = cy + headH * (row * 0.065 - 0.04);
+        const px = cx + side * headW * (0.21 - row * 0.019);
+        ctx.moveTo(px, py - headH * 0.025);
+        ctx.lineTo(px + side * headW * 0.055, py);
+        ctx.lineTo(px, py + headH * 0.026);
+      }
+      ctx.moveTo(cx + side * headW * 0.08, cy - headH * 0.10);
+      ctx.quadraticCurveTo(cx + side * headW * 0.18, cy - headH * 0.15,
+        cx + side * headW * 0.27, cy - headH * 0.08);
+    }
+    ctx.stroke();
+
     // 3. 3D VOLUMETRIC DEPTH OVERLAY (игра цветами для объема)
     if (!isDead) {
       // Longitudinal 3D ridge highlight: center crest is raised and bright, flanks stay in deep shadow
@@ -637,9 +684,9 @@ export const HADO99_THEME = {
         // Outer whisker glow
         ctx.strokeStyle = pal.borderCol;
         ctx.lineWidth = 2.4;
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = inheritedAlpha * 0.6;
         ctx.stroke();
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha = inheritedAlpha;
 
         // Sharp luminous whisker core
         ctx.strokeStyle = isGold ? '#fef08a' : (pal.spineCol || '#ffffff');
@@ -866,7 +913,7 @@ export const HADO99_THEME = {
   // HIT ANIMATION (Snappy Hadō #99 Kido Barrier Prism & Reishi Flash Hit Animation)
   // ==========================================================================
   drawHitAnimation(ctx, cx, cy, w, h, p, isPerfect, isLight, now, combo = 0) {
-    const liveCombo = (combo !== undefined && combo !== null && combo > 0)
+    const liveCombo = Number.isFinite(combo)
       ? combo
       : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
     const pal = this._getTierPalette(liveCombo, false, true);
@@ -992,12 +1039,14 @@ export const HADO99_THEME = {
   // ==========================================================================
   // SINUOUS SERPENTINE DRAGON BODY (Мощное анатомическое тело восточного дракона)
   // ==========================================================================
+  _bodyNodes: Array.from({ length: 257 }, () => ({ y: 0, cx: 0, hw: 0 })),
+
   drawHoldBody(ctx, x, yTail, w, headH, tile, isLight, now, tailH, currentCombo = 0, actualYHeadTop = null, isReleased = false) {
-    if (tailH <= 2) return true;
+    if (!Number.isFinite(tailH) || tailH <= 2) return true;
 
     const dead      = isReleased || Boolean(tile && tile.failed);
     const holding   = Boolean(tile && tile.holding && tile.hit);
-    const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
+    const liveCombo = Number.isFinite(currentCombo)
       ? currentCombo
       : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
     const tier      = dead ? 0 : liveCombo;
@@ -1035,18 +1084,19 @@ export const HADO99_THEME = {
       return bodyCenterX + Math.sin(phase) * (maxAmp * env);
     };
 
-    const stepY = 12;
-    const numSteps = Math.ceil(tailH / stepY);
+    const numSteps = Math.min(256, Math.ceil(tailH / 12));
+    const stepY = tailH / numSteps;
 
     // Precalculate polygon nodes along the undulating spine
-    const nodes = [];
+    const nodes = this._bodyNodes;
+    const nodeCount = numSteps + 1;
     for (let i = 0; i <= numSteps; i++) {
       const y = Math.max(yTail, headTopY - i * stepY);
       const prog = getProg(y);
       const cx = getCenterX(y);
       const hw = getHW(prog);
-      nodes.push({ y, prog, cx, hw });
-      if (y <= yTail) break;
+      const node = nodes[i];
+      node.y = y; node.cx = cx; node.hw = hw;
     }
 
     // PATH 1: Ethereal Reiatsu Pressure Aura
@@ -1055,7 +1105,7 @@ export const HADO99_THEME = {
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
     ctx.beginPath();
-    for (let i = 0; i < nodes.length; i++) {
+    for (let i = 0; i < nodeCount; i++) {
       const n = nodes[i];
       if (i === 0) ctx.moveTo(n.cx, n.y);
       else ctx.lineTo(n.cx, n.y);
@@ -1069,15 +1119,15 @@ export const HADO99_THEME = {
 
     // PATH 3: Solid Muscular Dragon Serpent Body (Filled Ribbon with Shaded Contours)
     ctx.beginPath();
-    for (let i = 0; i < nodes.length; i++) {
+    for (let i = 0; i < nodeCount; i++) {
       const n = nodes[i];
       const lx = n.cx - n.hw;
       if (i === 0) ctx.moveTo(lx, n.y);
       else ctx.lineTo(lx, n.y);
     }
-    const topNode = nodes[nodes.length - 1];
+    const topNode = nodes[nodeCount - 1];
     ctx.lineTo(topNode.cx + topNode.hw, topNode.y);
-    for (let i = nodes.length - 1; i >= 0; i--) {
+    for (let i = nodeCount - 1; i >= 0; i--) {
       const n = nodes[i];
       const rx = n.cx + n.hw;
       ctx.lineTo(rx, n.y);
@@ -1097,7 +1147,7 @@ export const HADO99_THEME = {
     ctx.stroke();
 
     // PATH 4: 3D Volumetric Anatomy: Interlocking Dragon Armor Scales & Ventral Scutes
-    const segmentStep = 18;
+    const segmentStep = Math.max(18, tailH / 64);
     for (let y = headTopY - 14; y > yTail + 8; y -= segmentStep) {
       const prog = getProg(y);
       const cx = getCenterX(y);
@@ -1153,7 +1203,7 @@ export const HADO99_THEME = {
     ctx.strokeStyle = pal.spineCol;
     ctx.lineWidth   = holding ? 2.6 : 2.0;
     ctx.beginPath();
-    for (let i = 0; i < nodes.length; i++) {
+    for (let i = 0; i < nodeCount; i++) {
       const n = nodes[i];
       if (i === 0) ctx.moveTo(n.cx, n.y);
       else ctx.lineTo(n.cx, n.y);
@@ -1161,7 +1211,7 @@ export const HADO99_THEME = {
     ctx.stroke();
 
     // Raised vertebrae crests (ромбовидные щитки позвоночника)
-    const crestStep = 22;
+    const crestStep = Math.max(22, tailH / 48);
     let crestIdx = 0;
     for (let y = headTopY - 12; y > yTail + 8; y -= crestStep) {
       const prog = getProg(y);
@@ -1215,11 +1265,11 @@ export const HADO99_THEME = {
   // POST-NOTES OVERLAY (Парящий пепел Рейси после рендеринга всех нот)
   // ==========================================================================
   drawPostNotesOverlay(ctx, now, combo = 0) {
-    const liveCombo = (combo !== undefined && combo !== null && combo > 0)
+    const liveCombo = Number.isFinite(combo)
       ? combo
       : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : 0);
     const pal = this._getTierPalette(liveCombo, false, false);
-    this._updateAndDrawReishiAsh(ctx, pal);
+    this._updateAndDrawReishiAsh(ctx, pal, now);
   },
 
   // ==========================================================================
@@ -1232,7 +1282,7 @@ export const HADO99_THEME = {
 
     const dead    = isReleased || Boolean(tile && tile.failed);
     const holding = Boolean(tile && tile.holding && tile.hit);
-    const tier    = dead ? 0 : (currentCombo || (tile?.style?.tier || 0));
+    const tier    = dead ? 0 : (Number.isFinite(currentCombo) ? currentCombo : (tile?.style?.tier || 0));
     const pal     = this._getTierPalette(tier, dead, holding);
     const isGold  = (pal.borderCol === '#ffd700');
 
@@ -1338,10 +1388,10 @@ export const HADO99_THEME = {
     const hw      = Math.max(7, Math.round(bodyW * 0.19));
 
     const holding = tile.holding && tile.hit;
-    const dead    = tile.failed;
+    const dead    = tile.failed || tile.released;
 
     // Get live combo: from argument, from tile, or from window.GameState
-    const liveCombo = (currentCombo !== undefined && currentCombo !== null && currentCombo > 0)
+    const liveCombo = Number.isFinite(currentCombo)
       ? currentCombo
       : (typeof window !== 'undefined' && window.GameState ? window.GameState.combo : (tile?.style?.tier || 0));
 
@@ -1538,7 +1588,7 @@ export const HADO99_THEME = {
     const crownX = cx - crownW / 2 + tremor;
     const crownY = bladeRootY - crownH + 28;
 
-    const dissolveAlpha = (holding && tailH < 120) ? Math.max(0, tailH / 120) : 1.0;
+    const dissolveAlpha = ctx.globalAlpha;
 
     if (showCrown && dissolveAlpha > 0.01) {
       ctx.save();
@@ -1567,13 +1617,7 @@ export const HADO99_THEME = {
         ctx.globalAlpha = dissolveAlpha * eyeGlowAlpha;
 
         // Coordinates for eyes of 5 heads relative to crown box
-        const eyePositions = [
-          [0.485, 0.22], [0.515, 0.22], // Center head
-          [0.29, 0.28],  [0.32, 0.28],  // Mid-left head
-          [0.68, 0.28],  [0.71, 0.28],  // Mid-right head
-          [0.15, 0.48],  [0.175, 0.48], // Far-left head
-          [0.825, 0.48], [0.85, 0.48]   // Far-right head
-        ];
+        const eyePositions = CROWN_EYES;
 
         // Pass 1: Soft outer eye aura (batched)
         ctx.fillStyle = isGold ? 'rgba(254, 240, 138, 0.40)' : (pal.auraCol || 'rgba(232, 121, 249, 0.40)');
@@ -1613,7 +1657,7 @@ export const HADO99_THEME = {
     }
 
     // 6. REISHI DISINTEGRATION & FALLING ASH EFFECT (OPTION 2)
-    if (holding) {
+    if (holding && !dead && dissolveAlpha > 0.02) {
       // Spawn floating ash and glowing Reishi embers at yTail
       this._spawnReishiAsh(cx, yTail, hw, pal, now);
 
@@ -1643,8 +1687,6 @@ export const HADO99_THEME = {
       ctx.stroke();
     }
 
-    // Update & draw all active ash and Reishi embers
-    this._updateAndDrawReishiAsh(ctx, pal);
 
     ctx.restore();
   },
@@ -1658,6 +1700,7 @@ export const HADO99_THEME = {
 
     ctx.strokeStyle = isActive ? '#ffffff' : 'rgba(192, 132, 252, 0.60)';
     ctx.lineWidth   = isActive ? 2.2 : 1.3;
+    ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(x, y, w, h, 8);
     else ctx.strokeRect(x, y, w, h);
     ctx.stroke();
@@ -1944,9 +1987,6 @@ export const HADO99_THEME = {
       }
     }
 
-    // Update & draw any active floating Reishi ash/embers across the atmosphere
-    const currentCombo = (typeof State !== 'undefined' && State?.combo) || 0;
-    this._updateAndDrawReishiAsh(ctx, this._getTierPalette(currentCombo, false, false));
 
     ctx.restore();
   }
