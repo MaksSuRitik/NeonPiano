@@ -49,11 +49,11 @@ import {
     db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
-import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=74.0";
+import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=74.1";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=74.0";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=74.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=74.1";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=74.1";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -1990,6 +1990,7 @@ function bootGame() {
             initGradients();
             draw();
             pixiRenderer.render(0, State);
+            pixiRenderer.clearNotes();
         }
     }
 
@@ -2579,7 +2580,7 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
         update(songTime);
         draw(songTime);
-        pixiRenderer.render(songTime, State);
+        pixiRenderer.render(songTime, State, CONFIG);
         State.animationFrameId = requestAnimationFrame(gameLoop);
     }
 
@@ -4318,6 +4319,7 @@ function updateRipples(dt) {
         if (ctx) {
             draw();
             pixiRenderer.render(0, State);
+            pixiRenderer.clearNotes();
         }
     }
 

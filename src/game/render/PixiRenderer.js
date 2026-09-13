@@ -4,6 +4,7 @@
 // ==========================================
 
 const PIXI_CDN_URL = "https://cdn.jsdelivr.net/npm/pixi.js@8.7.3/dist/pixi.mjs";
+import { pixiNotePool } from "./PixiNotePool.js";
 
 /**
  * Loads the PixiJS v8 engine either from global window.PIXI (if loaded via script tag)
@@ -133,6 +134,18 @@ export class PixiRenderer {
       this.stage.addChild(this.effectsLayer);
       this.stage.addChild(this.uiLayer);
 
+      // Initialize Phase 2 object pool for notes
+      const laneW = this.width / 4;
+      const padding = 6;
+      const w = laneW - (padding * 2);
+      const noteHeight = Math.round(w * 1.858);
+      pixiNotePool.init(this.PIXI, this.app, this.notesLayer, {
+        laneWidth: laneW,
+        noteWidth: w,
+        noteHeight: noteHeight,
+        padding: padding
+      });
+
       // Detect active graphics backend (WebGPU or WebGL2)
       this.backendName = (this.app.renderer && this.app.renderer.type) ? String(this.app.renderer.type) : "WebGL";
       if (this.app.renderer?.name) {
@@ -177,6 +190,13 @@ export class PixiRenderer {
 
     this.app.renderer.resize(this.width, this.height);
 
+    // Update note pool dimensions
+    const laneW = this.width / 4;
+    const padding = 6;
+    const w = laneW - (padding * 2);
+    const noteHeight = Math.round(w * 1.858);
+    pixiNotePool.updateDimensions(laneW, w, noteHeight, padding);
+
     // Update position of status indicator
     if (this.statusIndicator) {
       this.statusIndicator.x = this.width - 95;
@@ -188,11 +208,17 @@ export class PixiRenderer {
    * Manual audio-synchronized frame render, called directly from gameLoop().
    * @param {number} songTime - Current track time in milliseconds
    * @param {Object} state - Game state reference
+   * @param {Object} config - Game configuration (hitPosition, noteHeight, etc.)
    */
-  render(songTime = 0, state = null) {
+  render(songTime = 0, state = null, config = null) {
     if (!this.isReady || !this.app || !this.app.renderer) return;
 
-    // Animate Phase 1 test indicator (smooth neon pulse)
+    // Update Phase 2 zero-allocation note pool stream
+    if (state && Array.isArray(state.activeTiles)) {
+      pixiNotePool.update(songTime, state.activeTiles, state, config);
+    }
+
+    // Animate status indicator (smooth neon pulse)
     if (this.statusIndicator) {
       const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.004);
       this.statusIndicator.alpha = 0.4 + pulse * 0.45;
@@ -200,6 +226,13 @@ export class PixiRenderer {
 
     // Explicit manual draw call
     this.app.render();
+  }
+
+  /**
+   * Clears all active notes from the scene.
+   */
+  clearNotes() {
+    pixiNotePool.reset();
   }
 
   /**
