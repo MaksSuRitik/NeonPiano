@@ -269,6 +269,7 @@ class DanceUI {
       const title = this.adminTitleInput.value.trim();
       const artist = this.adminArtistInput.value.trim();
       const duration = parseFloat(this.adminDurationInput.value) || 0;
+      const isPhonk = Boolean(document.getElementById('admin-phonk-checkbox')?.checked);
 
       try {
         this.adminUploadBtn.disabled = true;
@@ -276,7 +277,7 @@ class DanceUI {
         if (this.adminUploadMode === "url") {
           const url = this.adminUrlInput.value.trim();
           this.adminUploadBtn.innerText = "Збереження в Firestore...";
-          await addTrackByUrl({ url, title, artist, duration });
+          await addTrackByUrl({ url, title, artist, duration, isPhonk });
           this.showToast("Трек за посиланням успішно додано до Firestore!", "success");
         } else {
           const file = this.adminFileInput.files[0];
@@ -291,6 +292,7 @@ class DanceUI {
             title,
             artist,
             duration,
+            isPhonk,
             onProgress: (percent) => {
               this.adminProgressFill.style.width = `${percent}%`;
               this.adminUploadBtn.innerText = `Завантаження: ${percent}%`;

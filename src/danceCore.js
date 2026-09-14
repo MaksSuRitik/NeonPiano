@@ -227,6 +227,7 @@ async function loadCloudSongs() {
                 fileHash: data.fileHash || null,
                 fileSize: Number(data.fileSize) || 0,
                 isSecret: Boolean(data.isSecret),
+                isPhonk: Boolean(data.isPhonk),
                 isLocal: Boolean(data.audioUrl && data.audioUrl.startsWith("indexeddb://")),
                 createdAt: data.createdAt || 0
             });
@@ -4812,6 +4813,7 @@ function updateRipples(dt) {
                     else if (f === 'unplayed') iconContainer.innerHTML = icons.play(12);
                     else if (f === 'hardcore') iconContainer.innerHTML = icons.skull(13);
                     else if (f === 'secret') iconContainer.innerHTML = icons.lock(13);
+                    else if (f === 'phonk') iconContainer.innerHTML = icons.zap(13);
                 }
             });
 
@@ -4913,6 +4915,8 @@ function updateRipples(dt) {
             });
         } else if (currentSongFilter === 'secret') {
             displayedSongs = displayedSongs.filter(item => item.song.isSecret);
+        } else if (currentSongFilter === 'phonk') {
+            displayedSongs = displayedSongs.filter(item => item.song?.isPhonk === true);
         }
 
         // 3. Сортування списку
@@ -5080,6 +5084,10 @@ function updateRipples(dt) {
             const activeGradList = isLightMode ? lightGradients : darkGradients;
             const gradTheme = activeGradList[i % activeGradList.length];
 
+            const phonkBadgeHtml = s.isPhonk
+                ? `<span class="track-phonk-badge" data-i18n="trackTagPhonk">${getText('trackTagPhonk') || 'ФОНК'}</span>`
+                : '';
+
             el.innerHTML = `
                 <div class="spotify-cover-wrap" style="background: ${s.coverUrl ? `url('${s.coverUrl}') center/cover no-repeat` : gradTheme.bg};">
                     <div class="spotify-cover-top">
@@ -5096,8 +5104,11 @@ function updateRipples(dt) {
                     </button>
                 </div>
                 <div class="spotify-card-info">
-                    <div class="spotify-track-title" title="${escapeHtml(s.title)}">
-                        ${escapeHtml(s.title)} ${localBadgeHtml}
+                    <div class="spotify-track-header">
+                        <div class="spotify-track-title" title="${escapeHtml(s.title)}">
+                            ${escapeHtml(s.title)} ${localBadgeHtml}
+                        </div>
+                        ${phonkBadgeHtml}
                     </div>
                     <div class="spotify-track-artist">
                         ${escapeHtml(s.artist)} • ${s.duration}
@@ -6621,6 +6632,7 @@ function updateRipples(dt) {
 
                 try {
                     adminUploadBtn.disabled = true;
+                    const isPhonk = Boolean(document.getElementById('admin-phonk-checkbox')?.checked);
 
                     if (file) {
                         adminUploadBtn.innerText = getText('adminAnalyzing') || 'Аналіз та збереження...';
@@ -6637,6 +6649,7 @@ function updateRipples(dt) {
                             title,
                             artist: artist || 'Local',
                             duration,
+                            isPhonk,
                             onProgress: (pct) => {
                                 if (adminUploadBtn) {
                                     adminUploadBtn.innerText = `${getText('adminUploadingProgress') || 'Завантаження:'} ${pct}%`;
@@ -6648,13 +6661,15 @@ function updateRipples(dt) {
                         if (duration <= 0) {
                             duration = await calculateAudioDurationFromUrl(url);
                         }
-                        await addTrackByUrl({ url, title, artist, duration });
+                        await addTrackByUrl({ url, title, artist, duration, isPhonk });
                     }
 
                     showNotification(getText('adminTrackAdded') || 'Трек успішно додано у фонотеку!');
 
                     adminForm.reset();
                     resetAdminFileInput();
+                    const phonkCheckbox = document.getElementById('admin-phonk-checkbox');
+                    if (phonkCheckbox) phonkCheckbox.checked = false;
                     if (adminDurationFeedback) adminDurationFeedback.innerHTML = '';
                     if (adminSpotifyFeedback) {
                         adminSpotifyFeedback.className = 'admin-spotify-feedback';
@@ -6710,7 +6725,11 @@ function updateRipples(dt) {
                                 ${escapeHtml(track.artist)} • ${track.duration || 0} ${getText('secondsShort') || 'сек.'}
                             </div>
                         </div>
-                        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                            <label class="admin-track-phonk-toggle" title="${getText('adminPhonkHint') || 'Позначити як фонк'}">
+                                <input type="checkbox" class="admin-phonk-row-toggle" ${track.isPhonk ? 'checked' : ''} />
+                                <span class="phonk-tag-label" style="${track.isPhonk ? 'color:#f472b6;' : ''}">${getText('adminPhonkLabel') || 'Фонк'}</span>
+                            </label>
                             <button class="nav-btn admin-btn-secondary admin-btn-sm btn-edit-track" title="${getText('adminEditTrack') || 'Редагувати / Замінити аудіо'}">
                                 ${icons.edit(14)}
                             </button>
@@ -6719,6 +6738,32 @@ function updateRipples(dt) {
                             </button>
                         </div>
                     `;
+
+                    const phonkToggleInput = item.querySelector('.admin-phonk-row-toggle');
+                    if (phonkToggleInput) {
+                        phonkToggleInput.onclick = (e) => e.stopPropagation();
+                        phonkToggleInput.onchange = async (e) => {
+                            e.stopPropagation();
+                            const newPhonkState = phonkToggleInput.checked;
+                            const tagLabel = item.querySelector('.phonk-tag-label');
+                            if (tagLabel) tagLabel.style.color = newPhonkState ? '#f472b6' : '';
+                            try {
+                                await updateTrackAdmin({ trackId: track.id, isPhonk: newPhonkState });
+                                track.isPhonk = newPhonkState;
+                                const songInDb = songsDB.find(s => s.id === track.id || s.title === track.title);
+                                if (songInDb) {
+                                    songInDb.isPhonk = newPhonkState;
+                                }
+                                renderMenu();
+                                showNotification(newPhonkState ? (getText('adminPhonkMark') || 'Позначено як фонк') : 'Фонк вимкнено');
+                            } catch (err) {
+                                console.error('Error toggling phonk:', err);
+                                phonkToggleInput.checked = !newPhonkState;
+                                if (tagLabel) tagLabel.style.color = !newPhonkState ? '#f472b6' : '';
+                                alert('Error updating phonk status: ' + (err.message || err));
+                            }
+                        };
+                    }
 
                     const editBtn = item.querySelector('.btn-edit-track');
                     const infoArea = item.querySelector('.admin-track-item-info');
@@ -6821,6 +6866,10 @@ function updateRipples(dt) {
             if (adminEditDurationInput) adminEditDurationInput.value = track.duration || 0;
             if (adminEditUrlInput) adminEditUrlInput.value = '';
             if (adminEditUrlFeedback) adminEditUrlFeedback.innerHTML = '';
+            const editPhonkCheckbox = document.getElementById('admin-edit-phonk-checkbox');
+            if (editPhonkCheckbox) {
+                editPhonkCheckbox.checked = Boolean(track.isPhonk);
+            }
 
             if (adminEditPreviewName) {
                 adminEditPreviewName.textContent = `${track.artist ? track.artist + ' - ' : ''}${track.title}`;
@@ -6956,6 +7005,7 @@ function updateRipples(dt) {
                 const duration = adminEditDurationInput ? parseFloat(adminEditDurationInput.value) : 0;
                 const newUrl = adminEditUrlInput ? adminEditUrlInput.value.trim() : '';
                 const oldStoragePath = adminEditOldStoragePath ? adminEditOldStoragePath.value : null;
+                const isPhonk = Boolean(document.getElementById('admin-edit-phonk-checkbox')?.checked);
 
                 if (!title) {
                     alert(getText('adminSpecifyTitle') || 'Вкажіть назву треку.');
@@ -6982,6 +7032,7 @@ function updateRipples(dt) {
                         duration,
                         audioUrl: newUrl || null,
                         oldStoragePath,
+                        isPhonk,
                         onProgress: (pct) => {
                             if (adminEditProgressWrap) adminEditProgressWrap.style.display = 'block';
                             if (adminEditProgressBar) adminEditProgressBar.style.width = `${pct}%`;
@@ -10700,7 +10751,7 @@ function updateRipples(dt) {
     setTimeout(resizeCanvas, 100);
 
     window.__gameDebug = { 
-        State, CONFIG, songsDB: () => songsDB, startGame, endGame, quitGame, 
+        State, CONFIG, songsDB: () => songsDB, renderMenu, startGame, endGame, quitGame, 
         NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, 
         handleInputDown, handleInputUp, draw, FieldThemes, updateProgressBar, 
         cleanLevelRemnants, i18n, updateGameText,

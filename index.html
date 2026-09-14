@@ -107,6 +107,10 @@
           <span class="filter-icon-lock"></span>
           <span data-i18n="filterSecret">Секретні</span>
         </button>
+        <button type="button" class="filter-chip" data-filter="phonk">
+          <span class="filter-icon-phonk"></span>
+          <span data-i18n="filterPhonk">Фонк</span>
+        </button>
       </div>
 
       <!-- Search & Sort Row -->
@@ -483,6 +487,14 @@
               <input type="number" id="admin-duration-input" class="modern-input" placeholder="0.0" step="0.1" required>
             </div>
 
+            <div class="admin-phonk-row" style="margin: 10px 0 14px 0;">
+              <label class="admin-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="admin-phonk-checkbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: #ec4899;">
+                <span style="font-size: 0.86rem; font-weight: 600; color: var(--text-primary);" data-i18n="adminPhonkLabel">Фонк</span>
+                <span style="font-size: 0.76rem; color: var(--text-secondary);" data-i18n="adminPhonkHint">Позначити як фонк</span>
+              </label>
+            </div>
+
             <button type="submit" id="admin-upload-btn" class="modern-btn modern-btn-primary" data-i18n="adminUploadBtn" style="width: 100%; margin-top: 6px;">
               Додати трек у фонотеку
             </button>
@@ -847,6 +859,15 @@
           <div style="margin-bottom: 16px;">
             <label for="admin-edit-duration-input" style="font-size: 0.82rem; color: var(--highlight); font-weight: 600; display: block; margin-bottom: 2px;" data-i18n="adminDuration">Тривалість (сек.):</label>
             <input type="number" id="admin-edit-duration-input" class="modern-input" step="0.1" required style="margin: 0 !important;">
+          </div>
+
+          <!-- Phonk Tag Toggle -->
+          <div class="admin-phonk-row" style="margin-bottom: 16px;">
+            <label class="admin-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+              <input type="checkbox" id="admin-edit-phonk-checkbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: #ec4899;">
+              <span style="font-size: 0.86rem; font-weight: 600; color: var(--text-primary);" data-i18n="adminPhonkLabel">Фонк</span>
+              <span style="font-size: 0.76rem; color: var(--text-secondary);" data-i18n="adminPhonkHint">Позначити як фонк</span>
+            </label>
           </div>
 
           <!-- Progress Indicator -->

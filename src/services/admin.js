@@ -284,7 +284,7 @@ export async function calculateAudioDuration(file) {
  * @param {function} params.onProgress Progress callback (percent: number)
  * @returns {Promise<object>} Created track data
  */
-export async function uploadTrack({ file, title, artist, duration, onProgress = () => {} }) {
+export async function uploadTrack({ file, title, artist, duration, isPhonk = false, onProgress = () => {} }) {
   const admin = requireAdmin();
 
   if (!file) throw new Error(i18n.t("adminSelectFile") || "Будь ласка, оберіть аудіофайл.");
@@ -351,6 +351,7 @@ export async function uploadTrack({ file, title, artist, duration, onProgress = 
     title: title.trim(),
     artist: artist.trim(),
     duration: Number(duration) || 0,
+    isPhonk: Boolean(isPhonk),
     audioUrl: downloadUrl,
     storagePath: usedStorage ? storagePath : null,
     fileHash: fileHash || null,
@@ -450,7 +451,7 @@ export async function calculateAudioDurationFromUrl(url) {
  * @param {number} [params.duration]
  * @returns {Promise<object>}
  */
-export async function addTrackByUrl({ url, title, artist, duration }) {
+export async function addTrackByUrl({ url, title, artist, duration, isPhonk = false }) {
   const admin = requireAdmin();
 
   if (!url?.trim()) throw new Error(i18n.t("adminEnterUrlPrompt") || "Вкажіть пряме посилання на аудіофайл.");
@@ -521,6 +522,7 @@ export async function addTrackByUrl({ url, title, artist, duration }) {
     title: title.trim(),
     artist: artist.trim(),
     duration: trackDuration,
+    isPhonk: Boolean(isPhonk),
     audioUrl: cleanUrl,
     storagePath: null,
     isLocalFallback: false,
@@ -634,6 +636,7 @@ export async function updateTrackAdmin({
   duration = null,
   audioUrl = null,
   oldStoragePath = null,
+  isPhonk = null,
   onProgress = () => {}
 }) {
   const admin = requireAdmin();
@@ -647,6 +650,9 @@ export async function updateTrackAdmin({
 
   if (title && title.trim()) updateData.title = title.trim();
   if (artist && artist.trim()) updateData.artist = artist.trim();
+  if (typeof isPhonk === 'boolean') {
+    updateData.isPhonk = isPhonk;
+  }
 
   // If a new audio file is provided:
   if (file) {
@@ -747,6 +753,17 @@ export async function updateTrackAdmin({
 
   await updateDoc(trackDocRef, updateData);
   return { id: trackId, ...updateData };
+}
+
+/**
+ * Dedicated metadata update helper to toggle track phonk classification.
+ * 
+ * @param {string} trackId 
+ * @param {boolean} isPhonk 
+ * @returns {Promise<object>}
+ */
+export async function updateTrackPhonk(trackId, isPhonk) {
+  return updateTrackAdmin({ trackId, isPhonk: Boolean(isPhonk) });
 }
 
 /**

@@ -186,6 +186,7 @@ class UIController {
       const title = this.adminTitleInput.value.trim();
       const artist = this.adminArtistInput.value.trim();
       const duration = parseFloat(this.adminDurationInput.value) || 0;
+      const isPhonk = Boolean(document.getElementById('admin-phonk-checkbox')?.checked);
 
       try {
         this.adminUploadBtn.disabled = true;
@@ -197,6 +198,7 @@ class UIController {
           title,
           artist,
           duration,
+          isPhonk,
           onProgress: (percent) => {
             this.adminProgressFill.style.width = `${percent}%`;
             this.adminUploadBtn.textContent = `Загрузка: ${percent}%`;
