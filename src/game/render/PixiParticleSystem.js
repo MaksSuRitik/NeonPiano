@@ -546,20 +546,6 @@ export class PixiParticleSystem {
   }
 
   /**
-   * Returns true if any dynamic hit explosions, particles, or ambient overlays are currently active.
-   */
-  hasActiveEffects() {
-    if (this.ambientContainer && this.ambientContainer.visible) return true;
-    for (let i = 0; i < this.MAX_HITS; i++) {
-      if (this.hitPool[i] && this.hitPool[i].active) return true;
-    }
-    for (let i = 0; i < this.particlePool.length; i++) {
-      if (this.particlePool[i] && this.particlePool[i].active) return true;
-    }
-    return false;
-  }
-
-  /**
    * Main per-frame update loop called synchronously from gameLoop.
    * @param {number} now - High-resolution timestamp
    * @param {number} combo - Current game combo

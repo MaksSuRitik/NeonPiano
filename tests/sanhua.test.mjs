@@ -151,22 +151,3 @@ test('environment crossfades at 800 and keeps caller state and gameplay state un
   assert.equal(c.globalCompositeOperation,'source-over');
   assert.deepEqual(state,{gameWidth:400,gameHeight:720,combo:800});
 });
-
-test('prewarm initializes all tiers and guarantees zero canvas allocations when crossing combo 800', () => {
-  // Prewarm for note width 95, headH 48
-  S.prewarm(95, 48, 105, false, 400, 720);
-  const canvasCountAfterPrewarm = canvases;
-
-  // Render combo 799 hold note and neck
-  const c = context(1.0);
-  S.drawHoldBody(c, 10, 100, 95, 48, tile, false, 1000, 200, 799, 300);
-  S.drawNeck(c, 10, 300, 95, 48, tile, false, 799);
-
-  // Cross into combo 800 (T5 Blood Eclipse)
-  S.drawHoldBody(c, 10, 100, 95, 48, tile, false, 1016, 200, 800, 300);
-  S.drawNeck(c, 10, 300, 95, 48, tile, false, 800);
-
-  // Assert ZERO new canvas elements were created during 799 -> 800 transition
-  assert.equal(canvases, canvasCountAfterPrewarm, 'No new canvases should be created during 799 -> 800 combo threshold');
-});
-

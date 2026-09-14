@@ -85,12 +85,7 @@ const MAX_PARTICLES = 120;
 export class DanceGame {
   constructor(canvas, options = {}) {
     this.canvas = canvas;
-    const isMobile = (typeof window !== 'undefined') && (
-      window.innerWidth < 768 ||
-      ('ontouchstart' in window) ||
-      (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024)
-    );
-    this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: !isMobile });
+    this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
 
     this.onScoreUpdate = options.onScoreUpdate || (() => {});
     this.onRatingShow = options.onRatingShow || (() => {});
