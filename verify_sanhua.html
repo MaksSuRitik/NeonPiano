@@ -114,19 +114,20 @@
       { combo: 1500, name: 'T5 (1500)', col: '#ff1744' }
     ];
 
+    const stateNormal = { gameWidth: W, gameHeight: H, bgPulse: 0, combo: 200 };
+    const stateT5 = { gameWidth: W, gameHeight: H, bgPulse: 0, combo: 888 };
+
     window.__LOGS__ = [];
 
     function renderView(ctx, isT5, tiersList, now) {
       ctx.fillStyle = isT5 ? '#140306' : '#071628';
       ctx.fillRect(0, 0, W, H);
 
+      const st = isT5 ? stateT5 : stateNormal;
+      st.bgPulse = Math.sin(now * 0.003) * 0.2 + 0.2;
+
       // Atmosphere: WebGL / Canvas fallback Ice Tree, Moon & Blizzard
-      SANHUA_THEME.updateAndDrawAtmosphere(ctx, now, 1.0, 0, {
-        gameWidth: W,
-        gameHeight: H,
-        bgPulse: Math.sin(now * 0.003) * 0.2 + 0.2,
-        combo: isT5 ? 888 : 200
-      });
+      SANHUA_THEME.updateAndDrawAtmosphere(ctx, now, 1.0, 0, st);
 
       // Lane dividers
       for (let i = 0; i <= numLanes; i++) {
