@@ -53,7 +53,7 @@ import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, d
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
 import * as FieldThemes from "./game/fieldThemes.js?v=97.0";
-import { pixiRenderer } from "./game/render/PixiRenderer.js?v=77.0";
+import { pixiRenderer } from "./game/render/PixiRenderer.js?v=78.0";
 
 // ==========================================
 // Системні константи та базова конфігурація гри.
@@ -605,9 +605,22 @@ function musicalLaneAllocator(laneFreeTimes, count, currentTime, pitchFreq, last
 
 function bootGame() {
 
+    // Визначення мобільного пристрою до ініціалізації контексту Canvas
+    const isMobileDevice = (typeof window !== 'undefined') && (
+        window.innerWidth < 768 ||
+        ('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024)
+    );
+    State.isMobile = isMobileDevice;
+
     // Отримання посилань на HTML-елементи.
     canvas = document.getElementById('rhythmCanvas');
-    ctx = canvas ? canvas.getContext('2d', { alpha: true, desynchronized: true }) : null;
+    // На мобільних використовується синхронізований контекст (desynchronized: false) для усунення апаратного тирінгу та спотворень екрана.
+    // На ПК зберігається низьколатентний режим (desynchronized: true).
+    ctx = canvas ? canvas.getContext('2d', {
+        alpha: false,
+        desynchronized: !isMobileDevice
+    }) : null;
     gameContainer = document.getElementById('game-container');
 
     // Ініціалізація високопродуктивного графічного шару Pixi.js (Фаза 1: гібридний режим)
@@ -627,6 +640,27 @@ function bootGame() {
     holdEffectsContainer = document.getElementById('hold-effects-container');
     progressBar = document.getElementById('game-progress-bar');
     scoreEl = document.getElementById('score-display');
+    State.showPerfDebug = (typeof window !== 'undefined') && (
+        new URLSearchParams(window.location.search).has('debug') ||
+        window.__DEBUG_PERF === true
+    );
+    if (scoreEl) {
+        let tapCount = 0, tapTimer = null;
+        scoreEl.addEventListener('click', () => {
+            tapCount++;
+            clearTimeout(tapTimer);
+            tapTimer = setTimeout(() => { tapCount = 0; }, 600);
+            if (tapCount >= 3) {
+                tapCount = 0;
+                State.showPerfDebug = !State.showPerfDebug;
+                if (!State.showPerfDebug && perfMetrics.el) {
+                    perfMetrics.el.remove();
+                    perfMetrics.el = null;
+                }
+                console.log("[PerfHUD] Debug overlay toggled:", State.showPerfDebug);
+            }
+        });
+    }
     
     starsElements = [
         document.getElementById('star-1'), document.getElementById('star-2'),
@@ -1874,6 +1908,15 @@ function bootGame() {
 
                 this.ratings[cfg.key] = c;
             });
+
+            // Попередній прогрів складних процедурних ресурсів активної теми (Hold cache, T5 середовище)
+            if (activeFieldTheme && typeof activeFieldTheme.prewarm === 'function') {
+                try {
+                    activeFieldTheme.prewarm(w, h, laneW, isLight, State.gameWidth, State.gameHeight);
+                } catch (e) {
+                    console.warn('[SpriteCache] Theme prewarm error:', e);
+                }
+            }
         },
 
         getRatingSprite(key) {
@@ -2587,11 +2630,64 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
             return;
         }
 
+        const fStart = State.showPerfDebug ? performance.now() : 0;
         update(songTime);
         draw(songTime);
         const activeTheme = FieldThemes.getActiveTheme();
         pixiRenderer.render(songTime, State, CONFIG, activeTheme);
+        if (State.showPerfDebug) {
+            recordPerfDebugMetrics(performance.now() - fStart, activeTheme);
+        }
         State.animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    const perfMetrics = {
+        frames: [],
+        lastPeakTime: 0,
+        peakMs: 0,
+        el: null
+    };
+
+    function recordPerfDebugMetrics(durationMs, activeTheme) {
+        const now = performance.now();
+        perfMetrics.frames.push({ t: now, d: durationMs });
+        while (perfMetrics.frames.length > 0 && now - perfMetrics.frames[0].t > 1000) {
+            perfMetrics.frames.shift();
+        }
+        if (now - perfMetrics.lastPeakTime > 2000) {
+            perfMetrics.peakMs = durationMs;
+            perfMetrics.lastPeakTime = now;
+        } else if (durationMs > perfMetrics.peakMs) {
+            perfMetrics.peakMs = durationMs;
+        }
+
+        if (!perfMetrics.el && gameContainer) {
+            perfMetrics.el = document.createElement('div');
+            perfMetrics.el.id = 'perf-debug-hud';
+            perfMetrics.el.style.cssText = 'position:absolute;top:54px;left:8px;z-index:9999;background:rgba(0,0,0,0.78);color:#38bdf8;font-family:monospace;font-size:11px;padding:6px 8px;border-radius:6px;pointer-events:none;line-height:1.35;border:1px solid rgba(56,189,248,0.3);box-shadow:0 4px 12px rgba(0,0,0,0.5);';
+            gameContainer.appendChild(perfMetrics.el);
+        }
+
+        if (perfMetrics.el) {
+            const fps = perfMetrics.frames.length;
+            const avgMs = (perfMetrics.frames.reduce((a, b) => a + b.d, 0) / Math.max(1, perfMetrics.frames.length)).toFixed(1);
+            const curMs = durationMs.toFixed(1);
+            const peakMs = perfMetrics.peakMs.toFixed(1);
+            const cDpr = (State.renderDpr || 1).toFixed(2);
+            const nDpr = (State.nativeDpr || window.devicePixelRatio || 1).toFixed(2);
+            const pDpr = (pixiRenderer.dpr || 1).toFixed(2);
+            const pBackend = pixiRenderer.backendName || 'Unknown';
+            const desync = !State.isMobile;
+            const themeId = activeTheme?.id || 'classic';
+            
+            perfMetrics.el.innerHTML = `
+                <div><b>FPS:</b> <span style="color:${fps >= 55 ? '#4ade80' : (fps >= 40 ? '#facc15' : '#f87171')}">${fps}</span> (${curMs}ms | avg ${avgMs}ms)</div>
+                <div><b>2s Peak:</b> <span style="color:${peakMs < 16.7 ? '#4ade80' : '#f87171'}">${peakMs}ms</span></div>
+                <div><b>DPR:</b> C:${cDpr} (nat:${nDpr}) | Pixi:${pDpr}</div>
+                <div><b>Pixi:</b> ${pBackend} | <b>Sync:</b> ${desync ? 'desync' : 'SYNC'}</div>
+                <div><b>Theme:</b> ${themeId} | <b>Combo:</b> ${State.combo}</div>
+            `;
+        }
     }
 
 function update(songTime) {
@@ -10697,7 +10793,10 @@ function updateRipples(dt) {
         const containerW = (gameContainer && gameContainer.clientWidth > 0) ? gameContainer.clientWidth : (window.innerWidth || 480);
         const containerH = (gameContainer && gameContainer.clientHeight > 0) ? gameContainer.clientHeight : (window.innerHeight || 800);
         if (canvas) {
-            const dpr = Math.min(window.devicePixelRatio || 1, 1.5); 
+            const nativeDpr = window.devicePixelRatio || 1;
+            const dpr = State.isMobile ? Math.min(nativeDpr, 1.5) : Math.min(nativeDpr, 2.0);
+            State.renderDpr = dpr;
+            State.nativeDpr = nativeDpr;
             const targetW = Math.round(containerW * dpr);
             const targetH = Math.round(containerH * dpr);
 

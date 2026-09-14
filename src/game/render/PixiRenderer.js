@@ -63,7 +63,7 @@ export class PixiRenderer {
    * @param {number} options.height - Game height in CSS pixels
    * @param {number} options.dpr - Device pixel ratio (e.g. 1.0 - 1.5)
    */
-  async init({ container, width, height, dpr = 1 }) {
+  async init({ container, width, height, dpr = 1, preference } = {}) {
     if (this.isReady || this.isInitializing) return;
     this.isInitializing = true;
     const generation = ++this._initGeneration;
@@ -81,7 +81,7 @@ export class PixiRenderer {
       const app = pendingApp = new this.PIXI.Application();
 
       // Async initialization in Pixi.js v8
-      await app.init({
+      const initOptions = {
         width: this.width,
         height: this.height,
         resolution: this.dpr,
@@ -89,7 +89,11 @@ export class PixiRenderer {
         backgroundAlpha: 0, // Fully transparent to let Canvas 2D / UI show through
         antialias: true,
         powerPreference: 'high-performance'
-      });
+      };
+      if (preference) {
+        initOptions.preference = preference;
+      }
+      await app.init(initOptions);
 
       if (generation !== this._initGeneration) {
         app.destroy(true, { children: true });
@@ -295,8 +299,19 @@ export class PixiRenderer {
         this.statusIndicator.alpha = 0.4 + pulse * 0.45;
       }
 
-      // Explicit manual draw call
-      this.app.render();
+      // Explicit manual draw call: skip rendering if there are no active particles/notes to save GPU bandwidth
+      const hasParticles = this.particleSystem && this.areParticlesHandled && this.particleSystem.hasActiveEffects();
+      const hasNotes = this.areNotesHandled;
+      const shouldDraw = hasParticles || hasNotes || !!this.statusIndicator;
+
+      if (shouldDraw) {
+        this._hasRenderedActive = true;
+        this.app.render();
+      } else if (this._hasRenderedActive) {
+        // One final clear pass so no lingering pixels remain, then sleep GPU
+        this._hasRenderedActive = false;
+        this.app.render();
+      }
     } catch (err) {
       console.warn("[PixiRenderer] Render loop warning:", err);
     }
