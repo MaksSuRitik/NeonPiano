@@ -7,7 +7,7 @@
 <nav><label>Combo palette <select id="combo"><option value="0">0 · Frozen silver</option><option value="50">50 · Cyan</option><option value="100">100 · Azure</option><option value="200">200 · Cold violet</option><option value="400">400 · Lunar amethyst</option><option value="800">800 · Blood eclipse</option></select></label><button id="motion">Play motion</button><button id="eclipse">Cross 800 combo</button><label><input id="environment" type="checkbox">Environment only</label><button id="bench">Validate & measure</button></nav>
 <div class="views"><canvas id="scene" width="500" height="720" aria-label="Live Hiyuki theme scene"></canvas><aside><small>MATERIAL PROGRESSION</small><p>Tap notes and broad holds share one color family. The ruby is a small focal accent. All six tiers shown below.</p><canvas id="palette" width="540" height="450" aria-label="Six combo materials"></canvas><p>The large scene uses the game's 210 px note height and 89% hit position. Motion here is a visual fixture; <a href="/">open the game</a> for the actual theme trial.</p><pre id="metrics">Ready for review.</pre></aside></div></main>
 <script type="module">
-import {SANHUA_THEME as S} from './src/game/themes/sanhua.js?v=96.0';
+import {SANHUA_THEME as S} from './src/game/themes/sanhua.js?v=97.0';
 const c=document.querySelector('#scene'),ctx=c.getContext('2d'),p=document.querySelector('#palette'),pc=p.getContext('2d');
 const control=document.querySelector('#combo'),only=document.querySelector('#environment'),out=document.querySelector('#metrics');
 const state={gameWidth:500,gameHeight:720,combo:0};window.GameState=state;

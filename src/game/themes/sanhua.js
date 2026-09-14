@@ -329,6 +329,171 @@ function ensureEnvCache(w,h) {
   environmentCache.set(key,entry);return entry;
 }
 
+function drawRedVeil(ctx, now, w, h, blend, layer) {
+  const t = now * 0.00032; // Ultra-slow cinematic silk drift
+  const isEclipse = blend > 0.5;
+  const alphaMult = isEclipse ? 1.25 : 0.88;
+
+  ctx.save();
+
+  if (layer === 0) {
+    // =========================================================================
+    // LAYER 0: Distant Fold & Upper Veil Sweep (Behind Tree Limbs)
+    // =========================================================================
+
+    // 1. Distant Secondary Fold (high atmosphere above branches)
+    const dfD1 = Math.sin(t * 0.7 + 0.3) * (w * 0.022);
+    const dfD2 = Math.cos(t * 0.5 + 1.1) * (h * 0.018);
+    const dfP0 = [-0.05 * w, 0.13 * h + dfD2];
+    const dfCP1 = [0.28 * w + dfD1, 0.08 * h + dfD2];
+    const dfCP2 = [0.65 * w - dfD1, 0.16 * h - dfD2];
+    const dfP1 = [1.06 * w, 0.11 * h + dfD2 * 0.5];
+    const dfW = w * 0.058;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(dfP0[0], dfP0[1]);
+    ctx.bezierCurveTo(dfCP1[0], dfCP1[1], dfCP2[0], dfCP2[1], dfP1[0], dfP1[1]);
+    ctx.lineTo(dfP1[0], dfP1[1] + dfW);
+    ctx.bezierCurveTo(dfCP2[0] - dfW * 0.2, dfCP2[1] + dfW, dfCP1[0] + dfW * 0.2, dfCP1[1] + dfW, dfP0[0], dfP0[1] + dfW * 0.8);
+    ctx.closePath();
+
+    const dfGrad = ctx.createLinearGradient(0, 0.08 * h, w, 0.16 * h);
+    dfGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.10 * alphaMult})`);
+    dfGrad.addColorStop(0.4, `rgba(143, 16, 40, ${0.20 * alphaMult})`);
+    dfGrad.addColorStop(0.8, `rgba(197, 30, 62, ${0.16 * alphaMult})`);
+    dfGrad.addColorStop(1.0, `rgba(74, 7, 20, ${0.07 * alphaMult})`);
+    ctx.fillStyle = dfGrad;
+    ctx.fill();
+    ctx.restore();
+
+    // 2. Primary Dominant Veil - Upper Arc (flowing from upper-left behind canopy)
+    const d1 = Math.sin(t + 0.8) * (w * 0.035);
+    const d2 = Math.cos(t * 0.8 + 1.4) * (h * 0.030);
+    const breath = Math.sin(t * 1.2) * 0.12;
+
+    const p0 = [-0.08 * w, 0.30 * h + d2];
+    const cp1 = [0.22 * w + d1, 0.19 * h - d2 * 0.8];
+    const cp2 = [0.46 * w - d1, 0.32 * h + d2 * 0.6];
+    const p1 = [0.52 * w + d1 * 0.5, 0.44 * h + d2];
+
+    const w0 = w * 0.11 * (1 + breath);
+    const wMid = w * 0.17 * (1 + breath);
+    const w1 = w * 0.09;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p0[0], p0[1]);
+    ctx.bezierCurveTo(cp1[0], cp1[1], cp2[0], cp2[1], p1[0], p1[1]);
+    ctx.lineTo(p1[0] + w1 * 0.4, p1[1] + w1 * 0.9);
+    ctx.bezierCurveTo(cp2[0] + wMid * 0.2, cp2[1] + wMid, cp1[0] - wMid * 0.1, cp1[1] + wMid * 0.9, p0[0], p0[1] + w0);
+    ctx.closePath();
+
+    const upGrad = ctx.createLinearGradient(0, 0.20 * h, 0.52 * w, 0.45 * h);
+    upGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.15 * alphaMult})`);
+    upGrad.addColorStop(0.35, `rgba(143, 16, 40, ${0.27 * alphaMult})`);
+    upGrad.addColorStop(0.70, `rgba(197, 30, 62, ${0.34 * alphaMult})`);
+    upGrad.addColorStop(1.0, `rgba(238, 54, 85, ${0.30 * alphaMult})`);
+    ctx.fillStyle = upGrad;
+    ctx.fill();
+
+    // Upper fold crest sheen
+    ctx.beginPath();
+    ctx.moveTo(p0[0], p0[1]);
+    ctx.bezierCurveTo(cp1[0], cp1[1], cp2[0], cp2[1], p1[0], p1[1]);
+    ctx.strokeStyle = isEclipse ? `rgba(255, 101, 125, ${0.46 * alphaMult})` : `rgba(238, 54, 85, ${0.34 * alphaMult})`;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.restore();
+
+  } else if (layer === 1) {
+    // =========================================================================
+    // LAYER 1: Foreground Swathe & Cascading Drapery (In Front of Tree Limbs)
+    // =========================================================================
+    const d1 = Math.sin(t + 0.8) * (w * 0.035);
+    const d2 = Math.cos(t * 0.8 + 1.4) * (h * 0.030);
+    const d3 = Math.sin(t * 0.6 + 2.1) * (w * 0.040);
+    const d4 = Math.cos(t * 0.7 + 0.4) * (h * 0.035);
+    const breath = Math.sin(t * 1.1 + 0.5) * 0.15;
+
+    // Connects seamlessly with upper fold, billows across mid-left, twists over trunk, cascades to right
+    const pStart = [0.50 * w + d1 * 0.5, 0.43 * h + d2];
+    const cpA1 = [0.25 * w - d3, 0.48 * h + d4 * 0.5];
+    const cpA2 = [0.21 * w + d1, 0.62 * h - d2 * 0.7];
+    const pMid = [0.45 * w + d3 * 0.4, 0.66 * h + d4 * 0.6];
+
+    const cpB1 = [0.67 * w - d1, 0.70 * h + d2 * 0.5];
+    const cpB2 = [0.88 * w + d3, 0.74 * h - d4 * 0.4];
+    const pEnd = [1.12 * w, 0.82 * h + d2 * 0.5];
+
+    const wStart = w * 0.095;
+    const wBelly1 = w * 0.19 * (1 + breath);
+    const wTwist = w * 0.072; // Narrow twisted fold crossing mid-scene
+    const wBelly2 = w * 0.17 * (1 + breath);
+    const wEnd = w * 0.11;
+
+    ctx.save();
+    // 1. Broad silk ribbon body
+    ctx.beginPath();
+    ctx.moveTo(pStart[0], pStart[1]);
+    ctx.bezierCurveTo(cpA1[0], cpA1[1], cpA2[0], cpA2[1], pMid[0], pMid[1]);
+    ctx.bezierCurveTo(cpB1[0], cpB1[1], cpB2[0], cpB2[1], pEnd[0], pEnd[1]);
+    ctx.lineTo(pEnd[0] + wEnd * 0.2, pEnd[1] + wEnd);
+    ctx.bezierCurveTo(cpB2[0] + wBelly2 * 0.3, cpB2[1] + wBelly2, cpB1[0] - wBelly2 * 0.2, cpB1[1] + wBelly2 * 0.8, pMid[0] + wTwist * 0.2, pMid[1] + wTwist);
+    ctx.bezierCurveTo(cpA2[0] + wBelly1 * 0.4, cpA2[1] + wBelly1, cpA1[0] + wBelly1 * 0.3, cpA1[1] + wBelly1 * 0.9, pStart[0] + wStart * 0.3, pStart[1] + wStart);
+    ctx.closePath();
+
+    const bodyGrad = ctx.createLinearGradient(0.20 * w, 0.45 * h, 0.95 * w, 0.80 * h);
+    bodyGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.16 * alphaMult})`);
+    bodyGrad.addColorStop(0.25, `rgba(143, 16, 40, ${0.28 * alphaMult})`);
+    bodyGrad.addColorStop(0.55, `rgba(197, 30, 62, ${0.35 * alphaMult})`);
+    bodyGrad.addColorStop(0.80, `rgba(238, 54, 85, ${0.30 * alphaMult})`);
+    bodyGrad.addColorStop(1.0, `rgba(143, 16, 40, ${0.15 * alphaMult})`);
+    ctx.fillStyle = bodyGrad;
+    ctx.fill();
+
+    // 2. Secondary internal drapery fold (creates tangible layered fabric depth)
+    ctx.beginPath();
+    ctx.moveTo(pStart[0] + wStart * 0.2, pStart[1] + wStart * 0.3);
+    ctx.bezierCurveTo(cpA1[0] + wBelly1 * 0.15, cpA1[1] + wBelly1 * 0.2, cpA2[0] + wBelly1 * 0.2, cpA2[1] + wBelly1 * 0.25, pMid[0], pMid[1] + wTwist * 0.3);
+    ctx.bezierCurveTo(cpB1[0] + wBelly2 * 0.15, cpB1[1] + wBelly2 * 0.2, cpB2[0] + wBelly2 * 0.2, cpB2[1] + wBelly2 * 0.25, pEnd[0] + wEnd * 0.1, pEnd[1] + wEnd * 0.3);
+    ctx.lineTo(pEnd[0] + wEnd * 0.15, pEnd[1] + wEnd * 0.7);
+    ctx.bezierCurveTo(cpB2[0] + wBelly2 * 0.25, cpB2[1] + wBelly2 * 0.6, cpB1[0] + wBelly2 * 0.1, cpB1[1] + wBelly2 * 0.5, pMid[0] + wTwist * 0.1, pMid[1] + wTwist * 0.7);
+    ctx.bezierCurveTo(cpA2[0] + wBelly1 * 0.3, cpA2[1] + wBelly1 * 0.6, cpA1[0] + wBelly1 * 0.2, cpA1[1] + wBelly1 * 0.5, pStart[0] + wStart * 0.25, pStart[1] + wStart * 0.6);
+    ctx.closePath();
+
+    const foldGrad = ctx.createLinearGradient(0.30 * w, 0.50 * h, 0.85 * w, 0.75 * h);
+    foldGrad.addColorStop(0.0, `rgba(143, 16, 40, ${0.10 * alphaMult})`);
+    foldGrad.addColorStop(0.40, `rgba(197, 30, 62, ${0.22 * alphaMult})`);
+    foldGrad.addColorStop(0.70, `rgba(238, 54, 85, ${0.26 * alphaMult})`);
+    foldGrad.addColorStop(1.0, `rgba(143, 16, 40, ${0.08 * alphaMult})`);
+    ctx.fillStyle = foldGrad;
+    ctx.fill();
+
+    // 3. Lit fold ridge crest line & hot highlight sheen
+    ctx.beginPath();
+    ctx.moveTo(pStart[0], pStart[1]);
+    ctx.bezierCurveTo(cpA1[0], cpA1[1], cpA2[0], cpA2[1], pMid[0], pMid[1]);
+    ctx.bezierCurveTo(cpB1[0], cpB1[1], cpB2[0], cpB2[1], pEnd[0], pEnd[1]);
+    ctx.strokeStyle = isEclipse ? `rgba(255, 101, 125, ${0.48 * alphaMult})` : `rgba(238, 54, 85, ${0.36 * alphaMult})`;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // Internal pleat ridge
+    ctx.beginPath();
+    ctx.moveTo(pStart[0] + wStart * 0.2, pStart[1] + wStart * 0.3);
+    ctx.bezierCurveTo(cpA1[0] + wBelly1 * 0.15, cpA1[1] + wBelly1 * 0.2, cpA2[0] + wBelly1 * 0.2, cpA2[1] + wBelly1 * 0.25, pMid[0], pMid[1] + wTwist * 0.3);
+    ctx.bezierCurveTo(cpB1[0] + wBelly2 * 0.15, cpB1[1] + wBelly2 * 0.2, cpB2[0] + wBelly2 * 0.2, cpB2[1] + wBelly2 * 0.25, pEnd[0] + wEnd * 0.1, pEnd[1] + wEnd * 0.3);
+    ctx.strokeStyle = isEclipse ? `rgba(255, 101, 125, ${0.32 * alphaMult})` : `rgba(238, 54, 85, ${0.22 * alphaMult})`;
+    ctx.lineWidth = 1.0;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
 export const SANHUA_THEME = {
   id: 'sanhua',
   nameKey: 'themeSanhua',
@@ -476,13 +641,14 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(255, 23, 68, 0.45)',
         specular: '#ffffff',
         finTip: '#e61e3c',
-        // Vertical gradient: Black -> Dark Red -> Crimson (0.62-0.96 smooth longitudinal progression)
+        // Vertical gradient: Wine-Obsidian -> Deep Crimson -> Rich Crimson (0.62-0.96 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(8, 3, 6, 0.96)'],     // BOTTOM: #080306 (near receptor)
-          [0.25, 'rgba(38, 8, 18, 0.93)'],   // MID-LOW: #260812 (25%)
-          [0.50, 'rgba(103, 18, 37, 0.86)'], // MID: #671225 (50%)
-          [0.75, 'rgba(197, 30, 62, 0.75)'], // MID-HIGH: #c51e3e (75%)
-          [1.00, 'rgba(143, 20, 46, 0.62)']  // TOP: #8f142e (free end at yTail)
+          [0.00, 'rgba(46, 8, 18, 0.96)'],     // BOTTOM: dark wine-obsidian (#2e0812)
+          [0.20, 'rgba(88, 14, 34, 0.94)'],   // MID-LOW: deep wine crimson (#580e22)
+          [0.45, 'rgba(148, 22, 48, 0.90)'],  // MID: rich crimson (#941630)
+          [0.70, 'rgba(205, 34, 68, 0.82)'],  // MID-HIGH: vivid crimson energy (#cd2244)
+          [0.90, 'rgba(180, 26, 56, 0.70)'],  // HIGH: crimson taper (#b41a38)
+          [1.00, 'rgba(140, 18, 42, 0.62)']   // TOP: free end at yTail (#8c122a, 62% opacity)
         ],
       };
     }
@@ -862,14 +1028,25 @@ export const SANHUA_THEME = {
     g.fillStyle = grad; g.fillRect(0, 0, tailWidth, 512);
     // Broad inner plane and narrow bevels give the body volume without a stripe.
     const cross = g.createLinearGradient(0, 0, tailWidth, 0);
-    cross.addColorStop(0, 'rgba(2,6,14,.30)');
-    cross.addColorStop(.055, pal.isObsidian ? 'rgba(214,48,78,.32)' : 'rgba(222,238,250,.16)');
-    cross.addColorStop(.13, 'rgba(2,6,14,.12)');
-    cross.addColorStop(.36, 'rgba(2,6,14,0)');
-    cross.addColorStop(.72, pal.isObsidian ? 'rgba(162,35,62,.10)' : 'rgba(220,234,249,.08)');
-    cross.addColorStop(.91, 'rgba(2,6,14,.10)');
-    cross.addColorStop(.97, pal.isObsidian ? 'rgba(214,48,78,.35)' : 'rgba(222,238,250,.17)');
-    cross.addColorStop(1, 'rgba(2,6,14,.24)');
+    if (pal.isObsidian) {
+      cross.addColorStop(0, 'rgba(255, 35, 75, 0.42)');    // Left rim reflection
+      cross.addColorStop(0.04, 'rgba(215, 25, 58, 0.25)'); // Left rim bevel
+      cross.addColorStop(0.12, 'rgba(10, 3, 6, 0.30)');    // Obsidian crevice/depth
+      cross.addColorStop(0.38, 'rgba(4, 1, 3, 0.10)');     // Subtle dark core
+      cross.addColorStop(0.68, 'rgba(175, 22, 52, 0.15)'); // Crimson refraction streak
+      cross.addColorStop(0.88, 'rgba(10, 3, 6, 0.30)');    // Obsidian crevice/depth
+      cross.addColorStop(0.96, 'rgba(215, 25, 58, 0.25)'); // Right rim bevel
+      cross.addColorStop(1, 'rgba(255, 35, 75, 0.42)');    // Right rim reflection
+    } else {
+      cross.addColorStop(0, 'rgba(2,6,14,.30)');
+      cross.addColorStop(.055, 'rgba(222,238,250,.16)');
+      cross.addColorStop(.13, 'rgba(2,6,14,.12)');
+      cross.addColorStop(.36, 'rgba(2,6,14,0)');
+      cross.addColorStop(.72, 'rgba(220,234,249,.08)');
+      cross.addColorStop(.91, 'rgba(2,6,14,.10)');
+      cross.addColorStop(.97, 'rgba(222,238,250,.17)');
+      cross.addColorStop(1, 'rgba(2,6,14,.24)');
+    }
     g.fillStyle=cross;g.fillRect(0,0,tailWidth,512);
 
     // 2. Receptor Head
@@ -938,6 +1115,7 @@ export const SANHUA_THEME = {
 
     const dead = isReleased || !!(tile?.failed || tile?.released);
     const paint = this._getHoldPaintCache(w, headH, currentCombo, dead, isLight);
+    const pal = paint.palette;
     const left = Math.round(x + (w - paint.tailWidth) / 2);
     const bodyW = paint.bodyW;
     const bevel = Math.min(7, length * .18, bodyW * .08);
@@ -945,6 +1123,15 @@ export const SANHUA_THEME = {
     polygon(ctx, [[left+bevel,yTail],[left+bodyW-bevel,yTail],
       [left+bodyW,yTail+bevel],[left+bodyW,bottom],
       [left,bottom],[left,yTail+bevel]]);
+    if (pal?.isObsidian && !dead) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(235, 25, 68, 0.45)';
+      ctx.shadowBlur = 5;
+      ctx.strokeStyle = 'rgba(225, 30, 70, 0.44)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.clip();
     ctx.drawImage(paint.strip,0,0,bodyW,512,left,yTail,bodyW,length);
     ctx.restore();
@@ -1079,10 +1266,16 @@ export const SANHUA_THEME = {
     // Layer 0: Background mirror shards (behind tree limbs)
     for(let i=0;i<8;i++) drawGlassPlate(ctx,env.glass[i],now,w,h,blend>.5,0.85);
 
+    // Flowing Red Veil Layer 0: Distant fold & upper sweep behind tree
+    drawRedVeil(ctx, now, w, h, blend, 0);
+
     // Tree limbs (normal and eclipse)
     ctx.globalAlpha=sceneAlpha*(1-blend);ctx.drawImage(env.normal,0,0);
     if(blend>.001) {ctx.globalAlpha=sceneAlpha*blend;ctx.drawImage(env.eclipse,0,0);}
     ctx.globalAlpha=sceneAlpha;
+
+    // Flowing Red Veil Layer 1: Forward billowing drapery in front of tree, behind glass shards
+    drawRedVeil(ctx, now, w, h, blend, 1);
 
     // Layer 1: Midground mirror shards (around tree)
     for(let i=8;i<18;i++) drawGlassPlate(ctx,env.glass[i],now,w,h,blend>.5,1.0);

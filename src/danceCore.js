@@ -52,7 +52,7 @@ import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB }
 import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, fetchYouTubeTrackMetadata, fetchMusicTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=77.0";
 import { getCurrentUser, loginUser, registerUser, logoutUser, onAuthStateChanged, updateUserUsername, updateUserPassword, deleteCurrentUserAccount } from "./services/auth.js?v=40.0";
 import { encryptGameStats } from "./services/crypto.js?v=39.0";
-import * as FieldThemes from "./game/fieldThemes.js?v=83.0";
+import * as FieldThemes from "./game/fieldThemes.js?v=97.0";
 import { pixiRenderer } from "./game/render/PixiRenderer.js?v=77.0";
 
 // ==========================================
