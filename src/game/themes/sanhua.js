@@ -102,7 +102,7 @@ function getRealisticSakuraStamps() {
   if (_realisticSakuraStamps) return _realisticSakuraStamps;
   if (typeof document === 'undefined') return null;
 
-  // Single small falling petal (12x12)
+  // Single small falling petal (12x12) for wind particles
   function makeSmallPetalStamp() {
     const c = document.createElement('canvas');
     c.width = 12; c.height = 12;
@@ -111,14 +111,14 @@ function getRealisticSakuraStamps() {
     g.save();
     g.translate(6, 6);
     g.beginPath();
-    g.moveTo(0, 4);
+    g.moveTo(0, 4.5);
     g.bezierCurveTo(-2.5, 2.5, -4, 0, -3.5, -2.5);
-    g.quadraticCurveTo(-1, -4.5, 0, -3.5); // notch
+    g.quadraticCurveTo(-1, -4.5, 0, -3.5); // characteristic sakura petal notch
     g.quadraticCurveTo(1, -4.5, 3.5, -2.5);
-    g.bezierCurveTo(4, 0, 2.5, 2.5, 0, 4);
+    g.bezierCurveTo(4, 0, 2.5, 2.5, 0, 4.5);
     g.closePath();
 
-    const grad = g.createLinearGradient(0, 4, 0, -4);
+    const grad = g.createLinearGradient(0, 4.5, 0, -4.5);
     grad.addColorStop(0, '#e11d48');
     grad.addColorStop(0.35, '#f472b6');
     grad.addColorStop(0.75, '#fbcfe8');
@@ -130,151 +130,152 @@ function getRealisticSakuraStamps() {
     return c;
   }
 
-  // Fluffy blossom cluster stamp (180x180) - Dense, organic texture matching real Sakura photo
-  function makeFluffyClusterStamp(seed = 1) {
-    const c = document.createElement('canvas');
-    c.width = 180; c.height = 180;
-    const g = c.getContext('2d');
-    const cx = 90, cy = 90;
+  // Draw a distinct, realistically shaped 5-petal sakura flower with notched petals
+  function drawSakuraFlower(g, fx, fy, flowerRadius, rot, petalColor, centerColor) {
+    g.save();
+    g.translate(fx, fy);
+    g.rotate(rot);
 
-    // Ambient soft blossom glow
-    const aura = g.createRadialGradient(cx, cy, 8, cx, cy, 86);
-    aura.addColorStop(0, 'rgba(244, 114, 182, 0.40)');
-    aura.addColorStop(0.5, 'rgba(251, 113, 133, 0.16)');
-    aura.addColorStop(1, 'transparent');
-    g.fillStyle = aura;
-    g.beginPath();
-    g.arc(cx, cy, 86, 0, Math.PI * 2);
-    g.fill();
-
-    let s = seed * 9973;
-    function rnd() {
-      s = (s * 16807) % 2147483647;
-      return (s - 1) / 2147483646;
-    }
-
-    // Soft-diffused base lobes for depth and volume
-    const baseLobes = [
-      { x: 0, y: 8, r: 42, col: 'rgba(244, 114, 182, 0.70)' },
-      { x: -28, y: -8, r: 36, col: 'rgba(251, 113, 133, 0.65)' },
-      { x: 26, y: -10, r: 38, col: 'rgba(251, 113, 133, 0.65)' },
-      { x: -14, y: 22, r: 34, col: 'rgba(225, 29, 72, 0.60)' },
-      { x: 18, y: 20, r: 32, col: 'rgba(225, 29, 72, 0.60)' },
-      { x: 0, y: -26, r: 36, col: 'rgba(253, 164, 175, 0.75)' }
-    ];
-    for (let i = 0; i < baseLobes.length; i++) {
-      const bl = baseLobes[i];
-      const bgd = g.createRadialGradient(cx + bl.x, cy + bl.y - 4, 3, cx + bl.x, cy + bl.y, bl.r);
-      bgd.addColorStop(0, bl.col);
-      bgd.addColorStop(0.85, bl.col);
-      bgd.addColorStop(1, 'transparent');
-      g.fillStyle = bgd;
-      g.beginPath();
-      g.arc(cx + bl.x, cy + bl.y, bl.r, 0, Math.PI * 2);
-      g.fill();
-    }
-
-    // Individual textured petals on top
-    const numPetals = 160;
-    for (let i = 0; i < numPetals; i++) {
-      const ang = rnd() * Math.PI * 2;
-      const dist = Math.pow(rnd(), 0.7) * 70;
-      const px = cx + Math.cos(ang) * dist;
-      const py = cy + Math.sin(ang) * dist * 0.85;
-
-      const petalL = 4.5 + rnd() * 5.5;
-      const petalW = 2.8 + rnd() * 3.5;
-      const rot = rnd() * Math.PI * 2;
-
+    // 5 notched petals radiating outward
+    for (let p = 0; p < 5; p++) {
+      const ang = (p * Math.PI * 2) / 5;
       g.save();
-      g.translate(px, py);
-      g.rotate(rot);
+      g.rotate(ang);
 
-      const isShadow = (py > cy + 12) && (rnd() > 0.4);
-      const isHighlight = (py < cy - 8) && (rnd() > 0.4);
+      const pl = flowerRadius;
+      const pw = flowerRadius * 0.52;
 
-      let pCol;
-      if (isShadow) {
-        pCol = rnd() > 0.5 ? 'rgba(225, 29, 72, 0.65)' : 'rgba(244, 63, 94, 0.70)';
-      } else if (isHighlight) {
-        pCol = rnd() > 0.5 ? 'rgba(255, 241, 242, 0.85)' : 'rgba(253, 226, 233, 0.88)';
-      } else {
-        const tone = rnd();
-        if (tone < 0.4) pCol = 'rgba(244, 114, 182, 0.82)';
-        else if (tone < 0.75) pCol = 'rgba(251, 113, 133, 0.80)';
-        else pCol = 'rgba(253, 164, 175, 0.85)';
-      }
-
-      g.fillStyle = pCol;
       g.beginPath();
-      g.ellipse(0, 0, petalW, petalL, 0, 0, Math.PI * 2);
+      g.moveTo(0, 0);
+      g.bezierCurveTo(-pw, -pl * 0.45, -pw * 0.9, -pl * 0.88, -pw * 0.35, -pl);
+      g.quadraticCurveTo(0, -pl * 0.82, pw * 0.35, -pl); // petal notch
+      g.bezierCurveTo(pw * 0.9, -pl * 0.88, pw, -pl * 0.45, 0, 0);
+      g.closePath();
+
+      g.fillStyle = petalColor;
       g.fill();
 
-      // Delicate stamen center on a few focal blossoms
-      if (rnd() > 0.82) {
-        g.fillStyle = 'rgba(136, 19, 55, 0.75)';
-        g.beginPath();
-        g.arc(0, 0, 1.2, 0, Math.PI * 2);
-        g.fill();
-        g.fillStyle = 'rgba(253, 224, 71, 0.85)';
-        g.beginPath();
-        g.arc(1.2, -1.0, 0.7, 0, Math.PI * 2);
-        g.fill();
-      }
+      // Delicate petal centerline vein
+      g.strokeStyle = 'rgba(244, 114, 182, 0.40)';
+      g.lineWidth = 0.6;
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.lineTo(0, -pl * 0.65);
+      g.stroke();
 
       g.restore();
     }
 
-    return c;
+    // Flower central pistils/stamens
+    g.fillStyle = centerColor || '#be123c';
+    g.beginPath();
+    g.arc(0, 0, Math.max(1.0, flowerRadius * 0.22), 0, Math.PI * 2);
+    g.fill();
+
+    g.fillStyle = '#fde047'; // golden pollen dots
+    for (let d = 0; d < 4; d++) {
+      const dAng = (d * Math.PI) / 2 + 0.3;
+      const dDist = flowerRadius * 0.26;
+      g.beginPath();
+      g.arc(Math.cos(dAng) * dDist, Math.sin(dAng) * dDist, 0.65, 0, Math.PI * 2);
+      g.fill();
+    }
+
+    g.restore();
   }
 
-  // Small blossom spray for outer weeping twigs (110x110)
-  function makeSmallSprayStamp(seed = 2) {
+  // Authentic organic blossom spray stamp (branch silhouette + distinct 5-petal flower clusters)
+  // No spherical blobs — natural irregular branchlet contour with visible dark wood twigs!
+  function makeAuthenticBlossomSpray(seed = 1, type = 'bough') {
     const c = document.createElement('canvas');
-    c.width = 110; c.height = 110;
+    c.width = 170; c.height = 140;
     const g = c.getContext('2d');
-    const cx = 55, cy = 55;
+    const cx = 85, cy = 70;
 
-    let s = seed * 7919;
+    let s = seed * 8191;
     function rnd() {
       s = (s * 16807) % 2147483647;
       return (s - 1) / 2147483646;
     }
 
-    const bgd = g.createRadialGradient(cx, cy - 2, 4, cx, cy, 45);
-    bgd.addColorStop(0, 'rgba(244, 114, 182, 0.75)');
-    bgd.addColorStop(0.7, 'rgba(251, 113, 133, 0.65)');
-    bgd.addColorStop(1, 'transparent');
-    g.fillStyle = bgd;
+    // 1. Supporting natural twig skeleton (dark charcoal wood)
+    g.strokeStyle = '#180f15';
+    g.lineWidth = 2.4;
+    g.lineCap = 'round';
     g.beginPath();
-    g.arc(cx, cy, 45, 0, Math.PI * 2);
-    g.fill();
+    if (type === 'weeping') {
+      g.moveTo(cx - 35, cy - 35);
+      g.quadraticCurveTo(cx - 10, cy - 10, cx + 5, cy + 20);
+      g.quadraticCurveTo(cx + 15, cy + 35, cx + 25, cy + 50);
+      g.moveTo(cx - 5, cy + 5);
+      g.quadraticCurveTo(cx - 20, cy + 25, cx - 28, cy + 42);
+    } else if (type === 'crown') {
+      g.moveTo(cx, cy + 40);
+      g.quadraticCurveTo(cx - 5, cy + 10, cx - 18, cy - 25);
+      g.moveTo(cx - 4, cy + 15);
+      g.quadraticCurveTo(cx + 12, cy - 5, cx + 24, cy - 30);
+    } else {
+      // standard spreading bough
+      g.moveTo(cx - 50, cy + 15);
+      g.quadraticCurveTo(cx - 15, cy + 5, cx + 20, cy - 8);
+      g.quadraticCurveTo(cx + 40, cy - 15, cx + 55, cy - 22);
+      g.moveTo(cx - 10, cy + 6);
+      g.quadraticCurveTo(cx + 5, cy + 22, cx + 25, cy + 30);
+      g.moveTo(cx + 15, cy - 6);
+      g.quadraticCurveTo(cx + 25, cy - 26, cx + 38, cy - 36);
+    }
+    g.stroke();
 
-    const numPetals = 85;
-    for (let i = 0; i < numPetals; i++) {
-      const ang = rnd() * Math.PI * 2;
-      const dist = Math.pow(rnd(), 0.65) * 44;
-      const px = cx + Math.cos(ang) * dist;
-      const py = cy + Math.sin(ang) * dist;
+    // Secondary wood grain highlight
+    g.strokeStyle = '#2d1b26';
+    g.lineWidth = 1.2;
+    g.stroke();
 
-      const petalL = 4.0 + rnd() * 4.5;
-      const petalW = 2.4 + rnd() * 2.8;
-      const rot = rnd() * Math.PI * 2;
+    // 2. Clusters of distinct, realistically shaped 5-petal sakura flowers
+    const numFlowers = (type === 'weeping') ? 34 : (type === 'crown' ? 42 : 48);
+    const flowerNodes = [];
 
-      g.save();
-      g.translate(px, py);
-      g.rotate(rot);
+    // Distribute flower nodes along the twig path with organic clustering
+    for (let f = 0; f < numFlowers; f++) {
+      let nx, ny;
+      if (type === 'weeping') {
+        const prog = rnd();
+        nx = cx - 25 + prog * 45 + (rnd() - 0.5) * 28;
+        ny = cy - 30 + prog * 70 + (rnd() - 0.5) * 22;
+      } else if (type === 'crown') {
+        const ang = rnd() * Math.PI * 1.8 + 0.2;
+        const rad = Math.pow(rnd(), 0.65) * 48;
+        nx = cx + Math.cos(ang) * rad;
+        ny = cy - 8 + Math.sin(ang) * rad * 0.85;
+      } else {
+        const prog = rnd();
+        nx = cx - 45 + prog * 95 + (rnd() - 0.5) * 26;
+        ny = cy + (rnd() - 0.5) * 38 - prog * 16;
+      }
+      flowerNodes.push({ x: nx, y: ny, seed: rnd() });
+    }
 
-      const tone = rnd();
-      let pCol = (tone < 0.4) ? 'rgba(244, 114, 182, 0.85)'
-      : (tone < 0.75) ? 'rgba(253, 164, 175, 0.88)'
-      : 'rgba(255, 241, 242, 0.90)';
+    // Sort by Y for natural depth layering
+    flowerNodes.sort((a, b) => a.y - b.y);
 
-      g.fillStyle = pCol;
-      g.beginPath();
-      g.ellipse(0, 0, petalW, petalL, 0, 0, Math.PI * 2);
-      g.fill();
-      g.restore();
+    for (let i = 0; i < flowerNodes.length; i++) {
+      const fn = flowerNodes[i];
+      const flwR = 5.0 + fn.seed * 4.2; // 5px to 9.2px diameter blossoms
+      const flwRot = fn.seed * Math.PI * 2;
+
+      // Color variation: tender white-pink highlights to rich sakura rose
+      let pCol;
+      if (fn.seed > 0.72) {
+        pCol = 'rgba(255, 245, 247, 0.95)'; // bright specular blossom highlight
+      } else if (fn.seed > 0.40) {
+        pCol = 'rgba(251, 207, 232, 0.92)'; // soft sakura blush
+      } else if (fn.seed > 0.15) {
+        pCol = 'rgba(244, 114, 182, 0.90)'; // warm cherry pink
+      } else {
+        pCol = 'rgba(225, 29, 72, 0.85)';  // carmine bud
+      }
+
+      drawSakuraFlower(g, fn.x, fn.y, flwR, flwRot, pCol, '#9f1239');
     }
 
     return c;
@@ -282,11 +283,11 @@ function getRealisticSakuraStamps() {
 
   _realisticSakuraStamps = {
     petal: makeSmallPetalStamp(),
-    clusterA: makeFluffyClusterStamp(1),
-    clusterB: makeFluffyClusterStamp(2),
-    clusterC: makeFluffyClusterStamp(3),
-    sprayA: makeSmallSprayStamp(4),
-    sprayB: makeSmallSprayStamp(5)
+    clusterA: makeAuthenticBlossomSpray(1, 'bough'),
+    clusterB: makeAuthenticBlossomSpray(2, 'bough'),
+    clusterC: makeAuthenticBlossomSpray(3, 'crown'),
+    sprayA: makeAuthenticBlossomSpray(4, 'weeping'),
+    sprayB: makeAuthenticBlossomSpray(5, 'weeping')
   };
   return _realisticSakuraStamps;
 }
@@ -296,7 +297,6 @@ const FLAME_COLORS = ['#38bdf8', '#818cf8', '#f472b6', '#fb923c', '#c084fc', '#f
 const FLAME_MULTIPLIERS = [1, 2, 4, 6, 8, 10];
 let flameStamps = null;
 let flameMotionQuery;
-const spiralPetalPool = Array.from({ length: 10 }, (_, p) => ({ px: 0, py: 0, z: 0, theta: 0, p }));
 
 function comboIndex(combo) {
   return combo >= 800 ? 5 : combo >= 400 ? 4 : combo >= 200 ? 3 : combo >= 100 ? 2 : combo >= 50 ? 1 : 0;
@@ -712,135 +712,184 @@ export const SANHUA_THEME = {
     const pal = this._getPalette(tier, false);
     const cx = x + w / 2;
     const cy = yTop + h / 2;
-    const r = Math.min(6, h * 0.22);
+    const r = Math.min(5, Math.max(2, Math.round(h * 0.16)));
 
     ctx.save();
 
-    // 1. Draw pre-rendered high-res rectangular sprite if available
-    const sprite = this._getTapSprite(tier, false);
-    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-      // Subtle background ice aura
-      const glowGrad = ctx.createRadialGradient(cx, cy, w * 0.1, cx, cy, w * 0.65);
-      glowGrad.addColorStop(0, pal.laserGlow || 'rgba(56, 189, 248, 0.40)');
-      glowGrad.addColorStop(0.7, 'rgba(56, 189, 248, 0.10)');
-      glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = glowGrad;
-      ctx.fillRect(x - 10, yTop - 10, w + 20, h + 20);
-
-      // Draw rectangular sprite
-      ctx.drawImage(sprite, Math.round(x - 5), Math.round(yTop - 5), Math.round(w + 10), Math.round(h + 30));
-
-      // Central specular diamond pulse
-      ctx.fillStyle = pal.core || '#ffffff';
-      ctx.beginPath();
-      ctx.arc(cx, cy, Math.max(1.8, w * 0.035), 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-      return true;
-    }
-
-    // Procedural Fallback (Pixel-perfect vector canvas rendering):
-    // 1. Base Crimson Lacquer Gradient
+    // Base background gradient matching combo tier palette
     const bg = ctx.createLinearGradient(x, yTop, x, yTop + h);
     if (isLight) {
-      bg.addColorStop(0, '#fff1f2');
-      bg.addColorStop(0.5, '#fecdd3');
-      bg.addColorStop(1, '#fda4af');
+      bg.addColorStop(0, '#fdf2f8');
+      bg.addColorStop(0.5, '#fce7f3');
+      bg.addColorStop(1, '#fbcfe8');
     } else {
-      bg.addColorStop(0, '#b91c1c');
-      bg.addColorStop(0.45, '#881337');
-      bg.addColorStop(1, '#1e040a');
+      bg.addColorStop(0, pal.bgTop || '#07253d');
+      bg.addColorStop(0.5, pal.bgMid || '#041524');
+      bg.addColorStop(1, pal.bgBot || '#020a12');
     }
+
+    // Clip to exact note bounds (standard note sizing without arbitrary reductions)
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, yTop, w, h, r);
+    else ctx.rect(x, yTop, w, h);
     ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.clip();
 
-    if (ctx.roundRect) {
+    // --------------------------------------------------------------------------
+    // SHATTERED GLASS / FRACTURED CRYSTAL SHARDS
+    // Normalized shard vertices tessellating the note surface with faceted planes
+    // --------------------------------------------------------------------------
+    const V = [
+      [0.00, 0.00], // 0: Top-left corner
+      [0.24, 0.00], // 1: Top edge 1
+      [0.54, 0.00], // 2: Top edge 2
+      [0.80, 0.00], // 3: Top edge 3
+      [1.00, 0.00], // 4: Top-right corner
+      [1.00, 0.44], // 5: Right edge 1
+      [1.00, 0.76], // 6: Right edge 2
+      [1.00, 1.00], // 7: Bottom-right corner
+      [0.76, 1.00], // 8: Bottom edge 1
+      [0.50, 1.00], // 9: Bottom edge 2
+      [0.22, 1.00], // 10: Bottom edge 3
+      [0.00, 1.00], // 11: Bottom-left corner
+      [0.00, 0.66], // 12: Left edge 1
+      [0.00, 0.32], // 13: Left edge 2
+      // Internal fracture junction vertices (sharp geometric cleavage nodes)
+      [0.34, 0.38], // 14: Mid-left fracture node
+      [0.62, 0.32], // 15: Upper-right fracture node
+      [0.48, 0.66], // 16: Center-lower fracture node
+      [0.78, 0.58]  // 17: Right fracture node
+    ];
+
+    const pt = (idx) => [x + V[idx][0] * w, yTop + V[idx][1] * h];
+
+    // Polygon shard definitions
+    const shards = [
+      { pts: [0, 1, 14, 13],         tone: 0.28, sheen: true  }, // Shard 0: Top-left
+      { pts: [1, 2, 15, 14],         tone: 0.16, sheen: true  }, // Shard 1: Top-mid
+      { pts: [2, 3, 4, 5, 15],       tone: 0.22, sheen: true  }, // Shard 2: Top-right
+      { pts: [13, 14, 16, 12],       tone: 0.08, sheen: false }, // Shard 3: Mid-left
+      { pts: [12, 16, 10, 11],       tone: 0.05, sheen: false }, // Shard 4: Bottom-left
+      { pts: [14, 15, 17, 16],       tone: 0.35, sheen: true  }, // Shard 5: Center core shard
+      { pts: [15, 5, 6, 17],         tone: 0.18, sheen: false }, // Shard 6: Right flank
+      { pts: [16, 17, 6, 7, 8],      tone: 0.10, sheen: false }, // Shard 7: Bottom-right
+      { pts: [10, 16, 8, 9],         tone: 0.14, sheen: false }  // Shard 8: Bottom-mid
+    ];
+
+    // Draw individual faceted shards
+    for (let i = 0; i < shards.length; i++) {
+      const sh = shards[i];
+      const p0 = pt(sh.pts[0]);
       ctx.beginPath();
-      ctx.roundRect(x + 2, yTop + 2, w - 4, h - 4, r);
+      ctx.moveTo(p0[0], p0[1]);
+      for (let j = 1; j < sh.pts.length; j++) {
+        const pj = pt(sh.pts[j]);
+        ctx.lineTo(pj[0], pj[1]);
+      }
+      ctx.closePath();
+
+      // Shard fill: dynamic refraction gradient adapting to tier palette
+      if (isLight) {
+        ctx.fillStyle = sh.sheen ? 'rgba(255, 255, 255, 0.55)' : `rgba(244, 114, 182, ${0.12 + sh.tone * 0.3})`;
+      } else if (tier >= 800) {
+        // T5: Jet-black obsidian shards with blood-crimson refractive facets
+        ctx.fillStyle = sh.sheen ? 'rgba(255, 23, 68, 0.28)' : (sh.tone > 0.15 ? 'rgba(185, 28, 28, 0.22)' : 'rgba(15, 2, 5, 0.55)');
+      } else if (tier >= 400) {
+        // T4: Amethyst & cyan refractive shards
+        ctx.fillStyle = sh.sheen ? 'rgba(232, 121, 249, 0.28)' : (sh.tone > 0.15 ? 'rgba(168, 85, 247, 0.22)' : 'rgba(15, 12, 40, 0.55)');
+      } else if (tier >= 200) {
+        // T3: Crystal azure & amber shards
+        ctx.fillStyle = sh.sheen ? 'rgba(0, 245, 255, 0.25)' : (sh.tone > 0.15 ? 'rgba(245, 158, 11, 0.20)' : 'rgba(8, 28, 55, 0.50)');
+      } else if (tier >= 100) {
+        // T2: Glacio cyan & sakura rose shards
+        ctx.fillStyle = sh.sheen ? 'rgba(253, 164, 175, 0.25)' : (sh.tone > 0.15 ? 'rgba(56, 189, 248, 0.22)' : 'rgba(7, 24, 45, 0.50)');
+      } else {
+        // T0-T1: Crystalline glacio ice shards
+        ctx.fillStyle = sh.sheen ? 'rgba(186, 230, 253, 0.28)' : (sh.tone > 0.15 ? 'rgba(56, 189, 248, 0.20)' : 'rgba(5, 20, 36, 0.50)');
+      }
       ctx.fill();
-    } else {
-      ctx.fillRect(x + 2, yTop + 2, w - 4, h - 4);
+
+      // Specular highlight on upper/sheen facets
+      if (sh.sheen) {
+        ctx.strokeStyle = isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.35)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
     }
 
-    // 2. Glass specular gloss on top half
-    const glossH = Math.max(4, Math.round(h * 0.40));
-    const glossGrad = ctx.createLinearGradient(x, yTop + 3, x, yTop + 3 + glossH);
-    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
-    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.04)');
-    ctx.fillStyle = glossGrad;
-    if (ctx.roundRect) {
-      ctx.beginPath();
-      ctx.roundRect(x + 4, yTop + 3, w - 8, glossH, Math.max(2, r - 2));
-      ctx.fill();
-    } else {
-      ctx.fillRect(x + 4, yTop + 3, w - 8, glossH);
+    // Fracture seams: razor-sharp luminous cleavage lines between shards
+    ctx.strokeStyle = pal.border || '#38bdf8';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    const cleavageLines = [
+      [14, 1], [14, 13], [14, 15], [14, 16],
+      [15, 2], [15, 5], [15, 17],
+      [16, 12], [16, 10], [16, 8], [16, 17],
+      [17, 6]
+    ];
+    for (let k = 0; k < cleavageLines.length; k++) {
+      const pA = pt(cleavageLines[k][0]);
+      const pB = pt(cleavageLines[k][1]);
+      ctx.moveTo(pA[0], pA[1]);
+      ctx.lineTo(pB[0], pB[1]);
     }
+    ctx.stroke();
 
-    // 3. Inner Gold Trim
-    ctx.strokeStyle = pal.goldTrim || 'rgba(245, 158, 11, 0.65)';
+    // Cleavage subtle glow / prismatic refraction
+    ctx.strokeStyle = pal.laserGlow || 'rgba(56, 189, 248, 0.55)';
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+
+    // Central fracture convergence glint (star spark at primary fracture node 14 and 15)
+    const pCenter = pt(14);
+    const pCenter2 = pt(15);
+    const starColor = pal.core || '#ffffff';
+
+    // Primary sparkle
+    ctx.fillStyle = starColor;
+    ctx.beginPath();
+    ctx.arc(pCenter[0], pCenter[1], 1.8, 0, Math.PI * 2);
+    ctx.arc(pCenter2[0], pCenter2[1], 1.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Micro 4-point glass glint cross at primary node
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
     ctx.lineWidth = 1.0;
-    if (ctx.roundRect) {
-      ctx.beginPath();
-      ctx.roundRect(x + 4, yTop + 4, w - 8, h - 8, Math.max(2, r - 2));
-      ctx.stroke();
-    } else {
-      ctx.strokeRect(x + 4, yTop + 4, w - 8, h - 8);
-    }
-
-    // 4. Outer Glacio Ice Border
-    ctx.strokeStyle = pal.border;
-    ctx.lineWidth = 1.6;
-    if (ctx.roundRect) {
-      ctx.beginPath();
-      ctx.roundRect(x + 2, yTop + 2, w - 4, h - 4, r);
-      ctx.stroke();
-    } else {
-      ctx.strokeRect(x + 2, yTop + 2, w - 4, h - 4);
-    }
-
-    // 5. Center Diamond Star Crest (matching Sanhua's Katana)
-    const dw = Math.max(7, Math.round(w * 0.09));
-    const dh = Math.max(9, Math.round(h * 0.26));
-    // Outer black-ruby diamond backing
-    ctx.fillStyle = '#20040a';
     ctx.beginPath();
-    ctx.moveTo(cx, cy - dh);
-    ctx.lineTo(cx + dw, cy);
-    ctx.lineTo(cx, cy + dh);
-    ctx.lineTo(cx - dw, cy);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = pal.crestCol || '#f43f5e';
-    ctx.lineWidth = 1.2;
+    ctx.moveTo(pCenter[0] - 5, pCenter[1]); ctx.lineTo(pCenter[0] + 5, pCenter[1]);
+    ctx.moveTo(pCenter[0], pCenter[1] - 5); ctx.lineTo(pCenter[0], pCenter[1] + 5);
     ctx.stroke();
 
-    // Inner glowing ruby diamond
-    ctx.fillStyle = pal.crestCol || '#e11d48';
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - dh * 0.68);
-    ctx.lineTo(cx + dw * 0.68, cy);
-    ctx.lineTo(cx, cy + dh * 0.68);
-    ctx.lineTo(cx - dw * 0.68, cy);
-    ctx.closePath();
-    ctx.fill();
+    // Top glass bevel sheen
+    const glossH = Math.max(4, Math.round(h * 0.38));
+    const gloss = ctx.createLinearGradient(x, yTop, x, yTop + glossH);
+    gloss.addColorStop(0, 'rgba(255, 255, 255, 0.32)');
+    gloss.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+    ctx.fillStyle = gloss;
+    ctx.fillRect(x, yTop, w, glossH);
 
-    // 4-pointed specular white cross star
-    const starX = Math.max(10, Math.round(w * 0.16));
-    const starY = Math.max(5, Math.round(h * 0.16));
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(cx - starX, cy); ctx.lineTo(cx + starX, cy);
-    ctx.moveTo(cx, cy - starY); ctx.lineTo(cx, cy + starY);
-    ctx.stroke();
-
-    // Central star glint
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-
+    // End clipping
     ctx.restore();
+
+    // Outer perimeter border: sharp, crisp rounded rectangle strictly matching w and h
+    ctx.save();
+    ctx.strokeStyle = pal.border || '#38bdf8';
+    ctx.lineWidth = tier >= 800 ? 1.8 : 1.5;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, yTop, w, h, r);
+    else ctx.rect(x, yTop, w, h);
+    ctx.stroke();
+
+    // Outer subtle border glow
+    if (tier >= 100) {
+      ctx.strokeStyle = pal.laserGlow || 'rgba(56, 189, 248, 0.4)';
+      ctx.lineWidth = 2.8;
+      ctx.globalAlpha = 0.45;
+      ctx.stroke();
+    }
+    ctx.restore();
+
     return true;
   },
 
@@ -904,10 +953,13 @@ export const SANHUA_THEME = {
       // 2. СНАЧАЛА рисуем текстуру ножен
       ctx.drawImage(sprite, scabX, scabY, scabW, scabH);
 
-      // 3. ПОТОМ рисуем пламя ПОВЕРХ ножен
+      // 3. Scabbard flame renders strictly behind blade in drawHoldBody;
+      // render here only if drawHoldBody did not already draw it (e.g. no body length)
       if (!dead) {
-        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-        drawScabbardFlame(ctx, cx, scabY + scabH + 80, scabW * 1.7, scabH, liveCombo, holding, now);
+        const nowMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (!tile || !tile._flameDrawn || (nowMs - tile._flameDrawn > 32)) {
+          drawScabbardFlame(ctx, cx, scabY + scabH + 80, scabW * 1.7, scabH, liveCombo, holding, nowMs);
+        }
       }
 
       // 4. Active holding & combo pulse on the scabbard's center ruby diamond
@@ -972,11 +1024,8 @@ export const SANHUA_THEME = {
 
   // ==========================================================================
   // 3. HOLD NOTE TAIL — KATANA HILT (Рукоятка катаны на конце хвоста)
-  // User Requirement: "на файле sanhua_hilt_tail_t5.png ты почему то на кронке нарисовал два рога , их там быть не должно"
   // Features:
-  // - Clean tsuka handle with blue criss-cross wrapping and gold pommel (NO HORNS!)
-  // - Radiant crimson Resonator Eye with white center and cross flare (+)
-  // - Elegant circular/oval tsuba collar with soft horizontal pink halo
+  // - Clean tsuka handle texture without foreign procedural lines crossing it
   // - Zero-gap seamless connection into the blade steel at yTail
   // ==========================================================================
   drawHoldTail(ctx, x, yTail, w, headH, tile, isLight, now, tailH = 0, currentCombo = 0, actualYHeadTop = null, nextTileDist = 9999) {
@@ -1016,94 +1065,10 @@ export const SANHUA_THEME = {
 
     const sprite = this._getHiltSprite(tier, dead);
     if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-      // 1. Guard radiant halo aura — color and intensity scales with tier
-      if (!dead) {
-        const guardGlowY = hiltY + Math.round(335 * hiltScale);
-        // Tier-specific guard glow color
-        const guardRGB = tier >= 800 ? '255, 23, 68'  :  // vivid crimson-red (Black & Red)
-        tier >= 400 ? '168, 85, 247' :  // electric purple
-        tier >= 200 ? '251, 113, 133' : // coral rose
-        tier >= 100 ? '244, 63, 94'  :  // sakura pink
-        tier >= 50  ? '236, 72, 153' :  // fuchsia
-        '244, 63, 94';    // default pink
-      // Alpha scales with tier: subtle at T0, grows at T4+
-      const guardAlphaInner = tier >= 400 ? (holding ? 0.72 : 0.45) :
-      tier >= 200 ? (holding ? 0.62 : 0.38) :
-      (holding ? 0.55 : 0.28);
-      const guardGrad = ctx.createRadialGradient(cx, guardGlowY, bladeW * 0.25, cx, guardGlowY, bladeW * (tier >= 400 ? 2.2 : 1.8));
-      guardGrad.addColorStop(0,   `rgba(${guardRGB}, ${guardAlphaInner})`);
-      guardGrad.addColorStop(0.7, `rgba(${guardRGB}, 0.06)`);
-      guardGrad.addColorStop(1,   'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = guardGrad;
-      ctx.fillRect(cx - bladeW * 2.2, guardGlowY - bladeW * 1.5, bladeW * 4.4, bladeW * 3.0);
-
-      // Sweeping glowing pink crescent ribbons & floating sakura blossoms curling around the tsuba collar (matching reference image)
-      const ribbonY = hiltY + Math.round(330 * hiltScale);
-      const ribbonSpread = bladeW * 2.2;
-      const ribbonPulse = Math.sin((now || 0) * 0.004) * 0.15 + 0.85;
-
-      // Left curving pink ribbon
-      ctx.strokeStyle = (tier >= 800) ? 'rgba(255, 23, 68, 0.70)' : 'rgba(244, 63, 94, 0.70)';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(cx - bladeW * 0.5, ribbonY);
-      ctx.quadraticCurveTo(cx - ribbonSpread * 0.65, ribbonY - 7 * ribbonPulse, cx - ribbonSpread, ribbonY - 2);
-      ctx.stroke();
-
-      // Right curving pink ribbon
-      ctx.beginPath();
-      ctx.moveTo(cx + bladeW * 0.5, ribbonY);
-      ctx.quadraticCurveTo(cx + ribbonSpread * 0.65, ribbonY - 7 * ribbonPulse, cx + ribbonSpread, ribbonY - 2);
-      ctx.stroke();
-
-      // Delicate sakura petal accents at ribbon tips
-      ctx.fillStyle = '#f43f5e';
-      ctx.beginPath();
-      ctx.arc(cx - ribbonSpread - 2, ribbonY - 3, 2.2, 0, Math.PI * 2);
-      ctx.arc(cx + ribbonSpread + 2, ribbonY - 3, 2.2, 0, Math.PI * 2);
-      ctx.fill();
-      }
-
-      // 2. Draw photorealistic 3D Katana Hilt (Prismatic, clean without horns)
+      // 1. Draw clean photorealistic 3D Katana Hilt texture (no procedural ribbons, red lines, or laser core)
       ctx.drawImage(sprite, hiltX, hiltY, hiltW, hiltH);
 
-      // 3. Glowing Resonator Eye on the tsuka handle (pulse animation + cross flare)
-      // Color and size scale with tier
-      if (!dead) {
-        const eyeY = hiltY + Math.round(155 * hiltScale);
-        const eyePulse = Math.sin((now || 0) * 0.006) * 0.25 + 0.75;
-        // Eye radius grows slightly at higher tiers
-        const eyeR = Math.max(2.0, bladeW * (tier >= 400 ? 0.17 : 0.14) * eyePulse);
-        // Eye color per tier
-        const eyeCol = tier >= 800 ? '#ff1744' :
-        tier >= 400 ? '#a855f7' :
-        tier >= 200 ? '#f59e0b' :
-        tier >= 100 ? '#f43f5e' :
-        tier >= 50  ? '#e11d48' : '#ff1744';
-
-        // Radiant eye core
-        ctx.fillStyle = eyeCol;
-        ctx.beginPath();
-        ctx.arc(cx, eyeY, eyeR, 0, Math.PI * 2);
-        ctx.fill();
-
-        // White specular hot center
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(cx, eyeY, eyeR * 0.45, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Horizontal and vertical cross lens flare beams (+)
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
-        ctx.lineWidth = 1.2;
-        const flareLen = bladeW * (tier >= 400 ? 0.90 : 0.75) * eyePulse;
-        ctx.beginPath();
-        ctx.moveTo(cx - flareLen, eyeY); ctx.lineTo(cx + flareLen, eyeY);
-        ctx.moveTo(cx, eyeY - flareLen * 0.45); ctx.lineTo(cx, eyeY + flareLen * 0.45);
-        ctx.stroke();
-      }
-
-      // 4. Sheathing Lock / Docking Glint (✦) when hilt collar rests against scabbard mouth
+      // 2. Sheathing Lock / Docking Glint (✦) only when hilt collar rests against scabbard mouth
       if (!dead && isDocked) {
         ctx.save();
         const dockY = actualYHeadTop;
@@ -1270,66 +1235,13 @@ export const SANHUA_THEME = {
     }
 
     // ========================================================================
-    // PREPARE 3D SPIRALING SAKURA PETALS (Лепестки сакуры кружляют по спирали)
-    // Petals orbit in a 3D helix around the katana blade steel.
-    // They are split into BACK petals (z < 0, drawn before blade) and
-    // FRONT petals (z >= 0, drawn after blade) for authentic 3D wrapping!
-    // All petals are strictly pink in color.
-    // ========================================================================
-    let spiralPetalCount = 0;
-    if (!dead && bodyLen > 30) {
-      const tierPetalBonus = isT5 ? 4 : (tier >= 400 ? 3 : (tier >= 200 ? 2 : 0));
-      const numPetals = Math.min(10, Math.max(5, Math.floor(bodyLen / 36)) + tierPetalBonus);
-
-
-      for (let p = 0; p < numPetals; p++) {
-        const drift = ((now || 0) * 0.040 + p * (bodyLen / numPetals)) % bodyLen;
-        const py = headTopY - drift;
-        if (py < yTail + 6 || py > headTopY - 6) continue;
-
-        // 3D helical spiral trajectory around the blade:
-        const theta = (py * 0.026 + (now || 0) * 0.0035 + p * 1.5);
-        const rSpiral = halfW + 6.5 + Math.sin(p * 2.1) * 2.5;
-        const px = cx + Math.sin(theta) * rSpiral;
-        const z = Math.cos(theta); // -1 (behind) to +1 (in front)
-
-
-        const pet = spiralPetalPool[spiralPetalCount++];
-        pet.px = px; pet.py = py; pet.z = z; pet.theta = theta; pet.p = p;
-      }
-    }
-
-    // Function to render a single 3D sakura petal
-    const drawSpiralPetal = (pet) => {
-      const { px, py, z, theta, p } = pet;
-      const isFront = z >= 0;
-      const pSize = (isFront ? 5.8 : 4.4) + Math.sin(p * 1.3) * 0.6;
-      const pAlpha = isFront ? 0.95 : 0.65;
-      const flip = Math.sin((now || 0) * 0.0035 + p * 2.0);
-
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(theta * 0.4 + p * 0.8);
-      ctx.scale(flip, 1);
-      ctx.globalAlpha *= pAlpha;
-      const stampPetal = getRealisticSakuraStamps()?.petal;
-      if (stampPetal) {
-        ctx.drawImage(stampPetal, -pSize, -pSize, pSize * 2, pSize * 2);
-      }
-      ctx.restore();
-    };
-
-    // ========================================================================
-    // LAYER 3: VOLUMETRIC HELICAL COLD FLAME (Пламя што крутиться вокруг клинка)
-    // Twisting counter-phase helical flame plumes winding around the blade cylinder
+    // LAYER 3: SCABBARD FLAME (strictly BEHIND Katana Blade Steel)
     // ========================================================================
     if (!dead) {
-
-      // 2. Draw BACK sakura petals (swirling behind the blade)
-      for (let i = 0; i < spiralPetalCount; i++) {
-        const pet = spiralPetalPool[i];
-        if (pet.z < 0) drawSpiralPetal(pet);
-      }
+      const scabH = Math.round(headH - 2);
+      const scabW = Math.round(bladeW * 1.72);
+      drawScabbardFlame(ctx, cx, headTopY + scabH + 80, scabW * 1.7, scabH, liveCombo, holding, now);
+      if (tile) tile._flameDrawn = now;
     }
 
     // ========================================================================
@@ -1395,18 +1307,6 @@ export const SANHUA_THEME = {
       ctx.moveTo(cx, yTail);
       ctx.lineTo(cx, headTopY);
       ctx.stroke();
-    }
-
-    // ========================================================================
-    // LAYER 5: FRONT PASSES (Twisting flame & spiraling sakura in front of blade!)
-    // ========================================================================
-    if (!dead) {
-
-      // 2. Draw FRONT sakura petals (dancing across the front of the blade!)
-      for (let i = 0; i < spiralPetalCount; i++) {
-        const pet = spiralPetalPool[i];
-        if (pet.z >= 0) drawSpiralPetal(pet);
-      }
     }
 
     // ========================================================================
@@ -1781,48 +1681,41 @@ export const SANHUA_THEME = {
     const boughLowerLeft = { x: gw * 0.56 + swayTrunk_x * 0.8, y: gh * 0.62 + swayTrunk_y * 0.8 };
     const twigLowerDrop = { x: gw * 0.45 + swayCrown_x * 0.8, y: gh * 0.68 + swayCrown_y * 0.8 };
 
-    // Canopy foliage clusters
+    // Canopy foliage clusters (accenting the branches while preserving trunk & bough silhouettes)
     const clusterPuffs = [
-      // Background layer
-      { pt: boughFarLeft, stamp: stamps.clusterA, s: 1.15, isBack: true },
-      { pt: boughHighLeft, stamp: stamps.clusterB, s: 1.25, isBack: true },
-      { pt: twigHighLeft1, stamp: stamps.clusterC, s: 1.10, isBack: true },
-      { pt: twigCenterTop1, stamp: stamps.clusterA, s: 1.20, isBack: true },
-      { pt: twigCenterTop2, stamp: stamps.clusterB, s: 1.25, isBack: true },
-      { pt: twigCenterTop3, stamp: stamps.clusterA, s: 1.15, isBack: true },
-      { pt: boughFarRight, stamp: stamps.clusterC, s: 1.15, isBack: true },
-      { pt: twigRightHigh, stamp: stamps.clusterB, s: 1.20, isBack: true },
+      // Background layer (depth sprays)
+      { pt: boughFarLeft,   stamp: stamps.clusterA, s: 0.90, isBack: true },
+      { pt: boughHighLeft,  stamp: stamps.clusterB, s: 0.95, isBack: true },
+      { pt: twigHighLeft1,  stamp: stamps.clusterC, s: 0.85, isBack: true },
+      { pt: twigCenterTop1, stamp: stamps.clusterA, s: 0.90, isBack: true },
+      { pt: twigCenterTop2, stamp: stamps.clusterB, s: 0.95, isBack: true },
+      { pt: twigCenterTop3, stamp: stamps.clusterA, s: 0.90, isBack: true },
+      { pt: boughFarRight,  stamp: stamps.clusterC, s: 0.90, isBack: true },
+      { pt: twigRightHigh,  stamp: stamps.clusterB, s: 0.90, isBack: true },
 
-      // Mid/Fore layer (dense fluffy canopy)
-      { pt: trunkFork, stamp: stamps.clusterA, s: 1.35, isBack: false },
-      { pt: boughLeftMain, stamp: stamps.clusterB, s: 1.30, isBack: false },
-      { pt: boughCenterHigh, stamp: stamps.clusterC, s: 1.35, isBack: false },
-      { pt: boughRightMain, stamp: stamps.clusterA, s: 1.30, isBack: false },
+      // Mid & Fore layer (graceful authentic blossom sprays)
+      { pt: boughHighLeft,  stamp: stamps.clusterA, s: 1.00, isBack: false },
+      { pt: twigHighLeft1,  stamp: stamps.clusterC, s: 0.95, isBack: false },
+      { pt: twigHighLeft2,  stamp: stamps.clusterB, s: 0.90, isBack: false },
 
-      { pt: { x: (boughLeftMain.x + boughHighLeft.x)*0.5, y: (boughLeftMain.y + boughHighLeft.y)*0.5 - 15 }, stamp: stamps.clusterB, s: 1.25, isBack: false },
-      { pt: boughHighLeft, stamp: stamps.clusterA, s: 1.30, isBack: false },
-      { pt: twigHighLeft1, stamp: stamps.clusterC, s: 1.20, isBack: false },
-      { pt: twigHighLeft2, stamp: stamps.clusterB, s: 1.15, isBack: false },
+      { pt: twigCenterTop1, stamp: stamps.clusterC, s: 1.00, isBack: false },
+      { pt: twigCenterTop2, stamp: stamps.clusterB, s: 0.95, isBack: false },
+      { pt: twigCenterTop3, stamp: stamps.clusterA, s: 0.90, isBack: false },
 
-      { pt: { x: (boughCenterHigh.x + twigCenterTop1.x)*0.5, y: (boughCenterHigh.y + twigCenterTop1.y)*0.5 }, stamp: stamps.clusterA, s: 1.30, isBack: false },
-      { pt: twigCenterTop1, stamp: stamps.clusterC, s: 1.25, isBack: false },
-      { pt: twigCenterTop2, stamp: stamps.clusterB, s: 1.25, isBack: false },
-      { pt: twigCenterTop3, stamp: stamps.clusterA, s: 1.10, isBack: false },
+      { pt: boughFarLeft,   stamp: stamps.clusterB, s: 0.95, isBack: false },
+      { pt: twigFarLeft1,   stamp: stamps.sprayA,   s: 0.95, isBack: false },
+      { pt: twigFarLeft2,   stamp: stamps.sprayB,   s: 0.90, isBack: false },
+      { pt: twigLeftDrop,   stamp: stamps.sprayA,   s: 1.00, isBack: false },
+      { pt: { x: twigLeftDrop.x + 8, y: twigLeftDrop.y + 28 }, stamp: stamps.sprayB, s: 0.85, isBack: false },
 
-      { pt: boughFarLeft, stamp: stamps.clusterB, s: 1.25, isBack: false },
-      { pt: twigFarLeft1, stamp: stamps.sprayA, s: 1.20, isBack: false },
-      { pt: twigFarLeft2, stamp: stamps.sprayB, s: 1.15, isBack: false },
-      { pt: twigLeftDrop, stamp: stamps.sprayA, s: 1.25, isBack: false },
-      { pt: { x: twigLeftDrop.x + 10, y: twigLeftDrop.y + 35 }, stamp: stamps.sprayB, s: 1.10, isBack: false },
+      { pt: boughFarRight,  stamp: stamps.clusterC, s: 0.95, isBack: false },
+      { pt: twigRightHigh,  stamp: stamps.clusterA, s: 0.95, isBack: false },
+      { pt: twigRightDrop1, stamp: stamps.sprayB,   s: 1.00, isBack: false },
+      { pt: twigRightDrop2, stamp: stamps.sprayA,   s: 1.00, isBack: false },
+      { pt: { x: twigRightDrop2.x - 6, y: twigRightDrop2.y + 28 }, stamp: stamps.sprayB, s: 0.85, isBack: false },
 
-      { pt: boughFarRight, stamp: stamps.clusterC, s: 1.25, isBack: false },
-      { pt: twigRightHigh, stamp: stamps.clusterA, s: 1.20, isBack: false },
-      { pt: twigRightDrop1, stamp: stamps.sprayB, s: 1.25, isBack: false },
-      { pt: twigRightDrop2, stamp: stamps.sprayA, s: 1.25, isBack: false },
-      { pt: { x: twigRightDrop2.x - 8, y: twigRightDrop2.y + 35 }, stamp: stamps.sprayB, s: 1.10, isBack: false },
-
-      { pt: boughLowerLeft, stamp: stamps.clusterC, s: 1.10, isBack: false },
-      { pt: twigLowerDrop, stamp: stamps.sprayA, s: 1.15, isBack: false }
+      { pt: boughLowerLeft, stamp: stamps.clusterC, s: 0.85, isBack: false },
+      { pt: twigLowerDrop,  stamp: stamps.sprayA,   s: 0.90, isBack: false }
     ];
 
     const petalSpawnNodes = clusterPuffs.map(cp => cp.pt);
