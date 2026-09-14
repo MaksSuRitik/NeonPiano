@@ -1011,20 +1011,20 @@ export const SANHUA_THEME = {
         finTip: '#64748b',
         // 11-stop layered desaturated depth gradient
         holdStops: [
-          [0.00, 'rgba(15, 23, 42, 0.08)'],
-          [0.06, 'rgba(30, 41, 59, 0.25)'],
-          [0.16, 'rgba(51, 65, 85, 0.50)'],
-          [0.29, 'rgba(71, 85, 105, 0.70)'],
-          [0.42, 'rgba(100, 116, 139, 0.85)'],
-          [0.52, 'rgba(148, 163, 184, 0.90)'],
-          [0.59, 'rgba(100, 116, 139, 0.85)'],
-          [0.68, 'rgba(71, 85, 105, 0.70)'],
-          [0.82, 'rgba(51, 65, 85, 0.50)'],
-          [0.94, 'rgba(30, 41, 59, 0.22)'],
-          [1.00, 'rgba(15, 23, 42, 0.08)']
+          [0.00, 'rgba(15, 23, 42, 0.24)'],
+          [0.06, 'rgba(30, 41, 59, 0.45)'],
+          [0.16, 'rgba(51, 65, 85, 0.70)'],
+          [0.29, 'rgba(71, 85, 105, 0.82)'],
+          [0.42, 'rgba(100, 116, 139, 0.90)'],
+          [0.52, 'rgba(148, 163, 184, 0.96)'],
+          [0.59, 'rgba(100, 116, 139, 0.90)'],
+          [0.68, 'rgba(71, 85, 105, 0.82)'],
+          [0.82, 'rgba(51, 65, 85, 0.70)'],
+          [0.94, 'rgba(30, 41, 59, 0.45)'],
+          [1.00, 'rgba(15, 23, 42, 0.24)']
         ],
-        refractionCol: 'rgba(148, 163, 184, 0.10)',
-        holdHaze: 'rgba(71, 85, 105, 0.08)',
+        refractionCol: 'rgba(148, 163, 184, 0.16)',
+        holdHaze: 'rgba(71, 85, 105, 0.14)',
         holdVein: null,
         holdVeinBloom: null
       };
@@ -1052,27 +1052,27 @@ export const SANHUA_THEME = {
         finTip: '#e61e3c',
         // 11-stop rich layered cross-section: Black obsidian edge -> dark wine -> broad internal crimson
         holdStops: [
-          [0.00, 'rgba(2, 2, 3, 0.92)'],
-          [0.08, 'rgba(24, 5, 10, 0.88)'],
-          [0.20, 'rgba(58, 8, 18, 0.85)'],
-          [0.32, 'rgba(125, 14, 32, 0.85)'],
-          [0.44, 'rgba(205, 20, 48, 0.92)'],
-          [0.52, 'rgba(255, 35, 75, 0.98)'],
-          [0.60, 'rgba(215, 22, 52, 0.92)'],
-          [0.72, 'rgba(135, 14, 35, 0.85)'],
-          [0.84, 'rgba(65, 8, 20, 0.85)'],
-          [0.94, 'rgba(24, 5, 10, 0.88)'],
-          [1.00, 'rgba(2, 2, 3, 0.92)']
+          [0.00, 'rgba(2, 2, 3, 0.94)'],
+          [0.08, 'rgba(24, 5, 10, 0.90)'],
+          [0.20, 'rgba(58, 8, 18, 0.88)'],
+          [0.32, 'rgba(125, 14, 32, 0.90)'],
+          [0.44, 'rgba(205, 20, 48, 0.95)'],
+          [0.52, 'rgba(255, 35, 75, 1.00)'],
+          [0.60, 'rgba(215, 22, 52, 0.95)'],
+          [0.72, 'rgba(135, 14, 35, 0.90)'],
+          [0.84, 'rgba(65, 8, 20, 0.88)'],
+          [0.94, 'rgba(24, 5, 10, 0.90)'],
+          [1.00, 'rgba(2, 2, 3, 0.94)']
         ],
-        refractionCol: 'rgba(255, 23, 68, 0.18)',
-        holdHaze: 'rgba(255, 23, 68, 0.14)', // Pure dark crimson haze (NO BLUE)
+        refractionCol: 'rgba(255, 23, 68, 0.22)',
+        holdHaze: 'rgba(255, 23, 68, 0.24)', // Pure dark crimson haze (NO BLUE)
         holdVein: '#ff1744',
         holdVeinBloom: 'rgba(255, 23, 68, 0.35)'
       };
     }
 
     if (tier >= 400) {
-      // T4: 400–799 — LUNAR AMETHYST / PRESTIGE ICE
+      // T4: 400–799 — LUNAR AMETHYST / PRESTICE ICE
       // Silver-lilac / pale violet crystal (#faf7ff, #ddd5f6, #a998d8, #66549e). NO RED.
       return {
         tierIndex: 4,
@@ -1093,20 +1093,20 @@ export const SANHUA_THEME = {
         finTip: '#ddd5f6',
         // 11-stop rich layered cross-section: deep lilac -> translucent medium -> soft core
         holdStops: [
-          [0.00, 'rgba(40, 28, 70, 0.08)'],
-          [0.06, 'rgba(65, 48, 108, 0.28)'],
-          [0.16, 'rgba(102, 80, 155, 0.58)'],
-          [0.29, 'rgba(148, 125, 205, 0.78)'],
-          [0.42, 'rgba(195, 178, 235, 0.88)'],
-          [0.52, 'rgba(250, 246, 255, 0.96)'],
-          [0.59, 'rgba(212, 198, 242, 0.90)'],
-          [0.68, 'rgba(155, 132, 210, 0.80)'],
-          [0.82, 'rgba(98, 78, 150, 0.55)'],
-          [0.94, 'rgba(58, 42, 98, 0.25)'],
-          [1.00, 'rgba(30, 20, 60, 0.06)']
+          [0.00, 'rgba(40, 28, 70, 0.26)'],
+          [0.06, 'rgba(65, 48, 108, 0.48)'],
+          [0.16, 'rgba(102, 80, 155, 0.75)'],
+          [0.29, 'rgba(148, 125, 205, 0.88)'],
+          [0.42, 'rgba(195, 178, 235, 0.94)'],
+          [0.52, 'rgba(250, 246, 255, 0.99)'],
+          [0.59, 'rgba(212, 198, 242, 0.94)'],
+          [0.68, 'rgba(155, 132, 210, 0.88)'],
+          [0.82, 'rgba(98, 78, 150, 0.74)'],
+          [0.94, 'rgba(58, 42, 98, 0.46)'],
+          [1.00, 'rgba(30, 20, 60, 0.24)']
         ],
-        refractionCol: 'rgba(169, 152, 216, 0.14)',
-        holdHaze: 'rgba(169, 152, 216, 0.12)',
+        refractionCol: 'rgba(169, 152, 216, 0.20)',
+        holdHaze: 'rgba(169, 152, 216, 0.20)',
         holdVein: null,
         holdVeinBloom: null
       };
@@ -1134,20 +1134,20 @@ export const SANHUA_THEME = {
         finTip: '#c5c7f6',
         // 11-stop rich layered cross-section: cold violet edges -> luminous violet core
         holdStops: [
-          [0.00, 'rgba(30, 25, 75, 0.08)'],
-          [0.06, 'rgba(48, 42, 115, 0.28)'],
-          [0.16, 'rgba(75, 70, 160, 0.58)'],
-          [0.29, 'rgba(115, 110, 205, 0.78)'],
-          [0.42, 'rgba(165, 162, 235, 0.88)'],
-          [0.52, 'rgba(240, 239, 255, 0.96)'],
-          [0.59, 'rgba(185, 182, 242, 0.90)'],
-          [0.68, 'rgba(125, 120, 212, 0.80)'],
-          [0.82, 'rgba(70, 65, 155, 0.55)'],
-          [0.94, 'rgba(42, 36, 105, 0.25)'],
-          [1.00, 'rgba(22, 18, 65, 0.06)']
+          [0.00, 'rgba(30, 25, 75, 0.26)'],
+          [0.06, 'rgba(48, 42, 115, 0.48)'],
+          [0.16, 'rgba(75, 70, 160, 0.75)'],
+          [0.29, 'rgba(115, 110, 205, 0.88)'],
+          [0.42, 'rgba(165, 162, 235, 0.94)'],
+          [0.52, 'rgba(240, 239, 255, 0.99)'],
+          [0.59, 'rgba(185, 182, 242, 0.94)'],
+          [0.68, 'rgba(125, 120, 212, 0.88)'],
+          [0.82, 'rgba(70, 65, 155, 0.74)'],
+          [0.94, 'rgba(42, 36, 105, 0.46)'],
+          [1.00, 'rgba(22, 18, 65, 0.24)']
         ],
-        refractionCol: 'rgba(133, 137, 217, 0.14)',
-        holdHaze: 'rgba(133, 137, 217, 0.12)',
+        refractionCol: 'rgba(133, 137, 217, 0.20)',
+        holdHaze: 'rgba(133, 137, 217, 0.20)',
         holdVein: null,
         holdVeinBloom: null
       };
@@ -1175,20 +1175,20 @@ export const SANHUA_THEME = {
         finTip: '#9ed4f4',
         // 11-stop rich layered cross-section: Deep azure edges -> rich blue body -> luminous core
         holdStops: [
-          [0.00, 'rgba(18, 55, 90, 0.08)'],
-          [0.06, 'rgba(23, 83, 133, 0.28)'],
-          [0.16, 'rgba(37, 105, 158, 0.58)'],
-          [0.29, 'rgba(67, 142, 197, 0.80)'],
-          [0.42, 'rgba(125, 190, 228, 0.88)'],
-          [0.52, 'rgba(225, 243, 252, 0.96)'],
-          [0.59, 'rgba(151, 207, 237, 0.90)'],
-          [0.68, 'rgba(62, 137, 190, 0.82)'],
-          [0.82, 'rgba(27, 91, 143, 0.55)'],
-          [0.94, 'rgba(18, 62, 102, 0.25)'],
-          [1.00, 'rgba(10, 35, 62, 0.06)']
+          [0.00, 'rgba(18, 55, 90, 0.26)'],
+          [0.06, 'rgba(23, 83, 133, 0.48)'],
+          [0.16, 'rgba(37, 105, 158, 0.75)'],
+          [0.29, 'rgba(67, 142, 197, 0.88)'],
+          [0.42, 'rgba(125, 190, 228, 0.94)'],
+          [0.52, 'rgba(225, 243, 252, 0.99)'],
+          [0.59, 'rgba(151, 207, 237, 0.94)'],
+          [0.68, 'rgba(62, 137, 190, 0.88)'],
+          [0.82, 'rgba(27, 91, 143, 0.74)'],
+          [0.94, 'rgba(18, 62, 102, 0.46)'],
+          [1.00, 'rgba(10, 35, 62, 0.24)']
         ],
-        refractionCol: 'rgba(67, 142, 197, 0.14)',
-        holdHaze: 'rgba(67, 142, 197, 0.12)',
+        refractionCol: 'rgba(67, 142, 197, 0.20)',
+        holdHaze: 'rgba(67, 142, 197, 0.20)',
         holdVein: null,
         holdVeinBloom: null
       };
@@ -1216,20 +1216,20 @@ export const SANHUA_THEME = {
         finTip: '#bdefff',
         // 11-stop rich layered cross-section: Deep cyan edges -> vibrant cyan body -> pale cyan core
         holdStops: [
-          [0.00, 'rgba(12, 60, 82, 0.08)'],
-          [0.06, 'rgba(21, 95, 125, 0.28)'],
-          [0.16, 'rgba(38, 140, 178, 0.58)'],
-          [0.29, 'rgba(70, 185, 222, 0.78)'],
-          [0.42, 'rgba(130, 225, 248, 0.88)'],
-          [0.52, 'rgba(225, 250, 255, 0.96)'],
-          [0.59, 'rgba(155, 234, 252, 0.90)'],
-          [0.68, 'rgba(65, 180, 218, 0.80)'],
-          [0.82, 'rgba(30, 130, 168, 0.55)'],
-          [0.94, 'rgba(18, 85, 115, 0.25)'],
-          [1.00, 'rgba(10, 50, 72, 0.06)']
+          [0.00, 'rgba(12, 60, 82, 0.26)'],
+          [0.06, 'rgba(21, 95, 125, 0.48)'],
+          [0.16, 'rgba(38, 140, 178, 0.75)'],
+          [0.29, 'rgba(70, 185, 222, 0.88)'],
+          [0.42, 'rgba(130, 225, 248, 0.94)'],
+          [0.52, 'rgba(225, 250, 255, 0.99)'],
+          [0.59, 'rgba(155, 234, 252, 0.94)'],
+          [0.68, 'rgba(65, 180, 218, 0.88)'],
+          [0.82, 'rgba(30, 130, 168, 0.74)'],
+          [0.94, 'rgba(18, 85, 115, 0.46)'],
+          [1.00, 'rgba(10, 50, 72, 0.24)']
         ],
-        refractionCol: 'rgba(96, 199, 232, 0.14)',
-        holdHaze: 'rgba(96, 199, 232, 0.12)',
+        refractionCol: 'rgba(96, 199, 232, 0.20)',
+        holdHaze: 'rgba(96, 199, 232, 0.20)',
         holdVein: null,
         holdVeinBloom: null
       };
@@ -1256,20 +1256,20 @@ export const SANHUA_THEME = {
       finTip: '#dcecf5',
       // 11-stop rich layered cross-section: Slate shadows -> translucent silver -> pure silver core
       holdStops: [
-        [0.00, 'rgba(35, 52, 68, 0.08)'],
-        [0.06, 'rgba(55, 78, 98, 0.28)'],
-        [0.16, 'rgba(90, 120, 142, 0.55)'],
-        [0.29, 'rgba(145, 175, 196, 0.75)'],
-        [0.42, 'rgba(200, 222, 236, 0.88)'],
-        [0.52, 'rgba(248, 252, 255, 0.95)'],
-        [0.59, 'rgba(215, 234, 245, 0.88)'],
-        [0.68, 'rgba(165, 195, 214, 0.78)'],
-        [0.82, 'rgba(105, 135, 156, 0.52)'],
-        [0.94, 'rgba(60, 85, 105, 0.24)'],
-        [1.00, 'rgba(30, 48, 62, 0.06)']
+        [0.00, 'rgba(35, 52, 68, 0.26)'],
+        [0.06, 'rgba(55, 78, 98, 0.48)'],
+        [0.16, 'rgba(90, 120, 142, 0.75)'],
+        [0.29, 'rgba(145, 175, 196, 0.88)'],
+        [0.42, 'rgba(200, 222, 236, 0.94)'],
+        [0.52, 'rgba(248, 252, 255, 0.99)'],
+        [0.59, 'rgba(215, 234, 245, 0.94)'],
+        [0.68, 'rgba(165, 195, 214, 0.88)'],
+        [0.82, 'rgba(105, 135, 156, 0.74)'],
+        [0.94, 'rgba(60, 85, 105, 0.46)'],
+        [1.00, 'rgba(30, 48, 62, 0.24)']
       ],
-      refractionCol: 'rgba(220, 236, 248, 0.12)',
-      holdHaze: 'rgba(170, 203, 221, 0.10)',
+      refractionCol: 'rgba(220, 236, 248, 0.20)',
+      holdHaze: 'rgba(170, 203, 221, 0.20)',
       holdVein: null,
       holdVeinBloom: null
     };
@@ -1689,16 +1689,16 @@ export const SANHUA_THEME = {
     }
 
     // 5. TOP END: SMOOTH TRANSPARENCY FADE VIA DESTINATION-IN ON OFFSCREEN BUFFER
-    // Top ~28-35% faintly visible (alpha 0.30 -> 1.00), NEVER masked on main canvas ctx
-    const fadeH = Math.min(42, Math.max(24, Math.round(bodyLen * 0.35)));
+    // Top ~58-65% visible (alpha 0.62 -> 1.00), NEVER masked on main canvas ctx
+    const fadeH = Math.min(32, Math.max(12, Math.round(bodyLen * 0.20)));
     if (fadeH > 2) {
       bCtx.save();
       bCtx.globalCompositeOperation = 'destination-in';
       const fadeGrad = bCtx.createLinearGradient(0, 0, 0, fadeH);
-      fadeGrad.addColorStop(0.00, 'rgba(0, 0, 0, 0.30)');
-      fadeGrad.addColorStop(0.25, 'rgba(0, 0, 0, 0.45)');
-      fadeGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.65)');
-      fadeGrad.addColorStop(0.80, 'rgba(0, 0, 0, 0.85)');
+      fadeGrad.addColorStop(0.00, 'rgba(0, 0, 0, 0.62)');
+      fadeGrad.addColorStop(0.22, 'rgba(0, 0, 0, 0.72)');
+      fadeGrad.addColorStop(0.48, 'rgba(0, 0, 0, 0.82)');
+      fadeGrad.addColorStop(0.76, 'rgba(0, 0, 0, 0.92)');
       fadeGrad.addColorStop(1.00, 'rgba(0, 0, 0, 1.00)');
       bCtx.fillStyle = fadeGrad;
       bCtx.fillRect(0, 0, bodyW, fadeH);
