@@ -81,11 +81,30 @@ function createTreeSegment(p1, p2, w1, w2, depth, fractures = null) {
   };
 }
 
+function getTrunkSurfacePoint(pStart, pEnd, wStart, wEnd, t, side, overlapIntoTrunk = 10) {
+  const cx = pStart.x + (pEnd.x - pStart.x) * t;
+  const cy = pStart.y + (pEnd.y - pStart.y) * t;
+  const dx = pEnd.x - pStart.x;
+  const dy = pEnd.y - pStart.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const tx = dx / len;
+  const ty = dy / len;
+  // Perpendicular normal (-ty, tx)
+  const nx = -ty;
+  const ny = tx;
+  const radius = (wStart + (wEnd - wStart) * t) * 0.48;
+  const effR = Math.max(0, radius - overlapIntoTrunk);
+  return {
+    x: cx + nx * effR * side,
+    y: cy + ny * effR * side
+  };
+}
+
 function generateSpectralTree(gw, gh) {
   const segments = [];
 
-  // 1. COLOSSAL DOMINANT TRUNK (~5x more massive, 35-42% of screen width)
-  // Visually 160-210px apparent width for ~480px gameplay viewport!
+  // 1. COLOSSAL DOMINANT TRUNK (35-45% of screen width, 150-210px)
+  // Preserved exact colossal thickness and dramatic elbow trajectory
   const trunkW = Math.max(150, Math.min(210, Math.round(gw * 0.40)));
 
   // Control points: P0 -> P1 -> P2 -> P3 -> P4 (sharp elbow) -> P5 -> P6 (massive sideways body)
@@ -97,80 +116,120 @@ function generateSpectralTree(gw, gh) {
   const p5 = { x: gw * 0.26, y: gh * 0.42 }; // Massive horizontal trunk body continuation
   const p6 = { x: gw * 0.12, y: gh * 0.40 }; // Horizontal trunk terminal node
 
-  // Connected colossal trunk segments:
-  segments.push(createTreeSegment(p0, p1, trunkW * 1.05, trunkW * 0.95, 0, [
+  const w0 = trunkW * 1.05;
+  const w1 = trunkW * 0.95;
+  const w2 = trunkW * 0.86;
+  const w3 = trunkW * 0.78;
+  const w4 = trunkW * 0.70;
+  const w5 = trunkW * 0.60;
+  const w6 = trunkW * 0.50;
+
+  // Connected colossal trunk segments (depth = 0):
+  segments.push(createTreeSegment(p0, p1, w0, w1, 0, [
     { t: 0.35, len: trunkW * 0.30, ang: 0.65 },
     { t: 0.70, len: trunkW * 0.32, ang: -0.55 }
   ]));
-  segments.push(createTreeSegment(p1, p2, trunkW * 0.95, trunkW * 0.86, 0, [
+  segments.push(createTreeSegment(p1, p2, w1, w2, 0, [
     { t: 0.40, len: trunkW * 0.28, ang: 0.70 },
     { t: 0.75, len: trunkW * 0.26, ang: -0.60 }
   ]));
-  segments.push(createTreeSegment(p2, p3, trunkW * 0.86, trunkW * 0.78, 0, [
+  segments.push(createTreeSegment(p2, p3, w2, w3, 0, [
     { t: 0.48, len: trunkW * 0.25, ang: 0.55 }
   ]));
   // The dramatic elbow transition (P2 -> P3 -> P4):
-  segments.push(createTreeSegment(p3, p4, trunkW * 0.78, trunkW * 0.70, 0, [
+  segments.push(createTreeSegment(p3, p4, w3, w4, 0, [
     { t: 0.50, len: trunkW * 0.28, ang: -0.65 }
   ]));
   // The massive sideways trunk body (P4 -> P5 -> P6):
-  segments.push(createTreeSegment(p4, p5, trunkW * 0.70, trunkW * 0.60, 0, [
+  segments.push(createTreeSegment(p4, p5, w4, w5, 0, [
     { t: 0.45, len: trunkW * 0.25, ang: 0.50 }
   ]));
-  segments.push(createTreeSegment(p5, p6, trunkW * 0.60, trunkW * 0.50, 0, [
+  segments.push(createTreeSegment(p5, p6, w5, w6, 0, [
     { t: 0.50, len: trunkW * 0.22, ang: -0.45 }
   ]));
 
-  // Lower trunk root spur off P2:
+  // Lower trunk root spur off P1->P2 outer surface
+  const rootSpur = getTrunkSurfacePoint(p1, p2, w1, w2, 0.85, +1, 10);
   const pSpur1 = { x: gw * 0.76, y: gh * 0.64 };
   const pSpur2 = { x: gw * 0.86, y: gh * 0.62 };
-  segments.push(createTreeSegment(p2, pSpur1, trunkW * 0.28, trunkW * 0.16, 1));
+  segments.push(createTreeSegment(rootSpur, pSpur1, trunkW * 0.26, trunkW * 0.16, 1));
   segments.push(createTreeSegment(pSpur1, pSpur2, trunkW * 0.16, trunkW * 0.08, 2));
-  segments.push(createTreeSegment(pSpur2, { x: gw * 0.92, y: gh * 0.59 }, trunkW * 0.08, 3.5, 3));
+  segments.push(createTreeSegment(pSpur2, { x: gw * 0.93, y: gh * 0.59 }, trunkW * 0.08, 3.5, 3));
 
-  // 2. PRIMARY LIMBS ONLY AFTER THE BEND & FROM TRUNK TERMINAL
-  // A. Sweeping Left Boughs from Horizontal Trunk Endpoint (P6):
-  const pL1_1 = { x: gw * 0.06, y: gh * 0.28 };
-  const pL1_2 = { x: gw * 0.02, y: gh * 0.18 };
-  segments.push(createTreeSegment(p6, pL1_1, trunkW * 0.38, trunkW * 0.25, 1, [
-    { t: 0.5, len: trunkW * 0.20, ang: -0.6 }
+  // 2. PRIMARY LIMBS GROWING FROM TRUNK SURFACE WITH DIRECTIONAL DIVERSITY
+
+  // PRIMARY BRANCH A: Sweeps diagonally upper-left from upper surface of horizontal trunk
+  const rootA = getTrunkSurfacePoint(p4, p5, w4, w5, 0.60, +1, 10);
+  const pA1 = { x: gw * 0.22, y: gh * 0.28 };
+  const pA2 = { x: gw * 0.12, y: gh * 0.18 };
+  const pA3 = { x: gw * 0.03, y: gh * 0.11 };
+  segments.push(createTreeSegment(rootA, pA1, trunkW * 0.32, trunkW * 0.22, 1, [
+    { t: 0.5, len: trunkW * 0.16, ang: -0.5 }
   ]));
-  segments.push(createTreeSegment(pL1_1, pL1_2, trunkW * 0.25, trunkW * 0.14, 1));
-  segments.push(createTreeSegment(pL1_2, { x: -gw * 0.02, y: gh * 0.10 }, trunkW * 0.14, 3.5, 3));
-  segments.push(createTreeSegment(pL1_1, { x: gw * 0.08, y: gh * 0.15 }, trunkW * 0.15, 3.0, 3));
+  segments.push(createTreeSegment(pA1, pA2, trunkW * 0.22, trunkW * 0.13, 1));
+  segments.push(createTreeSegment(pA2, pA3, trunkW * 0.13, 3.5, 3));
 
-  // Lower left tip from P6:
-  const pL2_1 = { x: gw * 0.05, y: gh * 0.50 };
-  segments.push(createTreeSegment(p6, pL2_1, trunkW * 0.30, trunkW * 0.18, 1));
-  segments.push(createTreeSegment(pL2_1, { x: gw * 0.01, y: gh * 0.62 }, trunkW * 0.18, 3.5, 3));
+  // Secondary fork off A1 curving upward
+  const pA_sub = { x: gw * 0.23, y: gh * 0.16 };
+  segments.push(createTreeSegment(pA1, pA_sub, trunkW * 0.16, trunkW * 0.09, 2));
+  segments.push(createTreeSegment(pA_sub, { x: gw * 0.25, y: gh * 0.08 }, trunkW * 0.09, 3.0, 3));
 
-  // B. High Left Antler Bough from Horizontal Trunk Midpoint (P5):
-  const pL3_1 = { x: gw * 0.24, y: gh * 0.26 };
-  const pL3_2 = { x: gw * 0.20, y: gh * 0.14 };
-  segments.push(createTreeSegment(p5, pL3_1, trunkW * 0.35, trunkW * 0.22, 1));
-  segments.push(createTreeSegment(pL3_1, pL3_2, trunkW * 0.22, trunkW * 0.12, 1));
-  segments.push(createTreeSegment(pL3_2, { x: gw * 0.26, y: gh * 0.07 }, trunkW * 0.12, 3.0, 3));
-  segments.push(createTreeSegment(pL3_2, { x: gw * 0.14, y: gh * 0.07 }, trunkW * 0.12, 3.0, 3));
+  // PRIMARY BRANCH B: Continues mostly horizontally from Terminal P6 across left screen
+  const rootB = { x: p6.x + 8, y: p6.y }; // 8px overlap into terminal node
+  const pB1 = { x: gw * 0.03, y: gh * 0.39 };  // endY ≈ startY (horizontal spread)
+  const pB2 = { x: -gw * 0.04, y: gh * 0.42 }; // endY > startY (slight downward dip)
+  const pB3 = { x: -gw * 0.09, y: gh * 0.35 }; // curls up at outer edge
+  segments.push(createTreeSegment(rootB, pB1, trunkW * 0.36, trunkW * 0.24, 1));
+  segments.push(createTreeSegment(pB1, pB2, trunkW * 0.24, trunkW * 0.14, 1));
+  segments.push(createTreeSegment(pB2, pB3, trunkW * 0.14, 3.5, 3));
 
-  // C. High Crown Antlers emerging above the Elbow (P4 & P3):
-  // Crown Limb 1 (Center-Left):
-  const pC1_1 = { x: gw * 0.43, y: gh * 0.28 };
-  const pC1_2 = { x: gw * 0.38, y: gh * 0.14 };
-  const pC1_3 = { x: gw * 0.34, y: gh * 0.05 };
-  segments.push(createTreeSegment(p4, pC1_1, trunkW * 0.40, trunkW * 0.28, 1));
-  segments.push(createTreeSegment(pC1_1, pC1_2, trunkW * 0.28, trunkW * 0.18, 1));
-  segments.push(createTreeSegment(pC1_2, pC1_3, trunkW * 0.18, trunkW * 0.10, 1));
-  segments.push(createTreeSegment(pC1_3, { x: gw * 0.28, y: gh * 0.02 }, trunkW * 0.10, 3.0, 3));
+  // Secondary antler fork off B1 heading downward-left
+  const pB_sub = { x: -gw * 0.01, y: gh * 0.50 }; // endY > startY
+  segments.push(createTreeSegment(pB1, pB_sub, trunkW * 0.18, trunkW * 0.10, 2));
+  segments.push(createTreeSegment(pB_sub, { x: -gw * 0.03, y: gh * 0.60 }, trunkW * 0.10, 3.0, 3));
 
-  // Crown Limb 2 (Center-Right, reaching across moon face):
-  const pC2_1 = { x: gw * 0.54, y: gh * 0.32 };
-  const pC2_2 = { x: gw * 0.63, y: gh * 0.18 };
-  const pC2_3 = { x: gw * 0.60, y: gh * 0.07 };
-  segments.push(createTreeSegment(p3, pC2_1, trunkW * 0.38, trunkW * 0.26, 1));
-  segments.push(createTreeSegment(pC2_1, pC2_2, trunkW * 0.26, trunkW * 0.16, 1));
-  segments.push(createTreeSegment(pC2_2, pC2_3, trunkW * 0.16, trunkW * 0.09, 1));
-  segments.push(createTreeSegment(pC2_2, { x: gw * 0.72, y: gh * 0.11 }, trunkW * 0.14, 3.0, 3));
-  segments.push(createTreeSegment(pC2_3, { x: gw * 0.55, y: gh * 0.02 }, trunkW * 0.09, 3.0, 3));
+  // PRIMARY BRANCH C: Curves upper-right across sky and moon
+  const rootC = getTrunkSurfacePoint(p3, p4, w3, w4, 0.40, +1, 10);
+  const pC1 = { x: gw * 0.57, y: gh * 0.30 };
+  const pC2 = { x: gw * 0.66, y: gh * 0.21 };
+  const pC3 = { x: gw * 0.74, y: gh * 0.15 };
+  segments.push(createTreeSegment(rootC, pC1, trunkW * 0.36, trunkW * 0.25, 1, [
+    { t: 0.5, len: trunkW * 0.18, ang: 0.5 }
+  ]));
+  segments.push(createTreeSegment(pC1, pC2, trunkW * 0.25, trunkW * 0.15, 1));
+  segments.push(createTreeSegment(pC2, pC3, trunkW * 0.15, 3.5, 3));
+
+  // Secondary branch C-sub1 (curving high above moon)
+  const pC_sub1 = { x: gw * 0.60, y: gh * 0.16 };
+  segments.push(createTreeSegment(pC1, pC_sub1, trunkW * 0.20, trunkW * 0.11, 2));
+  segments.push(createTreeSegment(pC_sub1, { x: gw * 0.58, y: gh * 0.06 }, trunkW * 0.11, 3.0, 3));
+
+  // Secondary tip C-sub2 (sideways reach with slight dip)
+  segments.push(createTreeSegment(pC2, { x: gw * 0.75, y: gh * 0.25 }, trunkW * 0.12, 3.0, 3)); // endY > startY
+
+  // PRIMARY BRANCH D: Moves slightly downward/sideways before curling upward
+  const rootD = getTrunkSurfacePoint(p4, p5, w4, w5, 0.55, -1, 10);
+  const pD1 = { x: gw * 0.24, y: gh * 0.55 }; // endY > startY (temporarily descends)
+  const pD2 = { x: gw * 0.16, y: gh * 0.55 }; // endY ≈ startY (horizontal travel)
+  const pD3 = { x: gw * 0.10, y: gh * 0.49 }; // curls upward
+  segments.push(createTreeSegment(rootD, pD1, trunkW * 0.28, trunkW * 0.19, 1));
+  segments.push(createTreeSegment(pD1, pD2, trunkW * 0.19, trunkW * 0.12, 1));
+  segments.push(createTreeSegment(pD2, pD3, trunkW * 0.12, 3.5, 3));
+
+  // Secondary branch D-sub descending further downward
+  segments.push(createTreeSegment(pD1, { x: gw * 0.21, y: gh * 0.65 }, trunkW * 0.13, 3.0, 3)); // endY > startY
+
+  // PRIMARY BRANCH E: Crown limb sweeping upward/backward near elbow
+  const rootE = getTrunkSurfacePoint(p4, p5, w4, w5, 0.10, +1, 10);
+  const pE1 = { x: gw * 0.39, y: gh * 0.27 };
+  const pE2 = { x: gw * 0.34, y: gh * 0.16 };
+  const pE3 = { x: gw * 0.30, y: gh * 0.06 };
+  segments.push(createTreeSegment(rootE, pE1, trunkW * 0.28, trunkW * 0.18, 1));
+  segments.push(createTreeSegment(pE1, pE2, trunkW * 0.18, trunkW * 0.10, 1));
+  segments.push(createTreeSegment(pE2, pE3, trunkW * 0.10, 3.5, 3));
+
+  // Secondary tip E-sub reaching rightward
+  segments.push(createTreeSegment(pE1, { x: gw * 0.44, y: gh * 0.19 }, trunkW * 0.13, 3.0, 3));
 
   return segments;
 }
@@ -193,8 +252,7 @@ function renderTreePrismsToCanvas(canvas, segments, isT5) {
   const colRim = isT5 ? '#ff1744' : '#ffffff';
   const colFracture = isT5 ? '#ef233c' : 'rgba(255, 255, 255, 0.85)';
 
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
+  const drawSegment = (seg) => {
     const dx = seg.x2 - seg.x1;
     const dy = seg.y2 - seg.y1;
     const len = Math.hypot(dx, dy) || 1;
@@ -272,7 +330,7 @@ function renderTreePrismsToCanvas(canvas, segments, isT5) {
       ctx.fill();
     }
 
-    // Bright Rim Edge (Moonlight catch, NO lots of cyan outlines!)
+    // Bright Rim Edge (Moonlight catch)
     ctx.strokeStyle = colRim;
     ctx.lineWidth = Math.min(2.0, Math.max(0.8, w2 * 0.05));
     ctx.beginPath();
@@ -305,7 +363,20 @@ function renderTreePrismsToCanvas(canvas, segments, isT5) {
       }
       ctx.stroke();
     }
-  }
+  };
+
+  // Render Order:
+  // 1. Distant secondary branches and tips (depth >= 2)
+  // 2. Primary limbs (depth === 1)
+  // 3. MAIN COLOSSAL TRUNK (depth === 0)
+  // Rendering the main trunk over primary limb bases naturally occludes their insertion!
+  const distant = segments.filter(s => s.depth >= 2);
+  const primary = segments.filter(s => s.depth === 1);
+  const trunk = segments.filter(s => s.depth === 0);
+
+  for (let i = 0; i < distant.length; i++) drawSegment(distant[i]);
+  for (let i = 0; i < primary.length; i++) drawSegment(primary[i]);
+  for (let i = 0; i < trunk.length; i++) drawSegment(trunk[i]);
 }
 
 // ----------------------------------------------------------------------------
@@ -941,250 +1012,213 @@ export const SANHUA_THEME = {
         holdStops: [
           [0.00, 'rgba(30, 41, 59, 0.15)'],
           [0.25, 'rgba(71, 85, 105, 0.60)'],
-          [0.50, 'rgba(148, 163, 184, 0.90)'],
-          [0.70, 'rgba(71, 85, 105, 0.60)'],
+          [0.50, 'rgba(148, 163, 184, 0.85)'],
+          [0.75, 'rgba(71, 85, 105, 0.60)'],
           [1.00, 'rgba(30, 41, 59, 0.15)']
         ],
         holdHaze: 'rgba(71, 85, 105, 0.08)',
-        holdVein: '#64748b',
-        holdVeinBloom: 'rgba(71, 85, 105, 0.15)',
-        holdTipGrad: ['#475569', '#94a3b8'],
-        holdTipEdge: 'rgba(148, 163, 184, 0.50)',
-        holdTipFlare: '#94a3b8'
+        holdVein: null,
+        holdVeinBloom: null
       };
     }
 
     if (isT5) {
-      // T5: 800+ MAX COMBO — BLACK + RED / OBSIDIAN HIYUKI
-      // Obsidian Black body 65-75%, Vivid Crimson 20-30%, White specular 5-10%
+      // T5: 800+ MAX COMBO — OBSIDIAN BLOOD
+      // Polished black obsidian + vivid burning crimson (ZERO BLUE)
       return {
         tierIndex: 5,
         isObsidian: true,
         bgStops: [
-          [0.00, '#280d14'],
-          [0.25, '#1a0d12'],
-          [0.50, '#100b0f'],
-          [0.75, '#070609'],
-          [1.00, '#020203']
+          [0.00, '#1b0a10'],
+          [0.25, '#10090d'],
+          [0.50, '#070609'],
+          [0.75, '#020203'],
+          [1.00, '#000000']
         ],
         edge: '#ff1744',
-        facetLight: 'rgba(255, 64, 93, 0.22)',
-        facetDark: 'rgba(5, 2, 4, 0.70)',
+        facetLight: 'rgba(255, 23, 68, 0.30)',
+        facetDark: 'rgba(2, 2, 3, 0.75)',
         resonance: '#ff1744',
         resonanceGlow: 'rgba(255, 23, 68, 0.45)',
         specular: '#ffffff',
-        finTip: '#ff405d',
-        // Hold Note: Dark translucent obsidian-red energy sheet
+        finTip: '#e61e3c',
+        // Broad internal crimson illumination beneath obsidian glass
         holdStops: [
-          [0.00, 'rgba(2, 2, 3, 0.85)'],
-          [0.18, 'rgba(28, 6, 12, 0.80)'],
-          [0.44, '#ffffff'], // Luminous white-hot core
-          [0.56, 'rgba(255, 238, 242, 0.95)'],
-          [0.64, '#ff1744'], // Vivid crimson vein
-          [0.76, 'rgba(239, 35, 60, 0.85)'],
-          [0.88, 'rgba(28, 6, 12, 0.80)'],
-          [1.00, 'rgba(2, 2, 3, 0.85)']
+          [0.00, 'rgba(2, 2, 3, 0.90)'],
+          [0.20, 'rgba(27, 10, 16, 0.85)'],
+          [0.40, 'rgba(181, 18, 45, 0.85)'],
+          [0.50, 'rgba(255, 23, 68, 0.95)'],
+          [0.60, 'rgba(181, 18, 45, 0.85)'],
+          [0.80, 'rgba(27, 10, 16, 0.85)'],
+          [1.00, 'rgba(2, 2, 3, 0.90)']
         ],
-        holdHaze: 'rgba(255, 23, 68, 0.12)', // Dark red/crimson haze (NOT blue)
+        holdHaze: 'rgba(255, 23, 68, 0.15)', // Pure dark crimson haze (NO BLUE)
         holdVein: '#ff1744',
-        holdVeinBloom: 'rgba(255, 23, 68, 0.35)',
-        holdTipGrad: ['#070609', '#1a0d12', '#ff1744', '#ffffff'],
-        holdTipEdge: 'rgba(255, 255, 255, 0.95)',
-        holdTipFlare: '#ff1744'
+        holdVeinBloom: 'rgba(255, 23, 68, 0.35)'
       };
     }
 
     if (tier >= 400) {
-      // T4: 400–799 — GLACIAL FRACTURE
-      // Luxurious crystalline white, ice blue, pale violet-blue with crimson accents
+      // T4: 400–799 — LUNAR AMETHYST / PRESTIGE ICE
+      // Silver-lilac / pale violet crystal (#faf7ff, #ddd5f6, #a998d8, #66549e). NO RED.
       return {
         tierIndex: 4,
         isObsidian: false,
         bgStops: [
-          [0.00, '#ffffff'],
-          [0.22, '#e8e7ff'],
-          [0.50, '#b6c8ff'],
-          [0.78, '#7c8cf8'],
-          [1.00, '#3344a5']
+          [0.00, '#faf7ff'],
+          [0.24, '#ddd5f6'],
+          [0.55, '#a998d8'],
+          [0.82, '#806cb8'],
+          [1.00, '#66549e']
         ],
-        edge: '#a5b4fc',
-        facetLight: 'rgba(255, 255, 255, 0.65)',
-        facetDark: 'rgba(51, 68, 165, 0.30)',
-        resonance: '#ff3158',
-        resonanceGlow: 'rgba(255, 49, 88, 0.32)',
+        edge: '#a998d8',
+        facetLight: 'rgba(250, 247, 255, 0.65)',
+        facetDark: 'rgba(102, 84, 158, 0.38)',
+        resonance: '#a998d8',
+        resonanceGlow: 'rgba(169, 152, 216, 0.32)',
         specular: '#ffffff',
-        finTip: '#c7d2fe',
+        finTip: '#ddd5f6',
         holdStops: [
-          [0.00, 'rgba(165, 180, 252, 0.15)'],
-          [0.18, 'rgba(232, 231, 255, 0.68)'],
-          [0.44, '#ffffff'], // Strong white overexposure
-          [0.58, 'rgba(255, 245, 248, 0.95)'],
-          [0.64, '#ff3158'], // Strong crimson streak
-          [0.72, 'rgba(255, 49, 88, 0.38)'],
-          [0.86, 'rgba(182, 200, 255, 0.55)'],
-          [1.00, 'rgba(124, 140, 248, 0.18)']
+          [0.00, 'rgba(102, 84, 158, 0.14)'],
+          [0.20, 'rgba(169, 152, 216, 0.65)'],
+          [0.50, 'rgba(250, 247, 255, 0.95)'],
+          [0.80, 'rgba(169, 152, 216, 0.65)'],
+          [1.00, 'rgba(102, 84, 158, 0.14)']
         ],
-        holdHaze: 'rgba(182, 200, 255, 0.12)', // Slight violet-blue atmospheric tint
-        holdVein: '#ff3158',
-        holdVeinBloom: 'rgba(255, 49, 88, 0.26)',
-        holdTipGrad: ['rgba(182, 200, 255, 0.70)', '#ffffff'],
-        holdTipEdge: '#ffffff',
-        holdTipFlare: '#ff3158'
+        holdHaze: 'rgba(169, 152, 216, 0.12)',
+        holdVein: null,
+        holdVeinBloom: null
       };
     }
 
     if (tier >= 200) {
-      // T3: 200–399 — CRYSTAL SURGE
-      // Bright white, strong cyan, small intense crimson incision
+      // T3: 200–399 — FROST VIOLET
+      // Cold blue-violet (#f1f0ff, #c5c7f6, #8589d9, #4d4f9e). NO RED.
       return {
         tierIndex: 3,
         isObsidian: false,
         bgStops: [
-          [0.00, '#ffffff'],
-          [0.24, '#d9fbff'],
-          [0.55, '#67e8f9'],
-          [0.82, '#0891b2'],
-          [1.00, '#0e4a6a']
+          [0.00, '#f1f0ff'],
+          [0.24, '#c5c7f6'],
+          [0.55, '#8589d9'],
+          [0.82, '#6163b7'],
+          [1.00, '#4d4f9e']
         ],
-        edge: '#38bdf8',
-        facetLight: 'rgba(255, 255, 255, 0.70)',
-        facetDark: 'rgba(8, 145, 178, 0.35)',
-        resonance: '#ff2a5f',
-        resonanceGlow: 'rgba(255, 42, 95, 0.35)',
+        edge: '#8589d9',
+        facetLight: 'rgba(241, 240, 255, 0.65)',
+        facetDark: 'rgba(77, 79, 158, 0.38)',
+        resonance: '#8589d9',
+        resonanceGlow: 'rgba(133, 137, 217, 0.32)',
         specular: '#ffffff',
-        finTip: '#67e8f9',
+        finTip: '#c5c7f6',
         holdStops: [
-          [0.00, 'rgba(103, 232, 249, 0.14)'],
-          [0.18, 'rgba(217, 251, 255, 0.72)'],
-          [0.44, '#ffffff'], // Very bright white core
-          [0.58, 'rgba(255, 245, 248, 0.95)'],
-          [0.64, '#ff2a5f'], // Clear red Hiyuki streak
-          [0.72, 'rgba(255, 42, 95, 0.35)'],
-          [0.86, 'rgba(103, 232, 249, 0.55)'],
-          [1.00, 'rgba(8, 145, 178, 0.15)']
+          [0.00, 'rgba(77, 79, 158, 0.14)'],
+          [0.20, 'rgba(133, 137, 217, 0.65)'],
+          [0.50, 'rgba(241, 240, 255, 0.95)'],
+          [0.80, 'rgba(133, 137, 217, 0.65)'],
+          [1.00, 'rgba(77, 79, 158, 0.14)']
         ],
-        holdHaze: 'rgba(103, 232, 249, 0.12)', // Strong icy aura
-        holdVein: '#ff2a5f',
-        holdVeinBloom: 'rgba(255, 42, 95, 0.24)',
-        holdTipGrad: ['rgba(103, 232, 249, 0.75)', '#ffffff'],
-        holdTipEdge: '#ffffff',
-        holdTipFlare: '#ff2a5f'
+        holdHaze: 'rgba(133, 137, 217, 0.12)',
+        holdVein: null,
+        holdVeinBloom: null
       };
     }
 
     if (tier >= 100) {
-      // T2: 100–199 — SAKURA FLUTTER
-      // White ice remains dominant. Soft sakura pink / crimson refraction
+      // T2: 100–199 — DEEP AZURE
+      // Richer blue (#e9f7ff, #9ed4f4, #438ec5, #175385). NO RED.
       return {
         tierIndex: 2,
         isObsidian: false,
         bgStops: [
-          [0.00, '#ffffff'],
-          [0.26, '#dff4ff'],
-          [0.54, '#7dd3fc'],
-          [0.82, '#fda4af'],
-          [1.00, '#f43f5e']
+          [0.00, '#e9f7ff'],
+          [0.24, '#9ed4f4'],
+          [0.55, '#438ec5'],
+          [0.82, '#25699e'],
+          [1.00, '#175385']
         ],
-        edge: '#7dd3fc',
-        facetLight: 'rgba(255, 255, 255, 0.65)',
-        facetDark: 'rgba(244, 63, 94, 0.25)',
-        resonance: '#f43f5e',
-        resonanceGlow: 'rgba(244, 63, 94, 0.28)',
+        edge: '#438ec5',
+        facetLight: 'rgba(233, 247, 255, 0.65)',
+        facetDark: 'rgba(23, 83, 133, 0.40)',
+        resonance: '#438ec5',
+        resonanceGlow: 'rgba(67, 142, 197, 0.32)',
         specular: '#ffffff',
-        finTip: '#fda4af',
+        finTip: '#9ed4f4',
         holdStops: [
-          [0.00, 'rgba(125, 211, 252, 0.12)'],
-          [0.18, 'rgba(223, 244, 255, 0.65)'],
-          [0.44, '#ffffff'], // White core
-          [0.58, 'rgba(255, 242, 246, 0.95)'],
-          [0.64, '#f43f5e'], // Increased crimson visibility, body NOT pink
-          [0.72, 'rgba(244, 63, 94, 0.32)'],
-          [0.86, 'rgba(125, 211, 252, 0.50)'],
-          [1.00, 'rgba(56, 189, 248, 0.12)']
+          [0.00, 'rgba(23, 83, 133, 0.14)'],
+          [0.20, 'rgba(67, 142, 197, 0.65)'],
+          [0.50, 'rgba(233, 247, 255, 0.95)'],
+          [0.80, 'rgba(67, 142, 197, 0.65)'],
+          [1.00, 'rgba(23, 83, 133, 0.14)']
         ],
-        holdHaze: 'rgba(170, 210, 240, 0.10)',
-        holdVein: '#f43f5e',
-        holdVeinBloom: 'rgba(244, 63, 94, 0.20)',
-        holdTipGrad: ['rgba(125, 211, 252, 0.70)', '#ffffff'],
-        holdTipEdge: '#ffffff',
-        holdTipFlare: '#f43f5e'
+        holdHaze: 'rgba(67, 142, 197, 0.12)',
+        holdVein: null,
+        holdVeinBloom: null
       };
     }
 
     if (tier >= 50) {
-      // T1: 50–99 — BITING FROST
-      // Saturated cold blue + clearer red
+      // T1: 50–99 — GLACIAL CYAN
+      // Cold cyan (#effcff, #bdefff, #60c7e8, #197ca5). NO RED.
       return {
         tierIndex: 1,
         isObsidian: false,
         bgStops: [
-          [0.00, '#ffffff'],
-          [0.25, '#c7ecff'],
-          [0.56, '#59b9ea'],
-          [0.84, '#075985'],
-          [1.00, '#043450']
+          [0.00, '#effcff'],
+          [0.24, '#bdefff'],
+          [0.55, '#60c7e8'],
+          [0.82, '#2898c4'],
+          [1.00, '#197ca5']
         ],
-        edge: '#0ea5e9',
-        facetLight: 'rgba(255, 255, 255, 0.60)',
-        facetDark: 'rgba(7, 89, 133, 0.35)',
-        resonance: '#e11d48',
-        resonanceGlow: 'rgba(225, 29, 72, 0.22)',
+        edge: '#60c7e8',
+        facetLight: 'rgba(239, 252, 255, 0.70)',
+        facetDark: 'rgba(25, 124, 165, 0.40)',
+        resonance: '#60c7e8',
+        resonanceGlow: 'rgba(96, 199, 232, 0.30)',
         specular: '#ffffff',
-        finTip: '#59b9ea',
+        finTip: '#bdefff',
         holdStops: [
-          [0.00, 'rgba(89, 185, 234, 0.12)'],
-          [0.18, 'rgba(199, 236, 255, 0.65)'],
-          [0.44, '#ffffff'], // Brighter white center
-          [0.58, 'rgba(255, 245, 248, 0.95)'],
-          [0.64, '#e11d48'], // Red streak slightly more visible
-          [0.72, 'rgba(225, 29, 72, 0.28)'],
-          [0.86, 'rgba(89, 185, 234, 0.50)'],
-          [1.00, 'rgba(7, 89, 133, 0.12)']
+          [0.00, 'rgba(25, 124, 165, 0.14)'],
+          [0.20, 'rgba(96, 199, 232, 0.60)'],
+          [0.50, 'rgba(239, 252, 255, 0.95)'],
+          [0.80, 'rgba(96, 199, 232, 0.60)'],
+          [1.00, 'rgba(25, 124, 165, 0.14)']
         ],
-        holdHaze: 'rgba(89, 185, 234, 0.10)',
-        holdVein: '#e11d48',
-        holdVeinBloom: 'rgba(225, 29, 72, 0.18)',
-        holdTipGrad: ['rgba(199, 236, 255, 0.70)', '#ffffff'],
-        holdTipEdge: '#ffffff',
-        holdTipFlare: '#e11d48'
+        holdHaze: 'rgba(96, 199, 232, 0.12)',
+        holdVein: null,
+        holdVeinBloom: null
       };
     }
 
-    // T0: 0–49 — FROST BLADE
-    // Clean cold Hiyuki ice: White 70%, Blue 25%, Red 5%
+    // T0: 0–49 — FROZEN SILVER
+    // Silver-white / pale ice with pale cyan depth (#f7fbff, #dcecf5, #aacbdd, #668ca5). NO RED.
     return {
       tierIndex: 0,
       isObsidian: false,
       bgStops: [
-        [0.00, '#f7fcff'],
-        [0.26, '#d8efff'],
-        [0.58, '#8fc9eb'],
-        [0.84, '#17334b'],
-        [1.00, '#0c1d2c']
+        [0.00, '#ffffff'],
+        [0.25, '#f7fbff'],
+        [0.55, '#dcecf5'],
+        [0.80, '#aacbdd'],
+        [1.00, '#668ca5']
       ],
-      edge: '#38bdf8',
-      facetLight: 'rgba(255, 255, 255, 0.55)',
-      facetDark: 'rgba(23, 51, 75, 0.35)',
-      resonance: '#be123c',
-      resonanceGlow: 'rgba(190, 18, 60, 0.15)',
+      edge: '#aacbdd',
+      facetLight: 'rgba(255, 255, 255, 0.65)',
+      facetDark: 'rgba(102, 140, 165, 0.35)',
+      resonance: '#aacbdd',
+      resonanceGlow: 'rgba(220, 236, 245, 0.25)',
       specular: '#ffffff',
-      finTip: '#8fc9eb',
+      finTip: '#dcecf5',
       holdStops: [
-        [0.00, 'rgba(143, 201, 235, 0.10)'],
-        [0.18, 'rgba(216, 239, 255, 0.65)'],
-        [0.44, '#ffffff'], // Dominant white 70%
-        [0.58, 'rgba(255, 245, 248, 0.95)'],
-        [0.64, 'rgba(190, 18, 60, 0.60)'], // Subtle crimson 5%
-        [0.72, 'rgba(190, 18, 60, 0.20)'],
-        [0.86, 'rgba(143, 201, 235, 0.45)'],
-        [1.00, 'rgba(23, 51, 75, 0.10)']
+        [0.00, 'rgba(102, 140, 165, 0.12)'],
+        [0.20, 'rgba(170, 203, 221, 0.55)'],
+        [0.50, 'rgba(247, 251, 255, 0.95)'],
+        [0.80, 'rgba(170, 203, 221, 0.55)'],
+        [1.00, 'rgba(102, 140, 165, 0.12)']
       ],
-      holdHaze: 'rgba(143, 201, 235, 0.08)',
-      holdVein: 'rgba(190, 18, 60, 0.70)',
-      holdVeinBloom: 'rgba(190, 18, 60, 0.12)',
-      holdTipGrad: ['rgba(216, 239, 255, 0.70)', '#ffffff'],
-      holdTipEdge: '#ffffff',
-      holdTipFlare: 'rgba(190, 18, 60, 0.75)'
+      holdHaze: 'rgba(170, 203, 221, 0.10)',
+      holdVein: null,
+      holdVeinBloom: null
     };
   },
 
@@ -1353,7 +1387,6 @@ export const SANHUA_THEME = {
 
     // Hold body occupies ~96% of note width
     const tailWidth = Math.max(1, Math.round(width * 0.96));
-    const tipHeight = Math.min(Math.round(tailWidth * 0.32) + 4, Math.round(height * 0.50));
 
     // 1. Energy Ribbon Gradient Strip (Hiyuki Cross-Section from shared palette)
     const strip = document.createElement('canvas');
@@ -1368,47 +1401,7 @@ export const SANHUA_THEME = {
     g.fillStyle = grad;
     g.fillRect(0, 0, tailWidth, 4);
 
-    // 2. Fast Diagonal Slash Blade Tip at yTail (PRESERVED EXACT GEOMETRY)
-    const tip = document.createElement('canvas');
-    tip.width = tailWidth;
-    tip.height = tipHeight;
-    const c = tip.getContext('2d');
-
-    c.save();
-    c.beginPath();
-    c.moveTo(0, tipHeight);
-    c.quadraticCurveTo(tailWidth * 0.12, tipHeight * 0.40, tailWidth * 0.45, 2);
-    c.lineTo(tailWidth * 0.82, 2);
-    c.quadraticCurveTo(tailWidth * 0.94, tipHeight * 0.45, tailWidth, tipHeight);
-    c.closePath();
-
-    const tipGrad = c.createLinearGradient(0, tipHeight, 0, 0);
-    const tg = pal.holdTipGrad;
-    for (let i = 0; i < tg.length; i++) {
-      tipGrad.addColorStop(i / (tg.length - 1), tg[i]);
-    }
-    c.fillStyle = tipGrad;
-    c.fill();
-
-    // White-hot / combo-colored leading edge along the crest
-    if (!dead) {
-      c.strokeStyle = pal.holdTipEdge;
-      c.lineWidth = 1.3;
-      c.beginPath();
-      c.moveTo(tailWidth * 0.12, tipHeight * 0.40);
-      c.quadraticCurveTo(tailWidth * 0.28, tipHeight * 0.10, tailWidth * 0.45, 2);
-      c.lineTo(tailWidth * 0.82, 2);
-      c.stroke();
-
-      // Crimson flare near corner
-      c.fillStyle = pal.holdTipFlare;
-      c.beginPath();
-      c.arc(tailWidth * 0.78, 3, 1.8, 0, Math.PI * 2);
-      c.fill();
-    }
-    c.restore();
-
-    // 3. Receptor Head
+    // 2. Receptor Head
     const head = document.createElement('canvas');
     head.width = width;
     head.height = height;
@@ -1422,13 +1415,13 @@ export const SANHUA_THEME = {
 
     return (cache.entries[key] = {
       strip,
-      tip,
-      cap: tip, // Backwards compatibility alias
+      tip: strip, // Backwards compatibility alias (no separate tip canvas)
+      cap: strip, // Backwards compatibility alias
       head,
       bodyW: tailWidth,
-      tailWidth, // Backwards compatibility alias
-      tipHeight,
-      capHeight: tipHeight, // Backwards compatibility alias
+      tailWidth,  // Backwards compatibility alias
+      tipHeight: 0,
+      capHeight: 0,
       palette: pal
     });
   },
@@ -1457,7 +1450,7 @@ export const SANHUA_THEME = {
     ctx.fill();
 
     // White / crimson refraction flash at junction
-    ctx.strokeStyle = pal.isObsidian ? '#ff1744' : '#ffffff';
+    ctx.strokeStyle = pal.isObsidian ? '#ff1744' : (pal.edge || '#ffffff');
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(x + w * 0.08, junctionY);
@@ -1483,57 +1476,54 @@ export const SANHUA_THEME = {
     const paint = this._getHoldPaintCache(w, headH, currentCombo, dead, isLight);
     const pal = paint.palette || this._getHiyukiNotePalette(currentCombo, dead, isLight);
     const left = Math.round(x + (w - paint.tailWidth) / 2);
-    const tipHeight = Math.min(paint.tipHeight, length);
 
-    // 1. Fast Slash Blade Tip at yTail (PRESERVED EXACT GEOMETRY)
-    ctx.drawImage(paint.tip, 0, 0, paint.tailWidth, tipHeight, left, yTail, paint.tailWidth, tipHeight);
+    // Full-width continuous energy body runs directly from yTail to bottom (NO separate tip canvas)
+    const bodyY = yTail;
+    const bodyLen = length;
 
-    // 2. Full-Width Flowing Hiyuki Energy Body (PRESERVED EXACT GEOMETRY)
-    if (length > tipHeight) {
-      const bodyY = yTail + tipHeight;
-      const bodyLen = length - tipHeight;
+    // LAYER A — OUTER MOTION HAZE (palette-driven haze color: red in T5, cool ambient in T0-T4)
+    const hazeW = Math.round(paint.bodyW * 1.08);
+    const hazeX = Math.round(x + (w - hazeW) / 2);
+    ctx.save();
+    ctx.fillStyle = pal.holdHaze;
+    ctx.fillRect(hazeX, bodyY, hazeW, bodyLen);
+    ctx.restore();
 
-      // LAYER A — OUTER MOTION HAZE (palette-driven haze color: red in T5, icy in T0-T4)
-      const hazeW = Math.round(paint.bodyW * 1.08);
-      const hazeX = Math.round(x + (w - hazeW) / 2);
+    // LAYER B — MAIN WHITE / OBSIDIAN ENERGY BODY (Broad 96% energy strip)
+    ctx.drawImage(paint.strip, 0, 0, paint.tailWidth, 4, left, bodyY, paint.bodyW, bodyLen);
+
+    // Subtle breathing edges (no harsh outline, 2-5% long smooth drift)
+    const timeOffset = (now || 0) * 0.0012;
+    const driftLeft = Math.sin(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
+    const driftRight = Math.cos(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
+
+    if (!dead) {
       ctx.save();
-      ctx.fillStyle = pal.holdHaze;
-      ctx.fillRect(hazeX, bodyY, hazeW, bodyLen);
-      ctx.restore();
+      // Soft outer edge luminescence matching tier palette
+      ctx.strokeStyle = pal.isObsidian ? 'rgba(255, 23, 68, 0.45)' : pal.edge + '80';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(left + driftLeft, bodyY);
+      ctx.lineTo(left + driftLeft * 0.6, bottom);
+      ctx.moveTo(left + paint.bodyW + driftRight, bodyY);
+      ctx.lineTo(left + paint.bodyW + driftRight * 0.6, bottom);
+      ctx.stroke();
 
-      // LAYER B — MAIN WHITE / OBSIDIAN ENERGY BODY (Broad 96% energy strip)
-      ctx.drawImage(paint.strip, left, bodyY, paint.bodyW, bodyLen);
-
-      // Subtle breathing edges (no harsh outline, 2-5% long smooth drift)
-      const timeOffset = (now || 0) * 0.0012;
-      const driftLeft = Math.sin(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
-      const driftRight = Math.cos(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
-
-      if (!dead) {
-        ctx.save();
-        // Soft outer edge luminescence
-        ctx.strokeStyle = pal.isObsidian ? 'rgba(255, 23, 68, 0.45)' : 'rgba(225, 245, 255, 0.50)';
-        ctx.lineWidth = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(left + driftLeft, bodyY);
-        ctx.lineTo(left + driftLeft * 0.6, bottom);
-        ctx.moveTo(left + paint.bodyW + driftRight, bodyY);
-        ctx.lineTo(left + paint.bodyW + driftRight * 0.6, bottom);
-        ctx.stroke();
-
-        // LAYER C — CRIMSON ENERGY STREAK (embedded ribbon, 7-13% width, gentle wander)
-        const veinW = Math.max(3, Math.round(paint.bodyW * 0.09));
-        const redBaseX = left + paint.bodyW * 0.63;
-        const drift0 = Math.sin(timeOffset + bodyY * 0.003) * (paint.bodyW * 0.04);
-        const driftMid = Math.cos(timeOffset * 0.8 + (bodyY + bodyLen * 0.5) * 0.003) * (paint.bodyW * 0.05);
-        const driftEnd = Math.sin(timeOffset * 1.2 + bottom * 0.003) * (paint.bodyW * 0.03);
+      // LAYER C — ONLY IN T5 (OBSIDIAN BLOOD): BROAD INTERNAL CRIMSON ILLUMINATION
+      // STRICTLY DISABLED FOR T0–T4 (NO RED, NO TOOTHPASTE STRIPE)
+      if (pal.isObsidian && pal.holdVein) {
+        const veinW = Math.max(6, Math.round(paint.bodyW * 0.20));
+        const redBaseX = left + paint.bodyW * 0.50;
+        const drift0 = Math.sin(timeOffset + bodyY * 0.003) * (paint.bodyW * 0.03);
+        const driftMid = Math.cos(timeOffset * 0.8 + (bodyY + bodyLen * 0.5) * 0.003) * (paint.bodyW * 0.04);
+        const driftEnd = Math.sin(timeOffset * 1.2 + bottom * 0.003) * (paint.bodyW * 0.02);
 
         const x0 = redBaseX + drift0;
         const xMid = redBaseX + driftMid;
         const xEnd = redBaseX + driftEnd;
 
-        // A: Soft red diffuse bloom behind vein (palette-driven)
-        const bloomW = veinW * 2.0;
+        // Broad diffuse internal crimson glow (red light trapped beneath black obsidian)
+        const bloomW = veinW * 2.5;
         ctx.fillStyle = pal.holdVeinBloom;
         ctx.beginPath();
         ctx.moveTo(x0 - bloomW * 0.5, bodyY);
@@ -1543,7 +1533,7 @@ export const SANHUA_THEME = {
         ctx.closePath();
         ctx.fill();
 
-        // B: Solid crimson energy ribbon (palette-driven)
+        // Soft internal core
         ctx.fillStyle = pal.holdVein;
         ctx.beginPath();
         ctx.moveTo(x0 - veinW * 0.5, bodyY);
@@ -1553,17 +1543,41 @@ export const SANHUA_THEME = {
         ctx.closePath();
         ctx.fill();
 
-        // LAYER D — HOT SPECULAR CORE (adjacent to crimson vein)
+        // Hot specular core streak
         ctx.strokeStyle = pal.specular;
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.0;
         ctx.beginPath();
-        const specOffset = veinW * 0.65;
-        ctx.moveTo(x0 - specOffset, bodyY);
-        ctx.bezierCurveTo(xMid - specOffset, bodyY + bodyLen * 0.45, xEnd - specOffset, bodyY + bodyLen * 0.85, xEnd - specOffset, bottom);
+        ctx.moveTo(x0, bodyY);
+        ctx.bezierCurveTo(xMid, bodyY + bodyLen * 0.45, xEnd, bodyY + bodyLen * 0.85, xEnd, bottom);
         ctx.stroke();
-
-        ctx.restore();
       }
+
+      ctx.restore();
+    }
+
+    // ========================================================================
+    // 3. TOP END: SMOOTH TRANSPARENCY FADE VIA ALPHA MASK
+    // Dissolves the top 24–45px with an alpha gradient:
+    // yTail: alpha ≈ 0.30 -> ~25%: 0.45 -> ~50%: 0.65 -> ~80%: 0.85 -> 100%: 1.00
+    // NEVER fades to zero; absolute top end remains ~30% visible.
+    // ========================================================================
+    const fadeH = Math.min(42, Math.max(24, Math.round(length * 0.35)));
+    if (fadeH > 2) {
+      ctx.save();
+      ctx.beginPath();
+      // Clip mask strictly to the top section of the hold body + haze
+      ctx.rect(hazeX, yTail, hazeW, fadeH);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'destination-in';
+      const fadeGrad = ctx.createLinearGradient(0, yTail, 0, yTail + fadeH);
+      fadeGrad.addColorStop(0.00, 'rgba(0, 0, 0, 0.30)');
+      fadeGrad.addColorStop(0.25, 'rgba(0, 0, 0, 0.45)');
+      fadeGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.65)');
+      fadeGrad.addColorStop(0.80, 'rgba(0, 0, 0, 0.85)');
+      fadeGrad.addColorStop(1.00, 'rgba(0, 0, 0, 1.00)');
+      ctx.fillStyle = fadeGrad;
+      ctx.fillRect(hazeX, yTail, hazeW, fadeH);
+      ctx.restore();
     }
 
     return true;

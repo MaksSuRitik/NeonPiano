@@ -64,13 +64,13 @@ test('bakeTapNote renders fractured shards strictly respecting note bounds', () 
   }
 });
 
-test('drawHoldBody renders full-width Hiyuki energy slash tip and body strip', () => {
+test('drawHoldBody renders full-width Hiyuki energy body with top alpha fade and no tip canvas', () => {
   const c = context(0.8);
   // yTail = 100, tailH = 200 => bottom = 300, length = 200
   S.drawHoldBody(c, 10, 100, 90, 44, tile, false, 1234, 200, 250);
-  // Should draw blade tip and full-width energy ribbon
-  assert.ok(c.draws.length >= 2);
-  // Tip is drawn at left (12) and yTail (100)
+  // Should draw full-width continuous energy body strip directly from yTail
+  assert.ok(c.draws.length >= 1);
+  // Body is drawn at left (12) and yTail (100)
   assert.equal(c.draws[0].args[5], 12);
   assert.equal(c.draws[0].args[6], 100);
   assert.ok(c.draws.every(d => d.alpha <= 0.8));
@@ -100,10 +100,10 @@ test('failed and released hold notes render dead state cache entry', () => {
   S.drawHoldBody(cReleased, 0, 100, 90, 44, tile, false, 0, 200, 150, null, true);
   S.drawHoldBody(cFailed, 0, 100, 90, 44, { ...tile, failed: true }, false, 0, 200, 150);
 
-  assert.ok(cNormal.draws.length >= 2);
-  assert.ok(cReleased.draws.length >= 2);
-  assert.ok(cFailed.draws.length >= 2);
-  // Dead hold note cap is distinct from active cap
+  assert.ok(cNormal.draws.length >= 1);
+  assert.ok(cReleased.draws.length >= 1);
+  assert.ok(cFailed.draws.length >= 1);
+  // Dead hold note strip is distinct from active strip
   assert.notEqual(cNormal.draws[0].args[0], cReleased.draws[0].args[0]);
   assert.equal(cReleased.draws[0].args[0], cFailed.draws[0].args[0]);
 });
