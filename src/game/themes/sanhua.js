@@ -1009,12 +1009,13 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(148, 163, 184, 0.15)',
         specular: 'rgba(203, 213, 225, 0.40)',
         finTip: '#64748b',
+        // Vertical gradient: Dead / Released state (0.56-0.94 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(30, 41, 59, 0.85)'],
-          [0.25, 'rgba(51, 65, 85, 0.88)'],
-          [0.50, 'rgba(71, 85, 105, 0.90)'],
-          [0.75, 'rgba(100, 116, 139, 0.90)'],
-          [1.00, 'rgba(71, 85, 105, 0.82)']
+          [0.00, 'rgba(30, 41, 59, 0.94)'],  // BOTTOM: near receptor
+          [0.25, 'rgba(51, 65, 85, 0.91)'],  // 25% up
+          [0.50, 'rgba(71, 85, 105, 0.82)'], // 50% up
+          [0.75, 'rgba(100, 116, 139, 0.70)'],// 75% up
+          [1.00, 'rgba(71, 85, 105, 0.56)']  // TOP: free end at yTail
         ],
         holdStops: [
           [0.00, '#1e293b'],
@@ -1048,13 +1049,13 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(255, 23, 68, 0.45)',
         specular: '#ffffff',
         finTip: '#e61e3c',
-        // Vertical gradient: Black -> Dark Red -> Crimson (0.85-0.95 opacity throughout)
+        // Vertical gradient: Black -> Dark Red -> Crimson (0.62-0.96 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(8, 3, 6, 0.94)'],     // BOTTOM: #080306
-          [0.25, 'rgba(38, 8, 18, 0.90)'],   // MID-LOW: #260812
-          [0.50, 'rgba(103, 18, 37, 0.92)'], // MID: #671225
-          [0.75, 'rgba(197, 30, 62, 0.95)'], // MID-HIGH: #c51e3e
-          [1.00, 'rgba(143, 20, 46, 0.85)']  // TOP: #8f142e
+          [0.00, 'rgba(8, 3, 6, 0.96)'],     // BOTTOM: #080306 (near receptor)
+          [0.25, 'rgba(38, 8, 18, 0.93)'],   // MID-LOW: #260812 (25%)
+          [0.50, 'rgba(103, 18, 37, 0.86)'], // MID: #671225 (50%)
+          [0.75, 'rgba(197, 30, 62, 0.75)'], // MID-HIGH: #c51e3e (75%)
+          [1.00, 'rgba(143, 20, 46, 0.62)']  // TOP: #8f142e (free end at yTail)
         ],
         holdStops: [
           [0.00, '#080306'],
@@ -1088,13 +1089,13 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(169, 152, 216, 0.32)',
         specular: '#ffffff',
         finTip: '#ddd5f6',
-        // Vertical gradient: Amethyst hue progression (0.82-0.94 opacity throughout)
+        // Vertical gradient: Amethyst hue progression (0.56-0.94 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(85, 66, 126, 0.85)'],  // BOTTOM: #55427e
-          [0.25, 'rgba(120, 98, 169, 0.88)'], // MID-LOW: #7862a9
-          [0.50, 'rgba(165, 143, 208, 0.94)'],// MID: #a58fd0
-          [0.75, 'rgba(209, 194, 234, 0.92)'],// MID-HIGH: #d1c2ea
-          [1.00, 'rgba(170, 150, 210, 0.82)'] // TOP: #aa96d2
+          [0.00, 'rgba(85, 66, 126, 0.94)'],  // BOTTOM: #55427e (near receptor)
+          [0.25, 'rgba(120, 98, 169, 0.91)'], // MID-LOW: #7862a9 (25%)
+          [0.50, 'rgba(165, 143, 208, 0.82)'],// MID: #a58fd0 (50%)
+          [0.75, 'rgba(209, 194, 234, 0.70)'],// MID-HIGH: #d1c2ea (75%)
+          [1.00, 'rgba(170, 150, 210, 0.56)'] // TOP: #aa96d2 (free end at yTail)
         ],
         holdStops: [
           [0.00, '#55427e'],
@@ -1128,13 +1129,13 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(133, 137, 217, 0.32)',
         specular: '#ffffff',
         finTip: '#c5c7f6',
-        // Vertical gradient: Violet hue progression (0.82-0.94 opacity throughout)
+        // Vertical gradient: Violet hue progression (0.56-0.94 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(64, 59, 130, 0.85)'],  // BOTTOM: #403b82
-          [0.25, 'rgba(98, 93, 180, 0.88)'],  // MID-LOW: #625db4
-          [0.50, 'rgba(136, 131, 213, 0.94)'],// MID: #8883d5
-          [0.75, 'rgba(182, 177, 235, 0.92)'],// MID-HIGH: #b6b1eb
-          [1.00, 'rgba(142, 136, 214, 0.82)'] // TOP: #8e88d6
+          [0.00, 'rgba(64, 59, 130, 0.94)'],  // BOTTOM: #403b82 (near receptor)
+          [0.25, 'rgba(98, 93, 180, 0.91)'],  // MID-LOW: #625db4 (25%)
+          [0.50, 'rgba(136, 131, 213, 0.82)'],// MID: #8883d5 (50%)
+          [0.75, 'rgba(182, 177, 235, 0.70)'],// MID-HIGH: #b6b1eb (75%)
+          [1.00, 'rgba(142, 136, 214, 0.56)'] // TOP: #8e88d6 (free end at yTail)
         ],
         holdStops: [
           [0.00, '#403b82'],
@@ -1168,13 +1169,13 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(67, 142, 197, 0.32)',
         specular: '#ffffff',
         finTip: '#9ed4f4',
-        // Vertical gradient: Azure hue progression (0.82-0.94 opacity throughout)
+        // Vertical gradient: Azure hue progression (0.56-0.94 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(23, 77, 124, 0.85)'],  // BOTTOM: #174d7c
-          [0.25, 'rgba(38, 119, 173, 0.88)'], // MID-LOW: #2677ad
-          [0.50, 'rgba(77, 164, 214, 0.94)'], // MID: #4da4d6
-          [0.75, 'rgba(145, 207, 236, 0.92)'],// MID-HIGH: #91cfec
-          [1.00, 'rgba(94, 173, 216, 0.82)']  // TOP: #5eadd8
+          [0.00, 'rgba(23, 77, 124, 0.94)'],  // BOTTOM: #174d7c (near receptor)
+          [0.25, 'rgba(38, 119, 173, 0.91)'], // MID-LOW: #2677ad (25%)
+          [0.50, 'rgba(77, 164, 214, 0.82)'], // MID: #4da4d6 (50%)
+          [0.75, 'rgba(145, 207, 236, 0.70)'],// MID-HIGH: #91cfec (75%)
+          [1.00, 'rgba(94, 173, 216, 0.56)']  // TOP: #5eadd8 (free end at yTail)
         ],
         holdStops: [
           [0.00, '#174d7c'],
@@ -1208,13 +1209,13 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(96, 199, 232, 0.30)',
         specular: '#ffffff',
         finTip: '#bdefff',
-        // Vertical gradient: Cyan hue progression (0.82-0.94 opacity throughout)
+        // Vertical gradient: Cyan hue progression (0.56-0.94 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(20, 125, 155, 0.85)'], // BOTTOM: #147d9b
-          [0.25, 'rgba(40, 181, 210, 0.88)'], // MID-LOW: #28b5d2
-          [0.50, 'rgba(98, 216, 237, 0.94)'], // MID: #62d8ed
-          [0.75, 'rgba(167, 239, 248, 0.92)'],// MID-HIGH: #a7eff8
-          [1.00, 'rgba(114, 215, 233, 0.82)'] // TOP: #72d7e9
+          [0.00, 'rgba(20, 125, 155, 0.94)'], // BOTTOM: #147d9b (near receptor)
+          [0.25, 'rgba(40, 181, 210, 0.91)'], // MID-LOW: #28b5d2 (25%)
+          [0.50, 'rgba(98, 216, 237, 0.82)'], // MID: #62d8ed (50%)
+          [0.75, 'rgba(167, 239, 248, 0.70)'],// MID-HIGH: #a7eff8 (75%)
+          [1.00, 'rgba(114, 215, 233, 0.56)'] // TOP: #72d7e9 (free end at yTail)
         ],
         holdStops: [
           [0.00, '#147d9b'],
@@ -1247,13 +1248,13 @@ export const SANHUA_THEME = {
       resonanceGlow: 'rgba(220, 236, 245, 0.25)',
       specular: '#ffffff',
       finTip: '#dcecf5',
-      // Vertical gradient: Silver hue progression (0.82-0.94 opacity throughout)
+      // Vertical gradient: Silver hue progression (0.56-0.94 smooth longitudinal progression)
       holdVerticalStops: [
-        [0.00, 'rgba(100, 127, 146, 0.85)'], // BOTTOM: #647f92
-        [0.25, 'rgba(168, 194, 210, 0.88)'], // MID-LOW: #a8c2d2
-        [0.50, 'rgba(215, 229, 237, 0.94)'], // MID: #d7e5ed
-        [0.75, 'rgba(238, 245, 248, 0.92)'], // MID-HIGH: #eef5f8
-        [1.00, 'rgba(197, 217, 228, 0.82)']  // TOP: #c5d9e4
+        [0.00, 'rgba(100, 127, 146, 0.94)'], // BOTTOM: #647f92 (near receptor)
+        [0.25, 'rgba(168, 194, 210, 0.91)'], // MID-LOW: #a8c2d2 (25%)
+        [0.50, 'rgba(215, 229, 237, 0.82)'], // MID: #d7e5ed (50%)
+        [0.75, 'rgba(238, 245, 248, 0.70)'], // MID-HIGH: #eef5f8 (75%)
+        [1.00, 'rgba(197, 217, 228, 0.56)']  // TOP: #c5d9e4 (free end at yTail)
       ],
       holdStops: [
         [0.00, '#647f92'],
@@ -1593,8 +1594,8 @@ export const SANHUA_THEME = {
     bCtx.clearRect(0, 0, bodyW, Math.ceil(bodyLen));
 
     // 1. Base Energy Body: Vertical Color Gradient (Bottom bodyLen -> Top 0)
-    // Darker/richer base near receptor (alpha 0.85-0.95), luminous middle (0.88-0.95),
-    // softly defined top end (0.78-0.82) - NEVER faded to near invisibility.
+    // Dense magical energy near receptor (alpha ~0.94-0.96), smoothly and gradually
+    // dissipating toward the free end at yTail (alpha ~0.55-0.62) across the entire body length.
     const vGrad = bCtx.createLinearGradient(0, bodyLen, 0, 0);
     for (const [stop, col] of pal.holdVerticalStops) {
       vGrad.addColorStop(stop, col);
