@@ -47,92 +47,135 @@ let _envParticles = null;
 // ----------------------------------------------------------------------------
 // FRACTAL CRYSTALLINE SPECTRAL TREE TOPOLOGY GENERATOR (Section 3)
 // ----------------------------------------------------------------------------
-function generateSpectralTree(gw, gh) {
-  const rng = mulberry32(0x8F31C5);
-  const segments = [];
+// ----------------------------------------------------------------------------
+// HAND-STRUCTURED SPECTRAL CRYSTALLINE TREE (Sections 1, 2, 3, 4, 5)
+// One massive dominant trunk (32–52px) sweeping upward before dividing into
+// 4 primary antler limbs, with ~6 secondary branches and ~11 terminal crystal tips TOTAL.
+// ----------------------------------------------------------------------------
+function createTreeSegment(p1, p2, w1, w2, depth, fractures = null) {
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const effFractures = [];
 
-  const rootX = gw * 0.58;
-  const rootY = gh * 1.01;
-  const initLength = gh * 0.23;
-  const initWidth = Math.max(16, Math.min(30, gw * 0.046));
-
-  function branch(x, y, angle, length, width, depth, bend) {
-    if (depth > 7 || width < 1.0 || length < 4) return;
-
-    const effAngle = angle + bend;
-    const x2 = x + Math.cos(effAngle) * length;
-    const y2 = y + Math.sin(effAngle) * length;
-    const w2 = Math.max(1.2, width * (0.60 + rng() * 0.14));
-
-    // Broken dead-end branches (occasional jagged stump)
-    const isBroken = (depth >= 4 && rng() < 0.16);
-
-    // Micro-fractures inside major branch prisms
-    const fractures = [];
-    if (depth <= 4 && width > 4.5) {
-      const numFrac = 1 + Math.floor(rng() * 3);
-      for (let f = 0; f < numFrac; f++) {
-        const tFrac = 0.2 + rng() * 0.6;
-        const fx = x + (x2 - x) * tFrac;
-        const fy = y + (y2 - y) * tFrac;
-        const fAng = effAngle + (rng() > 0.5 ? 1 : -1) * (0.45 + rng() * 0.55);
-        const fLen = width * (0.4 + rng() * 0.7);
-        fractures.push({
-          x1: fx,
-          y1: fy,
-          x2: fx + Math.cos(fAng) * fLen,
-          y2: fy + Math.sin(fAng) * fLen
-        });
-      }
-    }
-
-    segments.push({
-      x1: x, y1: y,
-      x2: x2, y2: y2,
-      w1: width,
-      w2: isBroken ? width * 0.8 : w2,
-      depth,
-      isBroken,
-      fractures
-    });
-
-    if (isBroken) return;
-
-    // 2-4 children for major boughs, 2 for higher depths
-    let numChildren = 2;
-    if (depth <= 2) {
-      numChildren = rng() > 0.35 ? 3 : 2;
-    } else if (depth === 3 && rng() > 0.65) {
-      numChildren = 3;
-    }
-
-    const baseSpread = 0.36 + rng() * 0.22;
-    for (let c = 0; c < numChildren; c++) {
-      let childAngle;
-      const childLenMult = 0.68 + rng() * 0.24;
-      const childWidthMult = 0.64 + rng() * 0.14;
-      const childBend = (rng() - 0.5) * 0.16;
-
-      if (numChildren === 2) {
-        const side = (c === 0 ? -1 : 1);
-        const spread = baseSpread * (c === 0 ? (0.8 + rng() * 0.4) : (0.9 + rng() * 0.4));
-        childAngle = effAngle + side * spread;
-        if (childAngle > -0.2) childAngle = -0.2 - rng() * 0.18;
-        if (childAngle < -Math.PI + 0.2) childAngle = -Math.PI + 0.2 + rng() * 0.18;
-      } else {
-        const spread = (c === 1) ? (rng() - 0.5) * 0.18 : (c === 0 ? -baseSpread : baseSpread);
-        childAngle = effAngle + spread;
-      }
-
-      // Wide crown horizontal antler spread
-      if (depth === 2 && c === 0) childAngle -= 0.24;
-      else if (depth === 2 && c === numChildren - 1) childAngle += 0.24;
-
-      branch(x2, y2, childAngle, length * childLenMult, width * childWidthMult, depth + 1, childBend);
+  if (fractures) {
+    for (let f = 0; f < fractures.length; f++) {
+      const fr = fractures[f];
+      const fx = p1.x + dx * fr.t;
+      const fy = p1.y + dy * fr.t;
+      const fAng = Math.atan2(dy, dx) + fr.ang;
+      effFractures.push({
+        x1: fx,
+        y1: fy,
+        x2: fx + Math.cos(fAng) * fr.len,
+        y2: fy + Math.sin(fAng) * fr.len
+      });
     }
   }
 
-  branch(rootX, rootY, -Math.PI * 0.54, initLength, initWidth, 0, -0.04);
+  return {
+    x1: p1.x, y1: p1.y,
+    x2: p2.x, y2: p2.y,
+    w1, w2,
+    depth,
+    fractures: effFractures
+  };
+}
+
+function generateSpectralTree(gw, gh) {
+  const segments = [];
+
+  // 1. MASSIVE DOMINANT TRUNK (Sweeps through lower-middle region)
+  // Section 3: 15–28% of screen width at thickest section (30–52px)
+  const trunkW = Math.max(30, Math.min(52, Math.round(gw * 0.082)));
+
+  const p0 = { x: gw * 0.63, y: gh * 1.01 };
+  const p1 = { x: gw * 0.60, y: gh * 0.82 };
+  const p2 = { x: gw * 0.55, y: gh * 0.64 };
+  const p3 = { x: gw * 0.49, y: gh * 0.47 }; // Major fork junction
+
+  segments.push(createTreeSegment(p0, p1, trunkW, trunkW * 0.88, 0, [
+    { t: 0.35, len: trunkW * 0.55, ang: 0.65 },
+    { t: 0.70, len: trunkW * 0.60, ang: -0.55 }
+  ]));
+  segments.push(createTreeSegment(p1, p2, trunkW * 0.88, trunkW * 0.78, 0, [
+    { t: 0.40, len: trunkW * 0.50, ang: 0.70 },
+    { t: 0.75, len: trunkW * 0.45, ang: -0.60 }
+  ]));
+  segments.push(createTreeSegment(p2, p3, trunkW * 0.78, trunkW * 0.66, 0, [
+    { t: 0.48, len: trunkW * 0.48, ang: 0.55 }
+  ]));
+
+  // Lower trunk spur (adds organic bone/crystal shelf)
+  const pSpur1 = { x: gw * 0.44, y: gh * 0.60 };
+  const pSpur2 = { x: gw * 0.36, y: gh * 0.65 };
+  segments.push(createTreeSegment(p2, pSpur1, trunkW * 0.36, trunkW * 0.22, 1));
+  segments.push(createTreeSegment(pSpur1, pSpur2, trunkW * 0.22, trunkW * 0.12, 2));
+  segments.push(createTreeSegment(pSpur2, { x: gw * 0.29, y: gh * 0.63 }, trunkW * 0.12, 3.5, 3));
+  segments.push(createTreeSegment(pSpur2, { x: gw * 0.32, y: gh * 0.72 }, trunkW * 0.12, 3.0, 3));
+
+  // 2. PRIMARY LIMB 1: Massive sweeping left bough (antler curvature)
+  const pL1_1 = { x: gw * 0.38, y: gh * 0.41 };
+  const pL1_2 = { x: gw * 0.25, y: gh * 0.36 };
+  const pL1_3 = { x: gw * 0.15, y: gh * 0.32 };
+  segments.push(createTreeSegment(p3, pL1_1, trunkW * 0.60, trunkW * 0.45, 1, [
+    { t: 0.5, len: trunkW * 0.35, ang: -0.6 }
+  ]));
+  segments.push(createTreeSegment(pL1_1, pL1_2, trunkW * 0.45, trunkW * 0.32, 1));
+  segments.push(createTreeSegment(pL1_2, pL1_3, trunkW * 0.32, trunkW * 0.20, 1));
+
+  // Secondary branches on Limb 1:
+  const pL1_A1 = { x: gw * 0.23, y: gh * 0.22 };
+  segments.push(createTreeSegment(pL1_2, pL1_A1, trunkW * 0.24, trunkW * 0.14, 2));
+  segments.push(createTreeSegment(pL1_A1, { x: gw * 0.17, y: gh * 0.15 }, trunkW * 0.14, 3.0, 3));
+  segments.push(createTreeSegment(pL1_A1, { x: gw * 0.26, y: gh * 0.13 }, trunkW * 0.14, 3.0, 3));
+
+  // Tips on Limb 1:
+  segments.push(createTreeSegment(pL1_3, { x: gw * 0.07, y: gh * 0.28 }, trunkW * 0.20, 4.0, 3));
+  segments.push(createTreeSegment(pL1_3, { x: gw * 0.10, y: gh * 0.39 }, trunkW * 0.18, 3.0, 3));
+
+  // 3. PRIMARY LIMB 2: High center-left crown antler
+  const pL2_1 = { x: gw * 0.46, y: gh * 0.33 };
+  const pL2_2 = { x: gw * 0.40, y: gh * 0.20 };
+  const pL2_3 = { x: gw * 0.33, y: gh * 0.09 };
+  segments.push(createTreeSegment(p3, pL2_1, trunkW * 0.52, trunkW * 0.38, 1));
+  segments.push(createTreeSegment(pL2_1, pL2_2, trunkW * 0.38, trunkW * 0.26, 1));
+  segments.push(createTreeSegment(pL2_2, pL2_3, trunkW * 0.26, trunkW * 0.16, 1));
+
+  // Secondary on Limb 2:
+  const pL2_B1 = { x: gw * 0.46, y: gh * 0.11 };
+  segments.push(createTreeSegment(pL2_2, pL2_B1, trunkW * 0.20, trunkW * 0.12, 2));
+  segments.push(createTreeSegment(pL2_B1, { x: gw * 0.49, y: gh * 0.03 }, trunkW * 0.12, 3.0, 3));
+  segments.push(createTreeSegment(pL2_3, { x: gw * 0.27, y: gh * 0.04 }, trunkW * 0.16, 3.0, 3));
+
+  // 4. PRIMARY LIMB 3: High center-right crown antler
+  const pL3_1 = { x: gw * 0.58, y: gh * 0.33 };
+  const pL3_2 = { x: gw * 0.65, y: gh * 0.19 };
+  const pL3_3 = { x: gw * 0.61, y: gh * 0.08 };
+  segments.push(createTreeSegment(p3, pL3_1, trunkW * 0.50, trunkW * 0.36, 1));
+  segments.push(createTreeSegment(pL3_1, pL3_2, trunkW * 0.36, trunkW * 0.24, 1));
+  segments.push(createTreeSegment(pL3_2, pL3_3, trunkW * 0.24, trunkW * 0.14, 1));
+
+  // Secondary on Limb 3:
+  const pL3_C1 = { x: gw * 0.73, y: gh * 0.12 };
+  segments.push(createTreeSegment(pL3_2, pL3_C1, trunkW * 0.20, trunkW * 0.12, 2));
+  segments.push(createTreeSegment(pL3_C1, { x: gw * 0.79, y: gh * 0.06 }, trunkW * 0.12, 3.0, 3));
+  segments.push(createTreeSegment(pL3_3, { x: gw * 0.57, y: gh * 0.02 }, trunkW * 0.14, 3.0, 3));
+
+  // 5. PRIMARY LIMB 4: Sweeping right bough
+  const pL4_1 = { x: gw * 0.66, y: gh * 0.45 };
+  const pL4_2 = { x: gw * 0.78, y: gh * 0.41 };
+  const pL4_3 = { x: gw * 0.89, y: gh * 0.39 };
+  segments.push(createTreeSegment(p3, pL4_1, trunkW * 0.48, trunkW * 0.34, 1));
+  segments.push(createTreeSegment(pL4_1, pL4_2, trunkW * 0.34, trunkW * 0.22, 1));
+  segments.push(createTreeSegment(pL4_2, pL4_3, trunkW * 0.22, trunkW * 0.14, 1));
+
+  // Secondary on Limb 4:
+  const pL4_D1 = { x: gw * 0.84, y: gh * 0.29 };
+  segments.push(createTreeSegment(pL4_2, pL4_D1, trunkW * 0.18, trunkW * 0.10, 2));
+  segments.push(createTreeSegment(pL4_D1, { x: gw * 0.93, y: gh * 0.23 }, trunkW * 0.10, 3.0, 3));
+  segments.push(createTreeSegment(pL4_3, { x: gw * 0.97, y: gh * 0.37 }, trunkW * 0.14, 3.0, 3));
+  segments.push(createTreeSegment(pL4_3, { x: gw * 0.94, y: gh * 0.48 }, trunkW * 0.12, 3.0, 3));
+
   return segments;
 }
 
@@ -226,9 +269,9 @@ function renderTreePrismsToCanvas(canvas, segments, isT5) {
     ctx.stroke();
 
     // Terminal Crystalline Wedges
-    if (seg.depth >= 6) {
-      const tipX = seg.x2 + (dx / len) * w2 * 1.8;
-      const tipY = seg.y2 + (dy / len) * w2 * 1.8;
+    if (seg.depth >= 3) {
+      const tipX = seg.x2 + (dx / len) * w2 * 2.2;
+      const tipY = seg.y2 + (dy / len) * w2 * 2.2;
       ctx.fillStyle = colSpecular;
       ctx.beginPath();
       ctx.moveTo(p2_L[0], p2_L[1]);
@@ -858,152 +901,141 @@ export const SANHUA_THEME = {
   // Procedural pseudo-Voronoi fracture pattern with orientation-dependent lighting.
   // Returns true to guarantee on-screen display.
   // ==========================================================================
+  // ==========================================================================
+  // ==========================================================================
+  // 1. MINIATURE HIYUKI ENERGY SLASH TAP NOTES
+  // A small frozen frame of Hiyuki's energy slash: dominant bright overexposed
+  // white energy (70-80%), pale ice-blue translucency (15-20%), and ONE elegant
+  // crimson energy vein (8-14%) embedded inside with soft red bloom and specular hotspot.
+  // Occupies 94-98% of w. Strictly NO rectangular UI borders, cracks, or mosaics.
+  // ==========================================================================
   bakeTapNote(ctx, x, yTop, w, h, isLight, style) {
     const tier = this._resolveTierNum(style);
-    const pal = this._getPalette(tier, false);
     const isT5 = tier >= 800;
 
     ctx.save();
 
-    // Base background gradient fill
-    const bg = ctx.createLinearGradient(x, yTop, x + w, yTop + h);
-    if (isLight) {
-      bg.addColorStop(0, '#fdf2f8');
-      bg.addColorStop(0.5, '#fce7f3');
-      bg.addColorStop(1, '#fbcfe8');
-    } else if (isT5) {
-      bg.addColorStop(0, '#1c0307');
-      bg.addColorStop(0.5, '#0d0104');
-      bg.addColorStop(1, '#050002');
-    } else {
-      bg.addColorStop(0, pal.bgTop || '#07253d');
-      bg.addColorStop(0.5, pal.bgMid || '#041524');
-      bg.addColorStop(1, pal.bgBot || '#020a12');
-    }
+    const padX = Math.max(1, Math.round(w * 0.02));
+    const left = x + padX;
+    const right = x + w - padX;
+    const top = yTop;
+    const bot = yTop + h;
+    const width = right - left;
+    const slashInset = Math.max(3, Math.round(h * 0.22));
 
-    // Clip strictly to note rectangle
-    ctx.beginPath();
-    ctx.rect(x, yTop, w, h);
-    ctx.fillStyle = bg;
+    // Subtle flowing slash silhouette: left tapered, middle broad, right swept diagonal
+    const createSlashPath = (pCtx, insetL, insetR, extraPad = 0) => {
+      pCtx.beginPath();
+      pCtx.moveTo(left + insetL - extraPad, top - extraPad);
+      pCtx.lineTo(right - insetR * 0.4 + extraPad, top - extraPad);
+      pCtx.quadraticCurveTo(right + extraPad, top + h * 0.4, right - insetR + extraPad, bot + extraPad);
+      pCtx.lineTo(left + extraPad, bot + extraPad);
+      pCtx.quadraticCurveTo(left - extraPad, top + h * 0.6, left + insetL - extraPad, top - extraPad);
+      pCtx.closePath();
+    };
+
+    // LAYER 1 — OUTER ICE HAZE (soft white/blue energy envelope extending 2px beyond core)
+    createSlashPath(ctx, slashInset, slashInset, 2);
+    if (isT5) {
+      ctx.fillStyle = 'rgba(255, 23, 68, 0.12)';
+    } else if (isLight) {
+      ctx.fillStyle = 'rgba(186, 230, 253, 0.14)';
+    } else {
+      ctx.fillStyle = 'rgba(170, 210, 240, 0.14)';
+    }
     ctx.fill();
+
+    // LAYER 2 — MAIN HIYUKI WHITE ENERGY (70-80% perceived white / silver / pale ice blue)
+    createSlashPath(ctx, slashInset, slashInset, 0);
+
+    const slashGrad = ctx.createLinearGradient(left, top, right, bot);
+    if (isLight) {
+      slashGrad.addColorStop(0.00, 'rgba(170, 210, 240, 0.12)');
+      slashGrad.addColorStop(0.20, 'rgba(225, 242, 255, 0.65)');
+      slashGrad.addColorStop(0.46, 'rgba(255, 255, 255, 0.98)');
+      slashGrad.addColorStop(0.62, 'rgba(245, 250, 255, 0.88)');
+      slashGrad.addColorStop(0.85, 'rgba(224, 242, 254, 0.55)');
+      slashGrad.addColorStop(1.00, 'rgba(170, 210, 240, 0.15)');
+    } else if (isT5) {
+      slashGrad.addColorStop(0.00, 'rgba(25, 3, 8, 0.70)');
+      slashGrad.addColorStop(0.20, 'rgba(75, 12, 24, 0.85)');
+      slashGrad.addColorStop(0.44, 'rgba(255, 255, 255, 0.98)'); // Luminous white-hot core
+      slashGrad.addColorStop(0.58, 'rgba(255, 238, 242, 0.92)');
+      slashGrad.addColorStop(0.82, 'rgba(185, 28, 50, 0.65)');
+      slashGrad.addColorStop(1.00, 'rgba(30, 4, 10, 0.70)');
+    } else {
+      slashGrad.addColorStop(0.00, 'rgba(170, 210, 240, 0.10)');
+      slashGrad.addColorStop(0.20, 'rgba(225, 242, 255, 0.65)');
+      slashGrad.addColorStop(0.46, 'rgba(255, 255, 255, 0.98)'); // Bright overexposed core
+      slashGrad.addColorStop(0.62, 'rgba(245, 250, 255, 0.85)');
+      slashGrad.addColorStop(0.85, 'rgba(200, 230, 250, 0.50)');
+      slashGrad.addColorStop(1.00, 'rgba(170, 210, 240, 0.15)');
+    }
+    ctx.fillStyle = slashGrad;
+    ctx.fill();
+
+    // Clip to slash silhouette to embed vein and specular highlights seamlessly
     ctx.clip();
 
-    // ------------------------------------------------------------------------
-    // FRACTURE CLEAVAGE GEOMETRY (11 Asymmetric Shards)
-    // ------------------------------------------------------------------------
-    const V = [
-      [0.00, 0.00], [0.24, 0.00], [0.52, 0.00], [0.80, 0.00], [1.00, 0.00],
-      [1.00, 0.42], [1.00, 0.74], [1.00, 1.00],
-      [0.76, 1.00], [0.50, 1.00], [0.22, 1.00], [0.00, 1.00],
-      [0.00, 0.65], [0.00, 0.30],
-      // Interior pseudo-Voronoi nodes
-      [0.32, 0.36], [0.66, 0.30], [0.46, 0.66], [0.78, 0.60]
-    ];
-    const pt = (idx) => [x + V[idx][0] * w, yTop + V[idx][1] * h];
+    // LAYER 3 — CRIMSON ENERGY VEIN (asymmetric at 63% across note width, 8-14% wide)
+    const redCenter = left + width * 0.63;
+    const veinW = Math.max(2, Math.round(width * 0.10));
+    const veinHalf = veinW * 0.5;
 
-    const shards = [
-      { pts: [0, 1, 14, 13],    specular: true,  lightTier: 0.85 },
-      { pts: [1, 2, 15, 14],    specular: true,  lightTier: 0.70 },
-      { pts: [2, 3, 4, 5, 15],  specular: true,  lightTier: 0.65 },
-      { pts: [13, 14, 16, 12],  specular: false, lightTier: 0.35 },
-      { pts: [12, 16, 10, 11],  specular: false, lightTier: 0.20 },
-      { pts: [14, 15, 17, 16],  specular: true,  lightTier: 0.90 },
-      { pts: [15, 5, 6, 17],    specular: false, lightTier: 0.40 },
-      { pts: [16, 17, 6, 7, 8], specular: false, lightTier: 0.25 },
-      { pts: [10, 16, 8, 9],    specular: false, lightTier: 0.30 }
-    ];
+    // A: Soft red bloom around the vein (looks embedded inside the white energy)
+    const bloomW = veinW * 2.2;
+    const redBloom = ctx.createLinearGradient(redCenter - bloomW, top, redCenter + bloomW, bot);
+    if (isT5) {
+      redBloom.addColorStop(0.0, 'rgba(255, 23, 68, 0.0)');
+      redBloom.addColorStop(0.5, 'rgba(255, 23, 68, 0.35)');
+      redBloom.addColorStop(1.0, 'rgba(255, 23, 68, 0.0)');
+    } else {
+      redBloom.addColorStop(0.0, 'rgba(239, 51, 79, 0.0)');
+      redBloom.addColorStop(0.5, tier >= 200 ? 'rgba(239, 51, 79, 0.28)' : 'rgba(239, 51, 79, 0.18)');
+      redBloom.addColorStop(1.0, 'rgba(239, 51, 79, 0.0)');
+    }
+    ctx.fillStyle = redBloom;
+    ctx.fillRect(redCenter - bloomW, top, bloomW * 2, h);
 
-    for (let i = 0; i < shards.length; i++) {
-      const sh = shards[i];
-      const p0 = pt(sh.pts[0]);
-      ctx.beginPath();
-      ctx.moveTo(p0[0], p0[1]);
-      for (let j = 1; j < sh.pts.length; j++) {
-        const pj = pt(sh.pts[j]);
-        ctx.lineTo(pj[0], pj[1]);
-      }
-      ctx.closePath();
-
-      // Shard surface refraction gradient based on orientation
-      if (isLight) {
-        ctx.fillStyle = sh.specular ? 'rgba(255, 255, 255, 0.60)' : `rgba(244, 114, 182, ${0.15 + sh.lightTier * 0.25})`;
-      } else if (isT5) {
-        // T5 Obsidian Crystal Faces
-        if (sh.specular) {
-          ctx.fillStyle = 'rgba(43, 17, 24, 0.85)';
-        } else {
-          ctx.fillStyle = sh.lightTier > 0.30 ? 'rgba(21, 17, 26, 0.85)' : 'rgba(5, 5, 9, 0.90)';
-        }
-      } else {
-        // Celestial Ice Glass Faces
-        if (sh.specular) {
-          ctx.fillStyle = 'rgba(230, 246, 255, 0.55)';
-        } else {
-          ctx.fillStyle = sh.lightTier > 0.30 ? 'rgba(118, 199, 239, 0.25)' : 'rgba(47, 128, 183, 0.20)';
-        }
-      }
-      ctx.fill();
-
-      // Specular sheen highlight along light-facing boundaries
-      if (sh.specular) {
-        ctx.strokeStyle = isT5 ? 'rgba(255, 60, 90, 0.65)' : 'rgba(255, 255, 255, 0.60)';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-      }
+    // B: Elegant Crimson Energy Ribbon
+    const veinGrad = ctx.createLinearGradient(redCenter - veinHalf, top, redCenter + veinHalf, bot);
+    if (isT5) {
+      veinGrad.addColorStop(0.00, 'rgba(185, 28, 50, 0.70)');
+      veinGrad.addColorStop(0.40, '#ff1744');
+      veinGrad.addColorStop(1.00, 'rgba(239, 51, 79, 0.90)');
+    } else {
+      veinGrad.addColorStop(0.00, 'rgba(185, 28, 50, 0.55)');
+      veinGrad.addColorStop(0.40, 'rgba(255, 90, 110, 0.95)');
+      veinGrad.addColorStop(1.00, 'rgba(239, 51, 79, 0.85)');
     }
 
-    // Razor-sharp fracture lines
-    ctx.strokeStyle = isT5 ? '#ff1744' : (pal.border || '#38bdf8');
-    ctx.lineWidth = 1.0;
     ctx.beginPath();
-    const fractureLines = [
-      [14, 1], [14, 13], [14, 15], [14, 16],
-      [15, 2], [15, 5], [15, 17],
-      [16, 12], [16, 10], [16, 8], [16, 17],
-      [17, 6]
-    ];
-    for (let k = 0; k < fractureLines.length; k++) {
-      const pA = pt(fractureLines[k][0]);
-      const pB = pt(fractureLines[k][1]);
-      ctx.moveTo(pA[0], pA[1]);
-      ctx.lineTo(pB[0], pB[1]);
-    }
-    ctx.stroke();
-
-    // Primary fracture node star glints
-    const pCenter1 = pt(14);
-    const pCenter2 = pt(15);
-    ctx.fillStyle = isT5 ? '#fff5f5' : '#ffffff';
-    ctx.beginPath();
-    ctx.arc(pCenter1[0], pCenter1[1], 1.6, 0, Math.PI * 2);
-    ctx.arc(pCenter2[0], pCenter2[1], 1.2, 0, Math.PI * 2);
+    ctx.moveTo(redCenter - veinHalf - slashInset * 0.3, top);
+    ctx.lineTo(redCenter + veinHalf - slashInset * 0.3, top);
+    ctx.lineTo(redCenter + veinHalf + slashInset * 0.3, bot);
+    ctx.lineTo(redCenter - veinHalf + slashInset * 0.3, bot);
+    ctx.closePath();
+    ctx.fillStyle = veinGrad;
     ctx.fill();
 
-    // Micro 4-point cross glint
-    ctx.strokeStyle = isT5 ? '#ff1744' : 'rgba(255, 255, 255, 0.95)';
-    ctx.lineWidth = 0.9;
+    // LAYER 4 — SPECULAR HOTSPOT (narrow overexposed white streak near crimson vein)
+    const specX = redCenter - veinHalf - Math.max(1, Math.round(width * 0.03));
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.3;
     ctx.beginPath();
-    ctx.moveTo(pCenter1[0] - 4, pCenter1[1]); ctx.lineTo(pCenter1[0] + 4, pCenter1[1]);
-    ctx.moveTo(pCenter1[0], pCenter1[1] - 4); ctx.lineTo(pCenter1[0], pCenter1[1] + 4);
+    ctx.moveTo(specX - slashInset * 0.3, top + 1);
+    ctx.lineTo(specX + slashInset * 0.3, bot - 1);
     ctx.stroke();
 
-    // Top glass bevel sheen
-    const glossH = Math.max(3, Math.round(h * 0.32));
-    const gloss = ctx.createLinearGradient(x, yTop, x, yTop + glossH);
-    gloss.addColorStop(0, isT5 ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.35)');
-    gloss.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-    ctx.fillStyle = gloss;
-    ctx.fillRect(x, yTop, w, glossH);
+    // Leading edge specular sheen along top slash crest
+    ctx.strokeStyle = isT5 ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.88)';
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.moveTo(left + slashInset, top);
+    ctx.lineTo(right - slashInset * 0.4, top);
+    ctx.stroke();
 
     ctx.restore();
-
-    // Outer perimeter sharp border
-    ctx.save();
-    ctx.strokeStyle = isT5 ? '#ff1744' : (pal.border || '#38bdf8');
-    ctx.lineWidth = isT5 ? 1.8 : 1.4;
-    ctx.strokeRect(x + 0.5, yTop + 0.5, w - 1, h - 1);
-    ctx.restore();
-
     return true;
   },
 
@@ -1012,9 +1044,11 @@ export const SANHUA_THEME = {
   },
 
   // ==========================================================================
-  // 2. CELESTIAL ICE COMET HOLD NOTES — NO KATANA (Sections 10, 11, 12, 13)
-  // Replaces sword logic with a flowing spirit energy veil ending in a razor-sharp
-  // true crescent moon negative-space cutout at yTail.
+  // 2. FLOWING HIYUKI ENERGY SLASH HOLD NOTES
+  // Same energy material as the tap note stretched into a continuous flowing wake:
+  // broad white-hot energy body (94-98% of w), pale-blue translucent edges,
+  // wandering crimson energy vein (7-13% width) with soft red bloom, specular hotspot,
+  // terminating at yTail with a fast diagonal slash blade tip (NO crescent).
   // ==========================================================================
   _getHoldPaintCache(w, h, comboTier, dead = false, isLight = false) {
     const width = Math.max(1, Math.round(w));
@@ -1030,10 +1064,11 @@ export const SANHUA_THEME = {
     const key = index + (isLight ? 7 : 0);
     if (cache.entries[key]) return cache.entries[key];
 
-    const tailWidth = Math.max(1, Math.round(width * 0.76));
-    const capHeight = Math.min(Math.round(tailWidth * 0.40) + 6, Math.round(height * 0.55));
+    // Hold body occupies ~96% of note width
+    const tailWidth = Math.max(1, Math.round(width * 0.96));
+    const tipHeight = Math.min(Math.round(tailWidth * 0.32) + 4, Math.round(height * 0.50));
 
-    // 1. Energy Ribbon Gradient Strip
+    // 1. Energy Ribbon Gradient Strip (Hiyuki Cross-Section)
     const strip = document.createElement('canvas');
     strip.width = tailWidth;
     strip.height = 4;
@@ -1041,108 +1076,87 @@ export const SANHUA_THEME = {
     const grad = g.createLinearGradient(0, 0, tailWidth, 0);
 
     if (dead) {
-      grad.addColorStop(0, '#1e293b');
-      grad.addColorStop(0.3, '#475569');
-      grad.addColorStop(0.5, '#94a3b8');
-      grad.addColorStop(0.7, '#475569');
-      grad.addColorStop(1, '#1e293b');
+      grad.addColorStop(0.00, 'rgba(30, 41, 59, 0.15)');
+      grad.addColorStop(0.25, 'rgba(71, 85, 105, 0.60)');
+      grad.addColorStop(0.50, 'rgba(148, 163, 184, 0.90)');
+      grad.addColorStop(0.70, 'rgba(71, 85, 105, 0.60)');
+      grad.addColorStop(1.00, 'rgba(30, 41, 59, 0.15)');
     } else if (isT5) {
-      grad.addColorStop(0, '#180308');
-      grad.addColorStop(0.25, '#7f1d1d');
-      grad.addColorStop(0.42, '#dc2626');
-      grad.addColorStop(0.50, '#ffffff'); // pure white-hot qi center
-      grad.addColorStop(0.58, '#dc2626');
-      grad.addColorStop(0.75, '#7f1d1d');
-      grad.addColorStop(1, '#180308');
+      grad.addColorStop(0.00, 'rgba(25, 3, 8, 0.25)');
+      grad.addColorStop(0.18, 'rgba(75, 12, 24, 0.65)');
+      grad.addColorStop(0.44, '#ffffff'); // Dominant bright white-hot core
+      grad.addColorStop(0.56, 'rgba(255, 238, 242, 0.95)');
+      grad.addColorStop(0.64, '#ff1744'); // Crimson incision
+      grad.addColorStop(0.74, 'rgba(185, 28, 50, 0.65)');
+      grad.addColorStop(0.88, 'rgba(75, 12, 24, 0.45)');
+      grad.addColorStop(1.00, 'rgba(25, 3, 8, 0.20)');
+    } else if (isLight) {
+      grad.addColorStop(0.00, 'rgba(186, 230, 253, 0.12)');
+      grad.addColorStop(0.20, 'rgba(225, 242, 255, 0.65)');
+      grad.addColorStop(0.46, '#ffffff'); // White core
+      grad.addColorStop(0.58, 'rgba(255, 240, 245, 0.90)');
+      grad.addColorStop(0.64, 'rgba(244, 63, 94, 0.90)'); // Crimson vein
+      grad.addColorStop(0.74, 'rgba(225, 29, 72, 0.35)');
+      grad.addColorStop(0.88, 'rgba(224, 242, 254, 0.55)');
+      grad.addColorStop(1.00, 'rgba(186, 230, 253, 0.12)');
     } else {
-      grad.addColorStop(0, '#0369a1');
-      grad.addColorStop(0.24, '#0284c7');
-      grad.addColorStop(0.42, '#38bdf8');
-      grad.addColorStop(0.50, '#ffffff'); // pure white-hot energy core
-      grad.addColorStop(0.58, '#38bdf8');
-      grad.addColorStop(0.76, '#0284c7');
-      grad.addColorStop(1, '#0369a1');
+      const redAlpha = tier >= 400 ? 0.95 : tier >= 200 ? 0.88 : tier >= 100 ? 0.80 : 0.70;
+      grad.addColorStop(0.00, 'rgba(170, 210, 240, 0.10)');
+      grad.addColorStop(0.18, 'rgba(225, 242, 255, 0.65)');
+      grad.addColorStop(0.44, '#ffffff'); // Dominant white core (70-80%)
+      grad.addColorStop(0.58, 'rgba(255, 245, 248, 0.95)');
+      grad.addColorStop(0.64, `rgba(255, 75, 100, ${redAlpha})`); // Crimson streak (8-14%)
+      grad.addColorStop(0.72, 'rgba(239, 51, 79, 0.35)'); // Soft red bleed
+      grad.addColorStop(0.86, 'rgba(200, 230, 250, 0.50)');
+      grad.addColorStop(1.00, 'rgba(170, 210, 240, 0.12)');
     }
     g.fillStyle = grad;
     g.fillRect(0, 0, tailWidth, 4);
 
-    // 2. Crescent Moon Negative-Space Cutout Cap (Section 12: destination-out)
-    const cap = document.createElement('canvas');
-    cap.width = tailWidth;
-    cap.height = capHeight;
-    const c = cap.getContext('2d');
-
-    const half = tailWidth / 2;
-    const tipLeft = [3, 2];
-    const tipRight = [tailWidth - 3, 2];
-    const outerCrestY = capHeight - 3;
-    const innerCrestY = capHeight - 11;
+    // 2. Fast Diagonal Slash Blade Tip at yTail (NO crescent)
+    const tip = document.createElement('canvas');
+    tip.width = tailWidth;
+    tip.height = tipHeight;
+    const c = tip.getContext('2d');
 
     c.save();
-    // Step 1: Draw thin curved lunar blade shape
-    const bladeGrad = c.createLinearGradient(0, 0, 0, capHeight);
+    c.beginPath();
+    c.moveTo(0, tipHeight);
+    c.quadraticCurveTo(tailWidth * 0.12, tipHeight * 0.40, tailWidth * 0.45, 2);
+    c.lineTo(tailWidth * 0.82, 2);
+    c.quadraticCurveTo(tailWidth * 0.94, tipHeight * 0.45, tailWidth, tipHeight);
+    c.closePath();
+
+    const tipGrad = c.createLinearGradient(0, tipHeight, 0, 0);
     if (dead) {
-      bladeGrad.addColorStop(0, '#64748b');
-      bladeGrad.addColorStop(1, '#334155');
+      tipGrad.addColorStop(0, '#475569');
+      tipGrad.addColorStop(1, '#94a3b8');
     } else if (isT5) {
-      bladeGrad.addColorStop(0, '#ffffff');
-      bladeGrad.addColorStop(0.35, '#ff1744');
-      bladeGrad.addColorStop(1, '#7f1d1d');
+      tipGrad.addColorStop(0, 'rgba(185, 28, 50, 0.85)');
+      tipGrad.addColorStop(0.6, '#ffffff');
+      tipGrad.addColorStop(1, '#ff1744');
     } else {
-      bladeGrad.addColorStop(0, '#ffffff');
-      bladeGrad.addColorStop(0.35, '#e0f2fe');
-      bladeGrad.addColorStop(0.70, '#38bdf8');
-      bladeGrad.addColorStop(1, '#0284c7');
+      tipGrad.addColorStop(0, 'rgba(200, 230, 250, 0.70)');
+      tipGrad.addColorStop(0.55, '#ffffff');
+      tipGrad.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
     }
-
-    c.fillStyle = bladeGrad;
-    c.beginPath();
-    c.moveTo(tipLeft[0], tipLeft[1]);
-    // Outer convex curve: swoops down from tips to outer crest
-    c.quadraticCurveTo(half * 0.35, outerCrestY * 0.95, half, outerCrestY);
-    c.quadraticCurveTo(tailWidth - half * 0.35, outerCrestY * 0.95, tipRight[0], tipRight[1]);
-    // Stem joining the energy veil at bottom center
-    c.lineTo(half + 8, capHeight);
-    c.lineTo(half - 8, capHeight);
-    c.closePath();
+    c.fillStyle = tipGrad;
     c.fill();
 
-    // Step 2: destination-out to subtract inner hollow space, carving an exquisite crescent!
-    c.globalCompositeOperation = 'destination-out';
-    c.beginPath();
-    c.moveTo(tipLeft[0], tipLeft[1]);
-    // Inner concave curve carving out the negative space:
-    c.quadraticCurveTo(half, innerCrestY, tipRight[0], tipRight[1]);
-    c.lineTo(tailWidth + 4, -4);
-    c.lineTo(-4, -4);
-    c.closePath();
-    c.fill();
-
-    // Step 3: Restore source-over
-    c.globalCompositeOperation = 'source-over';
-
-    // Step 4: Rim glow and razor-sharp crescent horn glints
+    // White-hot leading edge along the crest
     if (!dead) {
-      c.strokeStyle = isT5 ? 'rgba(255, 23, 68, 0.95)' : 'rgba(56, 189, 248, 0.95)';
-      c.lineWidth = 1.2;
+      c.strokeStyle = isT5 ? 'rgba(255, 255, 255, 0.95)' : '#ffffff';
+      c.lineWidth = 1.3;
       c.beginPath();
-      c.moveTo(tipLeft[0], tipLeft[1]);
-      c.quadraticCurveTo(half, innerCrestY, tipRight[0], tipRight[1]);
+      c.moveTo(tailWidth * 0.12, tipHeight * 0.40);
+      c.quadraticCurveTo(tailWidth * 0.28, tipHeight * 0.10, tailWidth * 0.45, 2);
+      c.lineTo(tailWidth * 0.82, 2);
       c.stroke();
 
-      c.strokeStyle = isT5 ? '#ff3b56' : '#ffffff';
-      c.lineWidth = 1.0;
+      // Tiny crimson flare near corner
+      c.fillStyle = isT5 ? '#ff1744' : 'rgba(255, 60, 85, 0.95)';
       c.beginPath();
-      c.moveTo(tipLeft[0], tipLeft[1]);
-      c.quadraticCurveTo(half * 0.35, outerCrestY * 0.95, half, outerCrestY);
-      c.quadraticCurveTo(tailWidth - half * 0.35, outerCrestY * 0.95, tipRight[0], tipRight[1]);
-      c.stroke();
-
-      // Radiant sharp horn glints
-      c.fillStyle = '#ffffff';
-      c.beginPath();
-      c.arc(tipLeft[0], tipLeft[1], 1.6, 0, Math.PI * 2);
-      c.arc(tipRight[0], tipRight[1], 1.6, 0, Math.PI * 2);
+      c.arc(tailWidth * 0.78, 3, 1.8, 0, Math.PI * 2);
       c.fill();
     }
     c.restore();
@@ -1159,18 +1173,50 @@ export const SANHUA_THEME = {
       n.fillRect(0, 0, width, height);
     }
 
-    return (cache.entries[key] = { strip, cap, head, tailWidth, capHeight });
+    return (cache.entries[key] = {
+      strip,
+      tip,
+      cap: tip, // Backwards compatibility alias
+      head,
+      bodyW: tailWidth,
+      tailWidth, // Backwards compatibility alias
+      tipHeight,
+      capHeight: tipHeight // Backwards compatibility alias
+    });
   },
 
   bakeLongHead(ctx, x, yTop, w, h, isLight, style) {
     return true;
   },
 
-  // Section 13: Energy convergence point, NOT scabbard
+  // Smooth compression taper over last 8-12px into receptor head
   drawNeck(ctx, x, junctionY, w, headH, tile, isReleased = false, currentCombo = 0) {
     const dead = isReleased || !!(tile?.failed || tile?.released);
     const light = typeof document !== 'undefined' && document.body?.getAttribute('data-theme') === 'light';
     const paint = this._getHoldPaintCache(w, headH, currentCombo, dead, light);
+
+    const taperH = Math.min(10, Math.round(headH * 0.25));
+    const isT5 = this._resolveTierNum(currentCombo) >= 800;
+
+    ctx.save();
+    ctx.fillStyle = isT5 ? 'rgba(255, 23, 68, 0.22)' : 'rgba(225, 245, 255, 0.25)';
+    ctx.beginPath();
+    ctx.moveTo(x + 2, junctionY - taperH);
+    ctx.lineTo(x + w - 2, junctionY - taperH);
+    ctx.lineTo(x + w * 0.92, junctionY);
+    ctx.lineTo(x + w * 0.08, junctionY);
+    ctx.closePath();
+    ctx.fill();
+
+    // White refraction flash at junction
+    ctx.strokeStyle = isT5 ? '#ff4060' : '#ffffff';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.08, junctionY);
+    ctx.lineTo(x + w * 0.92, junctionY);
+    ctx.stroke();
+    ctx.restore();
+
     ctx.drawImage(paint.head, Math.round(x), Math.round(junctionY), w, headH);
     return true;
   },
@@ -1188,43 +1234,86 @@ export const SANHUA_THEME = {
     const dead = isReleased || !!(tile?.failed || tile?.released);
     const paint = this._getHoldPaintCache(w, headH, currentCombo, dead, isLight);
     const left = Math.round(x + (w - paint.tailWidth) / 2);
-    const capHeight = Math.min(paint.capHeight, length);
+    const tipHeight = Math.min(paint.tipHeight, length);
 
-    // 1. Crescent moon cutout cap at top of tail (at yTail)
-    ctx.drawImage(paint.cap, 0, 0, paint.tailWidth, capHeight, left, yTail, paint.tailWidth, capHeight);
+    // 1. Fast Slash Blade Tip at yTail (NO crescent)
+    ctx.drawImage(paint.tip, 0, 0, paint.tailWidth, tipHeight, left, yTail, paint.tailWidth, tipHeight);
 
-    // 2. Flowing energy tail body (Section 11: 18-35% of note width)
-    if (length > paint.capHeight) {
-      const streamW = Math.max(8, Math.round(w * 0.28));
-      const streamX = Math.round(x + (w - streamW) / 2);
+    // 2. Full-Width Flowing Hiyuki Energy Body (94-98% of w)
+    if (length > tipHeight) {
+      const bodyY = yTail + tipHeight;
+      const bodyLen = length - tipHeight;
+      const isT5 = this._resolveTierNum(currentCombo) >= 800;
 
-      ctx.drawImage(paint.strip, streamX, yTail + paint.capHeight, streamW, length - paint.capHeight + 1);
+      // LAYER A — OUTER MOTION HAZE (105-112% of w, soft white-blue envelope)
+      const hazeW = Math.round(paint.bodyW * 1.08);
+      const hazeX = Math.round(x + (w - hazeW) / 2);
+      ctx.save();
+      ctx.fillStyle = isT5 ? 'rgba(255, 23, 68, 0.08)' : (isLight ? 'rgba(186, 230, 253, 0.08)' : 'rgba(170, 210, 240, 0.09)');
+      ctx.fillRect(hazeX, bodyY, hazeW, bodyLen);
+      ctx.restore();
 
-      // Low-alpha spiritual qi aura and harmonic filaments
+      // LAYER B — MAIN WHITE ENERGY BODY (Broad 96% energy strip)
+      ctx.drawImage(paint.strip, left, bodyY, paint.bodyW, bodyLen);
+
+      // Subtle breathing edges (no harsh outline, 2-5% long smooth drift)
+      const timeOffset = (now || 0) * 0.0012;
+      const driftLeft = Math.sin(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
+      const driftRight = Math.cos(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
+
       if (!dead) {
         ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        const isT5 = this._resolveTierNum(currentCombo) >= 800;
-        const auraW = Math.round(streamW * 1.8);
-        const auraLeft = Math.round(x + (w - auraW) / 2);
+        // Soft outer edge luminescence
+        ctx.strokeStyle = isT5 ? 'rgba(255, 255, 255, 0.40)' : 'rgba(225, 245, 255, 0.50)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(left + driftLeft, bodyY);
+        ctx.lineTo(left + driftLeft * 0.6, bottom);
+        ctx.moveTo(left + paint.bodyW + driftRight, bodyY);
+        ctx.lineTo(left + paint.bodyW + driftRight * 0.6, bottom);
+        ctx.stroke();
 
-        ctx.fillStyle = isT5 ? 'rgba(255, 23, 68, 0.14)' : 'rgba(56, 189, 248, 0.14)';
-        ctx.fillRect(auraLeft, yTail + paint.capHeight, auraW, length - paint.capHeight);
+        // LAYER C — CRIMSON ENERGY STREAK (embedded ribbon, 7-13% width, gentle wander)
+        const veinW = Math.max(3, Math.round(paint.bodyW * 0.09));
+        const redBaseX = left + paint.bodyW * 0.63;
+        const drift0 = Math.sin(timeOffset + bodyY * 0.003) * (paint.bodyW * 0.04);
+        const driftMid = Math.cos(timeOffset * 0.8 + (bodyY + bodyLen * 0.5) * 0.003) * (paint.bodyW * 0.05);
+        const driftEnd = Math.sin(timeOffset * 1.2 + bottom * 0.003) * (paint.bodyW * 0.03);
 
-        // Harmonic filaments curving along the stream
-        if (length > 35) {
-          ctx.strokeStyle = isT5 ? 'rgba(255, 120, 140, 0.70)' : 'rgba(255, 255, 255, 0.75)';
-          ctx.lineWidth = 1.0;
-          ctx.beginPath();
-          const cx = streamX + streamW / 2;
-          const step = 26;
-          for (let y = yTail + paint.capHeight + 4; y < bottom - 8; y += step) {
-            const wave = Math.sin((y + (now || 0) * 0.15) * 0.05) * (streamW * 0.24);
-            ctx.moveTo(cx + wave, y);
-            ctx.lineTo(cx - wave, y + step * 0.5);
-          }
-          ctx.stroke();
-        }
+        const x0 = redBaseX + drift0;
+        const xMid = redBaseX + driftMid;
+        const xEnd = redBaseX + driftEnd;
+
+        // A: Soft red diffuse bloom behind vein
+        const bloomW = veinW * 2.0;
+        ctx.fillStyle = isT5 ? 'rgba(255, 23, 68, 0.22)' : 'rgba(239, 51, 79, 0.18)';
+        ctx.beginPath();
+        ctx.moveTo(x0 - bloomW * 0.5, bodyY);
+        ctx.bezierCurveTo(xMid - bloomW * 0.5, bodyY + bodyLen * 0.45, xEnd - bloomW * 0.5, bodyY + bodyLen * 0.85, xEnd - bloomW * 0.5, bottom);
+        ctx.lineTo(xEnd + bloomW * 0.5, bottom);
+        ctx.bezierCurveTo(xEnd + bloomW * 0.5, bodyY + bodyLen * 0.85, xMid + bloomW * 0.5, bodyY + bodyLen * 0.45, x0 + bloomW * 0.5, bodyY);
+        ctx.closePath();
+        ctx.fill();
+
+        // B: Solid crimson energy ribbon
+        ctx.fillStyle = isT5 ? '#ff1744' : 'rgba(255, 75, 100, 0.88)';
+        ctx.beginPath();
+        ctx.moveTo(x0 - veinW * 0.5, bodyY);
+        ctx.bezierCurveTo(xMid - veinW * 0.5, bodyY + bodyLen * 0.45, xEnd - veinW * 0.5, bodyY + bodyLen * 0.85, xEnd - veinW * 0.5, bottom);
+        ctx.lineTo(xEnd + veinW * 0.5, bottom);
+        ctx.bezierCurveTo(xEnd + veinW * 0.5, bodyY + bodyLen * 0.85, xMid + veinW * 0.5, bodyY + bodyLen * 0.45, x0 + veinW * 0.5, bodyY);
+        ctx.closePath();
+        ctx.fill();
+
+        // LAYER D — HOT SPECULAR CORE (adjacent to crimson vein)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        const specOffset = veinW * 0.65;
+        ctx.moveTo(x0 - specOffset, bodyY);
+        ctx.bezierCurveTo(xMid - specOffset, bodyY + bodyLen * 0.45, xEnd - specOffset, bodyY + bodyLen * 0.85, xEnd - specOffset, bottom);
+        ctx.stroke();
+
         ctx.restore();
       }
     }

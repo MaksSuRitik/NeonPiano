@@ -64,14 +64,14 @@ test('bakeTapNote renders fractured shards strictly respecting note bounds', () 
   }
 });
 
-test('drawHoldBody renders crescent moon cutout cap and energy tail strip', () => {
+test('drawHoldBody renders full-width Hiyuki energy slash tip and body strip', () => {
   const c = context(0.8);
   // yTail = 100, tailH = 200 => bottom = 300, length = 200
   S.drawHoldBody(c, 10, 100, 90, 44, tile, false, 1234, 200, 250);
-  // Should draw crescent cap and energy ribbon
+  // Should draw blade tip and full-width energy ribbon
   assert.ok(c.draws.length >= 2);
-  // Cap is drawn at left (21) and yTail (100)
-  assert.equal(c.draws[0].args[5], 21);
+  // Tip is drawn at left (12) and yTail (100)
+  assert.equal(c.draws[0].args[5], 12);
   assert.equal(c.draws[0].args[6], 100);
   assert.ok(c.draws.every(d => d.alpha <= 0.8));
 });
