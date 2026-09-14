@@ -151,3 +151,17 @@ test('environment crossfades at 800 and keeps caller state and gameplay state un
   assert.equal(c.globalCompositeOperation,'source-over');
   assert.deepEqual(state,{gameWidth:400,gameHeight:720,combo:800});
 });
+
+test('self-prewarms T5 hold cache and guarantees zero canvas allocations when crossing combo 800', () => {
+  // Clear any existing hold paint cache for this test size
+  S._holdPaintCache = null;
+  const initialCanvases = canvases;
+  // First hold note at combo 0
+  S._getHoldPaintCache(120, 50, 0, false, false);
+  const canvasesAfterInit = canvases;
+  assert.ok(canvasesAfterInit > initialCanvases);
+
+  // Reaching combo 800 during gameplay
+  S._getHoldPaintCache(120, 50, 800, false, false);
+  assert.equal(canvases, canvasesAfterInit, 'Crossing combo 800 must not allocate any new DOM canvases');
+});

@@ -110,18 +110,28 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   ctx.rotate(rot);
 
   // Shard body: translucent broken mirror / glass plate
-  const grad = ctx.createLinearGradient(-sz * 0.5, -sz * 0.5, sz * 0.5, sz * 0.5);
-  if (isT5) {
-    grad.addColorStop(0, `rgba(45, 10, 18, ${alpha * 0.70})`);
-    grad.addColorStop(0.6, `rgba(20, 4, 8, ${alpha * 0.85})`);
-    grad.addColorStop(1, `rgba(6, 1, 3, ${alpha * 0.90})`);
-  } else {
-    grad.addColorStop(0, `rgba(225, 242, 255, ${alpha * 0.58})`);  // pale silver reflection
-    grad.addColorStop(0.5, `rgba(125, 175, 218, ${alpha * 0.40})`); // subtle cold ice-blue tint
-    grad.addColorStop(1, `rgba(12, 26, 48, ${alpha * 0.68})`);      // dark transparent interior
+  if (!p.gradT5) {
+    const gT5 = ctx.createLinearGradient(-sz * 0.5, -sz * 0.5, sz * 0.5, sz * 0.5);
+    gT5.addColorStop(0, `rgba(45, 10, 18, ${alpha * 0.70})`);
+    gT5.addColorStop(0.6, `rgba(20, 4, 8, ${alpha * 0.85})`);
+    gT5.addColorStop(1, `rgba(6, 1, 3, ${alpha * 0.90})`);
+    p.gradT5 = gT5;
+
+    const gNorm = ctx.createLinearGradient(-sz * 0.5, -sz * 0.5, sz * 0.5, sz * 0.5);
+    gNorm.addColorStop(0, `rgba(225, 242, 255, ${alpha * 0.58})`);
+    gNorm.addColorStop(0.5, `rgba(125, 175, 218, ${alpha * 0.40})`);
+    gNorm.addColorStop(1, `rgba(12, 26, 48, ${alpha * 0.68})`);
+    p.gradNormal = gNorm;
+
+    p.strokeT5 = `rgba(255, 45, 85, ${alpha * 0.95})`;
+    p.strokeNormal = `rgba(255, 255, 255, ${alpha * 0.92})`;
+    p.shadowT5 = `rgba(12, 2, 4, ${alpha * 0.8})`;
+    p.shadowNormal = `rgba(8, 22, 45, ${alpha * 0.60})`;
+    p.cleaveT5 = `rgba(255, 90, 120, ${alpha * 0.55})`;
+    p.cleaveNormal = `rgba(255, 255, 255, ${alpha * 0.50})`;
   }
 
-  ctx.fillStyle = grad;
+  ctx.fillStyle = isT5 ? p.gradT5 : p.gradNormal;
   ctx.beginPath();
   ctx.moveTo(p.verts[0][0] * sz, p.verts[0][1] * sz);
   for (let i = 1; i < p.verts.length; i++) {
@@ -131,7 +141,7 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   ctx.fill();
 
   // Bright moon-facing rim edge (silver in normal, crimson in T5)
-  ctx.strokeStyle = isT5 ? `rgba(255, 45, 85, ${alpha * 0.95})` : `rgba(255, 255, 255, ${alpha * 0.92})`;
+  ctx.strokeStyle = isT5 ? p.strokeT5 : p.strokeNormal;
   ctx.lineWidth = Math.max(1.0, sz * 0.022);
   ctx.beginPath();
   ctx.moveTo(p.verts[0][0] * sz, p.verts[0][1] * sz);
@@ -140,7 +150,7 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   ctx.stroke();
 
   // Dark shadow edge for 3D glass facet depth
-  ctx.strokeStyle = isT5 ? `rgba(12, 2, 4, ${alpha * 0.8})` : `rgba(8, 22, 45, ${alpha * 0.60})`;
+  ctx.strokeStyle = isT5 ? p.shadowT5 : p.shadowNormal;
   ctx.lineWidth = 0.8;
   ctx.beginPath();
   const last = p.verts.length - 1;
@@ -150,7 +160,7 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
 
   // Internal cleavage highlight plane line
   if (p.verts.length >= 4) {
-    ctx.strokeStyle = isT5 ? `rgba(255, 90, 120, ${alpha * 0.55})` : `rgba(255, 255, 255, ${alpha * 0.50})`;
+    ctx.strokeStyle = isT5 ? p.cleaveT5 : p.cleaveNormal;
     ctx.lineWidth = 0.7;
     ctx.beginPath();
     ctx.moveTo(p.verts[1][0] * sz * 0.8, p.verts[1][1] * sz * 0.8);
@@ -329,12 +339,58 @@ function ensureEnvCache(w,h) {
   environmentCache.set(key,entry);return entry;
 }
 
+const veilGradCache = new Map();
+function getVeilGradients(ctx, w, h, isEclipse) {
+  const key = `${w}:${h}:${isEclipse ? 1 : 0}`;
+  if (veilGradCache.has(key)) return veilGradCache.get(key);
+
+  const alphaMult = isEclipse ? 1.25 : 0.88;
+
+  const dfGrad = ctx.createLinearGradient(0, 0.08 * h, w, 0.16 * h);
+  dfGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.10 * alphaMult})`);
+  dfGrad.addColorStop(0.4, `rgba(143, 16, 40, ${0.20 * alphaMult})`);
+  dfGrad.addColorStop(0.8, `rgba(197, 30, 62, ${0.16 * alphaMult})`);
+  dfGrad.addColorStop(1.0, `rgba(74, 7, 20, ${0.07 * alphaMult})`);
+
+  const upGrad = ctx.createLinearGradient(0, 0.20 * h, 0.52 * w, 0.45 * h);
+  upGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.15 * alphaMult})`);
+  upGrad.addColorStop(0.35, `rgba(143, 16, 40, ${0.27 * alphaMult})`);
+  upGrad.addColorStop(0.70, `rgba(197, 30, 62, ${0.34 * alphaMult})`);
+  upGrad.addColorStop(1.0, `rgba(238, 54, 85, ${0.30 * alphaMult})`);
+
+  const bodyGrad = ctx.createLinearGradient(0.20 * w, 0.45 * h, 0.95 * w, 0.80 * h);
+  bodyGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.16 * alphaMult})`);
+  bodyGrad.addColorStop(0.25, `rgba(143, 16, 40, ${0.28 * alphaMult})`);
+  bodyGrad.addColorStop(0.55, `rgba(197, 30, 62, ${0.35 * alphaMult})`);
+  bodyGrad.addColorStop(0.80, `rgba(238, 54, 85, ${0.30 * alphaMult})`);
+  bodyGrad.addColorStop(1.0, `rgba(143, 16, 40, ${0.15 * alphaMult})`);
+
+  const foldGrad = ctx.createLinearGradient(0.30 * w, 0.50 * h, 0.85 * w, 0.75 * h);
+  foldGrad.addColorStop(0.0, `rgba(143, 16, 40, ${0.10 * alphaMult})`);
+  foldGrad.addColorStop(0.40, `rgba(197, 30, 62, ${0.22 * alphaMult})`);
+  foldGrad.addColorStop(0.70, `rgba(238, 54, 85, ${0.26 * alphaMult})`);
+  foldGrad.addColorStop(1.0, `rgba(143, 16, 40, ${0.08 * alphaMult})`);
+
+  const entry = {
+    dfGrad,
+    upGrad,
+    bodyGrad,
+    foldGrad,
+    upSheenStroke: isEclipse ? `rgba(255, 101, 125, ${0.46 * alphaMult})` : `rgba(238, 54, 85, ${0.34 * alphaMult})`,
+    sheenStroke: isEclipse ? `rgba(255, 101, 125, ${0.48 * alphaMult})` : `rgba(238, 54, 85, ${0.36 * alphaMult})`,
+    pleatStroke: isEclipse ? `rgba(255, 101, 125, ${0.32 * alphaMult})` : `rgba(238, 54, 85, ${0.22 * alphaMult})`
+  };
+  if (veilGradCache.size >= 8) veilGradCache.clear();
+  veilGradCache.set(key, entry);
+  return entry;
+}
+
 function drawRedVeil(ctx, now, w, h, blend, layer) {
   const t = now * 0.00032; // Ultra-slow cinematic silk drift
   const isEclipse = blend > 0.5;
-  const alphaMult = isEclipse ? 1.25 : 0.88;
 
   ctx.save();
+  const vg = getVeilGradients(ctx, w, h, isEclipse);
 
   if (layer === 0) {
     // =========================================================================
@@ -344,26 +400,20 @@ function drawRedVeil(ctx, now, w, h, blend, layer) {
     // 1. Distant Secondary Fold (high atmosphere above branches)
     const dfD1 = Math.sin(t * 0.7 + 0.3) * (w * 0.022);
     const dfD2 = Math.cos(t * 0.5 + 1.1) * (h * 0.018);
-    const dfP0 = [-0.05 * w, 0.13 * h + dfD2];
-    const dfCP1 = [0.28 * w + dfD1, 0.08 * h + dfD2];
-    const dfCP2 = [0.65 * w - dfD1, 0.16 * h - dfD2];
-    const dfP1 = [1.06 * w, 0.11 * h + dfD2 * 0.5];
+    const dfP0_x = -0.05 * w, dfP0_y = 0.13 * h + dfD2;
+    const dfCP1_x = 0.28 * w + dfD1, dfCP1_y = 0.08 * h + dfD2;
+    const dfCP2_x = 0.65 * w - dfD1, dfCP2_y = 0.16 * h - dfD2;
+    const dfP1_x = 1.06 * w, dfP1_y = 0.11 * h + dfD2 * 0.5;
     const dfW = w * 0.058;
 
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(dfP0[0], dfP0[1]);
-    ctx.bezierCurveTo(dfCP1[0], dfCP1[1], dfCP2[0], dfCP2[1], dfP1[0], dfP1[1]);
-    ctx.lineTo(dfP1[0], dfP1[1] + dfW);
-    ctx.bezierCurveTo(dfCP2[0] - dfW * 0.2, dfCP2[1] + dfW, dfCP1[0] + dfW * 0.2, dfCP1[1] + dfW, dfP0[0], dfP0[1] + dfW * 0.8);
+    ctx.moveTo(dfP0_x, dfP0_y);
+    ctx.bezierCurveTo(dfCP1_x, dfCP1_y, dfCP2_x, dfCP2_y, dfP1_x, dfP1_y);
+    ctx.lineTo(dfP1_x, dfP1_y + dfW);
+    ctx.bezierCurveTo(dfCP2_x - dfW * 0.2, dfCP2_y + dfW, dfCP1_x + dfW * 0.2, dfCP1_y + dfW, dfP0_x, dfP0_y + dfW * 0.8);
     ctx.closePath();
-
-    const dfGrad = ctx.createLinearGradient(0, 0.08 * h, w, 0.16 * h);
-    dfGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.10 * alphaMult})`);
-    dfGrad.addColorStop(0.4, `rgba(143, 16, 40, ${0.20 * alphaMult})`);
-    dfGrad.addColorStop(0.8, `rgba(197, 30, 62, ${0.16 * alphaMult})`);
-    dfGrad.addColorStop(1.0, `rgba(74, 7, 20, ${0.07 * alphaMult})`);
-    ctx.fillStyle = dfGrad;
+    ctx.fillStyle = vg.dfGrad;
     ctx.fill();
     ctx.restore();
 
@@ -372,10 +422,10 @@ function drawRedVeil(ctx, now, w, h, blend, layer) {
     const d2 = Math.cos(t * 0.8 + 1.4) * (h * 0.030);
     const breath = Math.sin(t * 1.2) * 0.12;
 
-    const p0 = [-0.08 * w, 0.30 * h + d2];
-    const cp1 = [0.22 * w + d1, 0.19 * h - d2 * 0.8];
-    const cp2 = [0.46 * w - d1, 0.32 * h + d2 * 0.6];
-    const p1 = [0.52 * w + d1 * 0.5, 0.44 * h + d2];
+    const p0_x = -0.08 * w, p0_y = 0.30 * h + d2;
+    const cp1_x = 0.22 * w + d1, cp1_y = 0.19 * h - d2 * 0.8;
+    const cp2_x = 0.46 * w - d1, cp2_y = 0.32 * h + d2 * 0.6;
+    const p1_x = 0.52 * w + d1 * 0.5, p1_y = 0.44 * h + d2;
 
     const w0 = w * 0.11 * (1 + breath);
     const wMid = w * 0.17 * (1 + breath);
@@ -383,25 +433,20 @@ function drawRedVeil(ctx, now, w, h, blend, layer) {
 
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(p0[0], p0[1]);
-    ctx.bezierCurveTo(cp1[0], cp1[1], cp2[0], cp2[1], p1[0], p1[1]);
-    ctx.lineTo(p1[0] + w1 * 0.4, p1[1] + w1 * 0.9);
-    ctx.bezierCurveTo(cp2[0] + wMid * 0.2, cp2[1] + wMid, cp1[0] - wMid * 0.1, cp1[1] + wMid * 0.9, p0[0], p0[1] + w0);
+    ctx.moveTo(p0_x, p0_y);
+    ctx.bezierCurveTo(cp1_x, cp1_y, cp2_x, cp2_y, p1_x, p1_y);
+    ctx.lineTo(p1_x + w1 * 0.4, p1_y + w1 * 0.9);
+    ctx.bezierCurveTo(cp2_x + wMid * 0.2, cp2_y + wMid, cp1_x - wMid * 0.1, cp1_y + wMid * 0.9, p0_x, p0_y + w0);
     ctx.closePath();
 
-    const upGrad = ctx.createLinearGradient(0, 0.20 * h, 0.52 * w, 0.45 * h);
-    upGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.15 * alphaMult})`);
-    upGrad.addColorStop(0.35, `rgba(143, 16, 40, ${0.27 * alphaMult})`);
-    upGrad.addColorStop(0.70, `rgba(197, 30, 62, ${0.34 * alphaMult})`);
-    upGrad.addColorStop(1.0, `rgba(238, 54, 85, ${0.30 * alphaMult})`);
-    ctx.fillStyle = upGrad;
+    ctx.fillStyle = vg.upGrad;
     ctx.fill();
 
     // Upper fold crest sheen
     ctx.beginPath();
-    ctx.moveTo(p0[0], p0[1]);
-    ctx.bezierCurveTo(cp1[0], cp1[1], cp2[0], cp2[1], p1[0], p1[1]);
-    ctx.strokeStyle = isEclipse ? `rgba(255, 101, 125, ${0.46 * alphaMult})` : `rgba(238, 54, 85, ${0.34 * alphaMult})`;
+    ctx.moveTo(p0_x, p0_y);
+    ctx.bezierCurveTo(cp1_x, cp1_y, cp2_x, cp2_y, p1_x, p1_y);
+    ctx.strokeStyle = vg.upSheenStroke;
     ctx.lineWidth = 1.3;
     ctx.stroke();
     ctx.restore();
@@ -417,14 +462,14 @@ function drawRedVeil(ctx, now, w, h, blend, layer) {
     const breath = Math.sin(t * 1.1 + 0.5) * 0.15;
 
     // Connects seamlessly with upper fold, billows across mid-left, twists over trunk, cascades to right
-    const pStart = [0.50 * w + d1 * 0.5, 0.43 * h + d2];
-    const cpA1 = [0.25 * w - d3, 0.48 * h + d4 * 0.5];
-    const cpA2 = [0.21 * w + d1, 0.62 * h - d2 * 0.7];
-    const pMid = [0.45 * w + d3 * 0.4, 0.66 * h + d4 * 0.6];
+    const pStart_x = 0.50 * w + d1 * 0.5, pStart_y = 0.43 * h + d2;
+    const cpA1_x = 0.25 * w - d3, cpA1_y = 0.48 * h + d4 * 0.5;
+    const cpA2_x = 0.21 * w + d1, cpA2_y = 0.62 * h - d2 * 0.7;
+    const pMid_x = 0.45 * w + d3 * 0.4, pMid_y = 0.66 * h + d4 * 0.6;
 
-    const cpB1 = [0.67 * w - d1, 0.70 * h + d2 * 0.5];
-    const cpB2 = [0.88 * w + d3, 0.74 * h - d4 * 0.4];
-    const pEnd = [1.12 * w, 0.82 * h + d2 * 0.5];
+    const cpB1_x = 0.67 * w - d1, cpB1_y = 0.70 * h + d2 * 0.5;
+    const cpB2_x = 0.88 * w + d3, cpB2_y = 0.74 * h - d4 * 0.4;
+    const pEnd_x = 1.12 * w, pEnd_y = 0.82 * h + d2 * 0.5;
 
     const wStart = w * 0.095;
     const wBelly1 = w * 0.19 * (1 + breath);
@@ -435,56 +480,45 @@ function drawRedVeil(ctx, now, w, h, blend, layer) {
     ctx.save();
     // 1. Broad silk ribbon body
     ctx.beginPath();
-    ctx.moveTo(pStart[0], pStart[1]);
-    ctx.bezierCurveTo(cpA1[0], cpA1[1], cpA2[0], cpA2[1], pMid[0], pMid[1]);
-    ctx.bezierCurveTo(cpB1[0], cpB1[1], cpB2[0], cpB2[1], pEnd[0], pEnd[1]);
-    ctx.lineTo(pEnd[0] + wEnd * 0.2, pEnd[1] + wEnd);
-    ctx.bezierCurveTo(cpB2[0] + wBelly2 * 0.3, cpB2[1] + wBelly2, cpB1[0] - wBelly2 * 0.2, cpB1[1] + wBelly2 * 0.8, pMid[0] + wTwist * 0.2, pMid[1] + wTwist);
-    ctx.bezierCurveTo(cpA2[0] + wBelly1 * 0.4, cpA2[1] + wBelly1, cpA1[0] + wBelly1 * 0.3, cpA1[1] + wBelly1 * 0.9, pStart[0] + wStart * 0.3, pStart[1] + wStart);
+    ctx.moveTo(pStart_x, pStart_y);
+    ctx.bezierCurveTo(cpA1_x, cpA1_y, cpA2_x, cpA2_y, pMid_x, pMid_y);
+    ctx.bezierCurveTo(cpB1_x, cpB1_y, cpB2_x, cpB2_y, pEnd_x, pEnd_y);
+    ctx.lineTo(pEnd_x + wEnd * 0.2, pEnd_y + wEnd);
+    ctx.bezierCurveTo(cpB2_x + wBelly2 * 0.3, cpB2_y + wBelly2, cpB1_x - wBelly2 * 0.2, cpB1_y + wBelly2 * 0.8, pMid_x + wTwist * 0.2, pMid_y + wTwist);
+    ctx.bezierCurveTo(cpA2_x + wBelly1 * 0.4, cpA2_y + wBelly1, cpA1_x + wBelly1 * 0.3, cpA1_y + wBelly1 * 0.9, pStart_x + wStart * 0.3, pStart_y + wStart);
     ctx.closePath();
 
-    const bodyGrad = ctx.createLinearGradient(0.20 * w, 0.45 * h, 0.95 * w, 0.80 * h);
-    bodyGrad.addColorStop(0.0, `rgba(74, 7, 20, ${0.16 * alphaMult})`);
-    bodyGrad.addColorStop(0.25, `rgba(143, 16, 40, ${0.28 * alphaMult})`);
-    bodyGrad.addColorStop(0.55, `rgba(197, 30, 62, ${0.35 * alphaMult})`);
-    bodyGrad.addColorStop(0.80, `rgba(238, 54, 85, ${0.30 * alphaMult})`);
-    bodyGrad.addColorStop(1.0, `rgba(143, 16, 40, ${0.15 * alphaMult})`);
-    ctx.fillStyle = bodyGrad;
+    ctx.fillStyle = vg.bodyGrad;
     ctx.fill();
 
     // 2. Secondary internal drapery fold (creates tangible layered fabric depth)
     ctx.beginPath();
-    ctx.moveTo(pStart[0] + wStart * 0.2, pStart[1] + wStart * 0.3);
-    ctx.bezierCurveTo(cpA1[0] + wBelly1 * 0.15, cpA1[1] + wBelly1 * 0.2, cpA2[0] + wBelly1 * 0.2, cpA2[1] + wBelly1 * 0.25, pMid[0], pMid[1] + wTwist * 0.3);
-    ctx.bezierCurveTo(cpB1[0] + wBelly2 * 0.15, cpB1[1] + wBelly2 * 0.2, cpB2[0] + wBelly2 * 0.2, cpB2[1] + wBelly2 * 0.25, pEnd[0] + wEnd * 0.1, pEnd[1] + wEnd * 0.3);
-    ctx.lineTo(pEnd[0] + wEnd * 0.15, pEnd[1] + wEnd * 0.7);
-    ctx.bezierCurveTo(cpB2[0] + wBelly2 * 0.25, cpB2[1] + wBelly2 * 0.6, cpB1[0] + wBelly2 * 0.1, cpB1[1] + wBelly2 * 0.5, pMid[0] + wTwist * 0.1, pMid[1] + wTwist * 0.7);
-    ctx.bezierCurveTo(cpA2[0] + wBelly1 * 0.3, cpA2[1] + wBelly1 * 0.6, cpA1[0] + wBelly1 * 0.2, cpA1[1] + wBelly1 * 0.5, pStart[0] + wStart * 0.25, pStart[1] + wStart * 0.6);
+    ctx.moveTo(pStart_x + wStart * 0.2, pStart_y + wStart * 0.3);
+    ctx.bezierCurveTo(cpA1_x + wBelly1 * 0.15, cpA1_y + wBelly1 * 0.2, cpA2_x + wBelly1 * 0.2, cpA2_y + wBelly1 * 0.25, pMid_x, pMid_y + wTwist * 0.3);
+    ctx.bezierCurveTo(cpB1_x + wBelly2 * 0.15, cpB1_y + wBelly2 * 0.2, cpB2_x + wBelly2 * 0.2, cpB2_y + wBelly2 * 0.25, pEnd_x + wEnd * 0.1, pEnd_y + wEnd * 0.3);
+    ctx.lineTo(pEnd_x + wEnd * 0.15, pEnd_y + wEnd * 0.7);
+    ctx.bezierCurveTo(cpB2_x + wBelly2 * 0.25, cpB2_y + wBelly2 * 0.6, cpB1_x + wBelly2 * 0.1, cpB1_y + wBelly2 * 0.5, pMid_x + wTwist * 0.1, pMid_y + wTwist * 0.7);
+    ctx.bezierCurveTo(cpA2_x + wBelly1 * 0.3, cpA2_y + wBelly1 * 0.6, cpA1_x + wBelly1 * 0.2, cpA1_y + wBelly1 * 0.5, pStart_x + wStart * 0.25, pStart_y + wStart * 0.6);
     ctx.closePath();
 
-    const foldGrad = ctx.createLinearGradient(0.30 * w, 0.50 * h, 0.85 * w, 0.75 * h);
-    foldGrad.addColorStop(0.0, `rgba(143, 16, 40, ${0.10 * alphaMult})`);
-    foldGrad.addColorStop(0.40, `rgba(197, 30, 62, ${0.22 * alphaMult})`);
-    foldGrad.addColorStop(0.70, `rgba(238, 54, 85, ${0.26 * alphaMult})`);
-    foldGrad.addColorStop(1.0, `rgba(143, 16, 40, ${0.08 * alphaMult})`);
-    ctx.fillStyle = foldGrad;
+    ctx.fillStyle = vg.foldGrad;
     ctx.fill();
 
     // 3. Lit fold ridge crest line & hot highlight sheen
     ctx.beginPath();
-    ctx.moveTo(pStart[0], pStart[1]);
-    ctx.bezierCurveTo(cpA1[0], cpA1[1], cpA2[0], cpA2[1], pMid[0], pMid[1]);
-    ctx.bezierCurveTo(cpB1[0], cpB1[1], cpB2[0], cpB2[1], pEnd[0], pEnd[1]);
-    ctx.strokeStyle = isEclipse ? `rgba(255, 101, 125, ${0.48 * alphaMult})` : `rgba(238, 54, 85, ${0.36 * alphaMult})`;
+    ctx.moveTo(pStart_x, pStart_y);
+    ctx.bezierCurveTo(cpA1_x, cpA1_y, cpA2_x, cpA2_y, pMid_x, pMid_y);
+    ctx.bezierCurveTo(cpB1_x, cpB1_y, cpB2_x, cpB2_y, pEnd_x, pEnd_y);
+    ctx.strokeStyle = vg.sheenStroke;
     ctx.lineWidth = 1.4;
     ctx.stroke();
 
     // Internal pleat ridge
     ctx.beginPath();
-    ctx.moveTo(pStart[0] + wStart * 0.2, pStart[1] + wStart * 0.3);
-    ctx.bezierCurveTo(cpA1[0] + wBelly1 * 0.15, cpA1[1] + wBelly1 * 0.2, cpA2[0] + wBelly1 * 0.2, cpA2[1] + wBelly1 * 0.25, pMid[0], pMid[1] + wTwist * 0.3);
-    ctx.bezierCurveTo(cpB1[0] + wBelly2 * 0.15, cpB1[1] + wBelly2 * 0.2, cpB2[0] + wBelly2 * 0.2, cpB2[1] + wBelly2 * 0.25, pEnd[0] + wEnd * 0.1, pEnd[1] + wEnd * 0.3);
-    ctx.strokeStyle = isEclipse ? `rgba(255, 101, 125, ${0.32 * alphaMult})` : `rgba(238, 54, 85, ${0.22 * alphaMult})`;
+    ctx.moveTo(pStart_x + wStart * 0.2, pStart_y + wStart * 0.3);
+    ctx.bezierCurveTo(cpA1_x + wBelly1 * 0.15, cpA1_y + wBelly1 * 0.2, cpA2_x + wBelly1 * 0.2, cpA2_y + wBelly1 * 0.25, pMid_x, pMid_y + wTwist * 0.3);
+    ctx.bezierCurveTo(cpB1_x + wBelly2 * 0.15, cpB1_y + wBelly2 * 0.2, cpB2_x + wBelly2 * 0.2, cpB2_y + wBelly2 * 0.25, pEnd_x + wEnd * 0.1, pEnd_y + wEnd * 0.3);
+    ctx.strokeStyle = vg.pleatStroke;
     ctx.lineWidth = 1.0;
     ctx.stroke();
 
@@ -1002,20 +1036,7 @@ export const SANHUA_THEME = {
     return this.bakeTapNote(ctx, x, yTop, w, h, isLight, comboTier);
   },
 
-  // Dense, broad hold material with a smooth receptor-to-free-end gradient.
-  _getHoldPaintCache(w, h, comboTier, dead = false, isLight = false) {
-    const width = Math.max(1, Math.round(w));
-    const height = Math.max(1, Math.round(h));
-    const tier = this._resolveTierNum(comboTier);
-    const pal = this._getHiyukiNotePalette(tier, dead, isLight);
-
-    let cache = this._holdPaintCache;
-    if (!cache || cache.width !== width || cache.height !== height) {
-      cache = this._holdPaintCache = { width, height, entries: new Array(28) };
-    }
-    const key = (dead ? 12 : pal.tierIndex * 2) + (isLight ? 1 : 0);
-    if (cache.entries[key]) return cache.entries[key];
-
+  _bakeHoldEntry(width, height, tier, dead, isLight, pal) {
     // Hold body occupies ~96% of note width
     const tailWidth = Math.max(1, Math.round(width * 0.96));
 
@@ -1047,7 +1068,7 @@ export const SANHUA_THEME = {
       cross.addColorStop(.97, 'rgba(222,238,250,.17)');
       cross.addColorStop(1, 'rgba(2,6,14,.24)');
     }
-    g.fillStyle=cross;g.fillRect(0,0,tailWidth,512);
+    g.fillStyle = cross; g.fillRect(0, 0, tailWidth, 512);
 
     // 2. Receptor Head
     const head = document.createElement('canvas');
@@ -1061,10 +1082,47 @@ export const SANHUA_THEME = {
       n.fillRect(0, 0, width, height);
     }
 
-    return (cache.entries[key] = {
+    return {
       strip, tip: strip, cap: strip, head, buf: strip,
       bodyW: tailWidth, tailWidth, tipHeight: 0, capHeight: 0, palette: pal
-    });
+    };
+  },
+
+  // Dense, broad hold material with a smooth receptor-to-free-end gradient.
+  _getHoldPaintCache(w, h, comboTier, dead = false, isLight = false) {
+    const width = Math.max(1, Math.round(w));
+    const height = Math.max(1, Math.round(h));
+    const tier = this._resolveTierNum(comboTier);
+    const pal = this._getHiyukiNotePalette(tier, dead, isLight);
+
+    let cache = this._holdPaintCache;
+    const isNew = !cache || cache.width !== width || cache.height !== height;
+    if (isNew) {
+      cache = this._holdPaintCache = { width, height, entries: new Array(28) };
+    }
+    const key = (dead ? 12 : pal.tierIndex * 2) + (isLight ? 1 : 0);
+    if (cache.entries[key]) return cache.entries[key];
+
+    const entry = this._bakeHoldEntry(width, height, tier, dead, isLight, pal);
+    cache.entries[key] = entry;
+
+    // Self-prewarm T5 (combo >= 800) during initial hold cache setup so crossing 800 combo has ZERO allocation hitch
+    if (isNew && tier < 800) {
+      try {
+        const t5PalDark = this._getHiyukiNotePalette(800, false, false);
+        const t5PalLight = this._getHiyukiNotePalette(800, false, true);
+        const keyDark = 5 * 2 + 0; // 10
+        const keyLight = 5 * 2 + 1; // 11
+        if (!cache.entries[keyDark]) {
+          cache.entries[keyDark] = this._bakeHoldEntry(width, height, 800, false, false, t5PalDark);
+        }
+        if (!cache.entries[keyLight]) {
+          cache.entries[keyLight] = this._bakeHoldEntry(width, height, 800, false, true, t5PalLight);
+        }
+      } catch (_) {}
+    }
+
+    return entry;
   },
 
   bakeLongHead(ctx, x, yTop, w, h, isLight, style) {
@@ -1125,10 +1183,8 @@ export const SANHUA_THEME = {
       [left,bottom],[left,yTail+bevel]]);
     if (pal?.isObsidian && !dead) {
       ctx.save();
-      ctx.shadowColor = 'rgba(235, 25, 68, 0.45)';
-      ctx.shadowBlur = 5;
-      ctx.strokeStyle = 'rgba(225, 30, 70, 0.44)';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(235, 25, 68, 0.65)';
+      ctx.lineWidth = 1.6;
       ctx.stroke();
       ctx.restore();
     }
@@ -1260,9 +1316,14 @@ export const SANHUA_THEME = {
     const env=ensureEnvCache(w,h), blend=state.blend;
     ctx.save();
     const sceneAlpha=ctx.globalAlpha;
-    ctx.drawImage(env.normal.sky,0,0);
-    if(blend>.001) {ctx.globalAlpha=sceneAlpha*blend;ctx.drawImage(env.eclipse.sky,0,0);}
-    ctx.globalAlpha=sceneAlpha;
+    if (blend < 0.999) {
+      ctx.drawImage(env.normal.sky, 0, 0);
+    }
+    if (blend > 0.001) {
+      ctx.globalAlpha = sceneAlpha * blend;
+      ctx.drawImage(env.eclipse.sky, 0, 0);
+      ctx.globalAlpha = sceneAlpha;
+    }
     // Layer 0: Background mirror shards (behind tree limbs)
     for(let i=0;i<8;i++) drawGlassPlate(ctx,env.glass[i],now,w,h,blend>.5,0.85);
 
@@ -1270,9 +1331,15 @@ export const SANHUA_THEME = {
     drawRedVeil(ctx, now, w, h, blend, 0);
 
     // Tree limbs (normal and eclipse)
-    ctx.globalAlpha=sceneAlpha*(1-blend);ctx.drawImage(env.normal,0,0);
-    if(blend>.001) {ctx.globalAlpha=sceneAlpha*blend;ctx.drawImage(env.eclipse,0,0);}
-    ctx.globalAlpha=sceneAlpha;
+    if (blend < 0.999) {
+      ctx.globalAlpha = sceneAlpha * (1 - blend);
+      ctx.drawImage(env.normal, 0, 0);
+    }
+    if (blend > 0.001) {
+      ctx.globalAlpha = sceneAlpha * blend;
+      ctx.drawImage(env.eclipse, 0, 0);
+    }
+    ctx.globalAlpha = sceneAlpha;
 
     // Flowing Red Veil Layer 1: Forward billowing drapery in front of tree, behind glass shards
     drawRedVeil(ctx, now, w, h, blend, 1);
