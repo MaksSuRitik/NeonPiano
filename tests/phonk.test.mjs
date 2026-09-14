@@ -35,15 +35,15 @@ test('i18n dictionaries include all required Phonk keys across UA, RU, and EN', 
 
   // Check language switching and fallback resolution
   i18n.setLanguage('UA');
-  assert.equal(i18n.t('trackTagPhonk'), 'ФОНК');
+  assert.equal(i18n.t('trackTagPhonk'), 'Фонк');
   assert.equal(i18n.t('filterPhonk'), 'Фонк');
 
   i18n.setLanguage('RU');
-  assert.equal(i18n.t('trackTagPhonk'), 'ФОНК');
+  assert.equal(i18n.t('trackTagPhonk'), 'Фонк');
   assert.equal(i18n.t('filterPhonk'), 'Фонк');
 
   i18n.setLanguage('EN');
-  assert.equal(i18n.t('trackTagPhonk'), 'PHONK');
+  assert.equal(i18n.t('trackTagPhonk'), 'Phonk');
   assert.equal(i18n.t('filterPhonk'), 'Phonk');
 });
 

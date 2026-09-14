@@ -1,9 +1,9 @@
 // ==========================================
 // I18N SERVICE: LANGUAGE MANAGER
 // ==========================================
-import ua from "./ua.js?v=39.0";
-import en from "./en.js?v=39.0";
-import ru from "./ru.js?v=39.0";
+import ua from "./ua.js?v=86.0";
+import en from "./en.js?v=86.0";
+import ru from "./ru.js?v=86.0";
 
 const dictionaries = { UA: ua, EN: en, RU: ru };
 const STORAGE_KEY = "siteLang";
@@ -51,10 +51,10 @@ export const i18n = {
       filterHardcore: "Хардкор",
       filterSecret: "Секретні",
       filterPhonk: currentLang === "RU" ? "Фонк" : (currentLang === "EN" ? "Phonk" : "Фонк"),
-      trackTagPhonk: currentLang === "EN" ? "PHONK" : "ФОНК",
+      trackTagPhonk: currentLang === "EN" ? "Phonk" : "Фонк",
       adminPhonkLabel: currentLang === "RU" ? "Фонк" : (currentLang === "EN" ? "Phonk" : "Фонк"),
       adminPhonkMark: currentLang === "RU" ? "Пометить как фонк" : (currentLang === "EN" ? "Mark as Phonk" : "Позначити як фонк"),
-      adminPhonkHint: currentLang === "RU" ? "Трек будет отображаться с пометкой «ФОНК» и будет доступен в фильтре фонка." : (currentLang === "EN" ? 'The track will display a "PHONK" tag and appear in the Phonk filter.' : "Трек відображатиметься з позначкою «ФОНК» і буде доступний у фільтрі фонку."),
+      adminPhonkHint: currentLang === "RU" ? "Трек будет отображаться с пометкой «Фонк» и будет доступен в фильтре фонка." : (currentLang === "EN" ? 'The track will display a "Phonk" tag and appear in the Phonk filter.' : "Трек відображатиметься з позначкою «Фонк» і буде доступний у фільтрі фонку."),
       sortLabel: "Сортування:",
       sortDefault: "За замовчуванням",
       sortScore: "За рекордом",

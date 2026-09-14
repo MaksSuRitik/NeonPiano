@@ -7,7 +7,7 @@ import { DARK_ANGEL_THEME } from "./darkAngel.js?v=77.0";
 import { COSMIC_THEME } from "./cosmic.js?v=77.0";
 import { IUNO_THEME } from "./iuno.js?v=77.0";
 import { HADO99_THEME } from "./hado99.js?v=77.0";
-import { SANHUA_THEME } from "./sanhua.js?v=95.0";
+import { SANHUA_THEME } from "./sanhua.js?v=96.0";
 
 export { CLASSIC_THEME, PHROLOVA_THEME, DARK_ANGEL_THEME, COSMIC_THEME, IUNO_THEME, HADO99_THEME, SANHUA_THEME };
 

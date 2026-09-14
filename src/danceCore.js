@@ -5084,8 +5084,12 @@ function updateRipples(dt) {
             const activeGradList = isLightMode ? lightGradients : darkGradients;
             const gradTheme = activeGradList[i % activeGradList.length];
 
+            const rawPhonkTag = getText('trackTagPhonk');
+            const safePhonkTag = (rawPhonkTag && rawPhonkTag !== 'trackTagPhonk')
+                ? rawPhonkTag
+                : (i18n.getLanguage?.() === 'EN' ? 'Phonk' : 'Фонк');
             const phonkBadgeHtml = s.isPhonk
-                ? `<span class="track-phonk-badge" data-i18n="trackTagPhonk">${getText('trackTagPhonk') || 'ФОНК'}</span>`
+                ? `<span class="track-phonk-badge" data-i18n="trackTagPhonk">${safePhonkTag}</span>`
                 : '';
 
             el.innerHTML = `

@@ -310,14 +310,6 @@ function bakeEnvironment(w,h,eclipse) {
     }
   });
 
-  // Peripheral crystal masses
-  const rng=mulberry32(6281);
-  for(let i=0;i<7;i++) {
-    const x=(i%2 ? .97:.025)*w, y=(.32+i*.105)*h,sz=w*(.025+rng()*.04);
-    polygon(ctx,[[x,y-sz],[x+sz*.6,y],[x+sz*.15,y+sz*1.7],[x-sz*.4,y+sz*.3]],eclipse?'#241422':'#d9e8f2');
-    polygon(ctx,[[x,y-sz],[x+sz*.6,y],[x+sz*.15,y+sz*1.7]],eclipse?'#422033':'#ffffff');
-  }
-
   // Gentle ground haze only at the very bottom base
   const groundHaze=ctx.createLinearGradient(0,h*.86,0,h);
   groundHaze.addColorStop(0,'transparent');
