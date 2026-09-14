@@ -86,7 +86,8 @@
   </div>
 
   <script type="module">
-    import { SANHUA_THEME } from './src/game/themes/sanhua.js?v=88.0';
+    import { SANHUA_THEME } from './src/game/themes/sanhua.js?v=89.0';
+    window.SANHUA_THEME = SANHUA_THEME;
 
     const cvNormal = document.getElementById('cv-normal');
     const ctxNormal = cvNormal.getContext('2d');
@@ -139,6 +140,19 @@
         ctx.stroke();
       }
 
+      // 4 Horizontal Hit Strings
+      const strColors = SANHUA_THEME.getStringColors(st.combo);
+      const strYs = [-9, -3, 3, 9];
+      const hitCenterY = recY + recH / 2;
+      for (let s = 0; s < 4; s++) {
+        ctx.strokeStyle = strColors[s] || '#ffffff';
+        ctx.lineWidth = 1.4 + s * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(0, hitCenterY + strYs[s]);
+        ctx.lineTo(W, hitCenterY + strYs[s]);
+        ctx.stroke();
+      }
+
       // Notes & Receptors per lane
       for (let i = 0; i < numLanes; i++) {
         const rx = Math.round(i * laneW + 8);
@@ -149,6 +163,7 @@
         SANHUA_THEME.bakeTapNote(ctx, rx, 35, rw, recH, false, t.combo);
 
         // 2. Receptor
+        window.GameState = { combo: t.combo };
         SANHUA_THEME.drawReceptor(ctx, rx, recY, rw, recH, true, false);
 
         // Tier text

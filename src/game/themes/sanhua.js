@@ -863,18 +863,18 @@ export const SANHUA_THEME = {
     bgMid: '#040b17',
     bgOuter: '#02050c',
     bgAura: 'rgba(56, 189, 248, 0.24)',
-    strings: ['#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8'],
-    stringGlow: 'rgba(56, 189, 248, 0.70)',
-    receptorBorder: 'rgba(56, 189, 248, 0.80)',
+    strings: ['#eef5f8', '#d8e5eb', '#b8ccd5', '#91aab5'], // Default T0 silver
+    stringGlow: 'rgba(170, 203, 221, 0.45)',
+    receptorBorder: 'rgba(220, 236, 245, 0.80)',
     particleType: 'petal'
   },
   comboTiers: [
-    { min: 0,   max: 49,       name: 'frost_blade',       border: 'rgba(56, 189, 248, 0.70)', glow: 'rgba(56, 189, 248, 0.45)', particleColors: ['#38bdf8', '#bae6fd', '#ffffff'] },
-    { min: 50,  max: 99,       name: 'biting_frost',      border: 'rgba(14, 165, 233, 0.85)', glow: 'rgba(14, 165, 233, 0.60)', particleColors: ['#0ea5e9', '#38bdf8', '#fda4af'] },
-    { min: 100, max: 199,      name: 'sakura_flutter',    border: 'rgba(244, 63, 94, 0.90)',  glow: 'rgba(56, 189, 248, 0.70)', particleColors: ['#f43f5e', '#38bdf8', '#fff1f2'] },
-    { min: 200, max: 399,      name: 'crystal_surge',     border: 'rgba(0, 245, 255, 0.95)',  glow: 'rgba(244, 63, 94, 0.80)', particleColors: ['#00f5ff', '#ff2a5f', '#ffffff'] },
-    { min: 400, max: 799,      name: 'glacial_fracture',  border: 'rgba(112, 0, 255, 0.98)',  glow: 'rgba(0, 229, 255, 0.90)', particleColors: ['#7000ff', '#00e5ff', '#ffffff'] },
-    { min: 800, max: Infinity, name: 'subzero_domain',    border: '#ff1744',                  glow: 'rgba(255, 23, 68, 0.95)', particleColors: ['#ff1744', '#dc2626', '#18181b', '#000000'] }
+    { min: 0,   max: 49,       name: 'frost_blade',       border: 'rgba(220, 236, 245, 0.75)', glow: 'rgba(180, 210, 225, 0.40)', particleColors: ['#dcecf5', '#9cb9cb', '#ffffff'] },
+    { min: 50,  max: 99,       name: 'biting_frost',      border: 'rgba(69, 204, 232, 0.85)',  glow: 'rgba(69, 204, 232, 0.50)',  particleColors: ['#45cce8', '#8de9f7', '#d5f8ff'] },
+    { min: 100, max: 199,      name: 'sakura_flutter',    border: 'rgba(67, 143, 200, 0.88)',  glow: 'rgba(67, 143, 200, 0.55)',  particleColors: ['#438fc8', '#83c8ed', '#ccecff'] },
+    { min: 200, max: 399,      name: 'crystal_surge',     border: 'rgba(119, 114, 207, 0.90)', glow: 'rgba(119, 114, 207, 0.55)', particleColors: ['#7772cf', '#aaa4ec', '#e1ddff'] },
+    { min: 400, max: 799,      name: 'glacial_fracture',  border: 'rgba(161, 139, 211, 0.92)', glow: 'rgba(161, 139, 211, 0.58)', particleColors: ['#a18bd3', '#cdbef0', '#eee7ff'] },
+    { min: 800, max: Infinity, name: 'subzero_domain',    border: '#ff1744',                  glow: 'rgba(255, 23, 68, 0.95)',  particleColors: ['#ff1744', '#dc2626', '#18181b', '#000000'] }
   ],
 
   _t5Blend: 0,
@@ -910,12 +910,12 @@ export const SANHUA_THEME = {
 
   getStringColors(combo = 0) {
     const tier = this._resolveTierNum(combo);
-    if (tier >= 800) return ['#ff1744', '#dc2626', '#7f1d1d', '#18181b'];
-    if (tier >= 400) return ['#f0fdfa', '#7dd3fc', '#38bdf8', '#a855f7'];
-    if (tier >= 200) return ['#ffffff', '#bae6fd', '#38bdf8', '#f43f5e'];
-    if (tier >= 100) return ['#f0f9ff', '#7dd3fc', '#38bdf8', '#fda4af'];
-    if (tier >= 50)  return ['#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8'];
-    return ['#bae6fd', '#7dd3fc', '#38bdf8', '#0284c7'];
+    if (tier >= 800) return ['#ff536c', '#e62648', '#a5122c', '#540817']; // T5: Crimson / Dark Red
+    if (tier >= 400) return ['#eee7ff', '#cdbef0', '#a18bd3', '#7159a6']; // T4: Lilac / Amethyst
+    if (tier >= 200) return ['#e1ddff', '#aaa4ec', '#7772cf', '#4e4999']; // T3: Violet
+    if (tier >= 100) return ['#ccecff', '#83c8ed', '#438fc8', '#205c91']; // T2: Azure / Blue
+    if (tier >= 50)  return ['#d5f8ff', '#8de9f7', '#45cce8', '#1596b5']; // T1: Cyan
+    return ['#eef5f8', '#d8e5eb', '#b8ccd5', '#91aab5'];                  // T0: Silver / White
   },
 
   _getPalette(tierInput, isDead = false) {
@@ -1009,13 +1009,21 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(148, 163, 184, 0.15)',
         specular: 'rgba(203, 213, 225, 0.40)',
         finTip: '#64748b',
+        // 11-stop layered desaturated depth gradient
         holdStops: [
-          [0.00, 'rgba(30, 41, 59, 0.15)'],
-          [0.25, 'rgba(71, 85, 105, 0.60)'],
-          [0.50, 'rgba(148, 163, 184, 0.85)'],
-          [0.75, 'rgba(71, 85, 105, 0.60)'],
-          [1.00, 'rgba(30, 41, 59, 0.15)']
+          [0.00, 'rgba(15, 23, 42, 0.08)'],
+          [0.06, 'rgba(30, 41, 59, 0.25)'],
+          [0.16, 'rgba(51, 65, 85, 0.50)'],
+          [0.29, 'rgba(71, 85, 105, 0.70)'],
+          [0.42, 'rgba(100, 116, 139, 0.85)'],
+          [0.52, 'rgba(148, 163, 184, 0.90)'],
+          [0.59, 'rgba(100, 116, 139, 0.85)'],
+          [0.68, 'rgba(71, 85, 105, 0.70)'],
+          [0.82, 'rgba(51, 65, 85, 0.50)'],
+          [0.94, 'rgba(30, 41, 59, 0.22)'],
+          [1.00, 'rgba(15, 23, 42, 0.08)']
         ],
+        refractionCol: 'rgba(148, 163, 184, 0.10)',
         holdHaze: 'rgba(71, 85, 105, 0.08)',
         holdVein: null,
         holdVeinBloom: null
@@ -1042,17 +1050,22 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(255, 23, 68, 0.45)',
         specular: '#ffffff',
         finTip: '#e61e3c',
-        // Broad internal crimson illumination beneath obsidian glass
+        // 11-stop rich layered cross-section: Black obsidian edge -> dark wine -> broad internal crimson
         holdStops: [
-          [0.00, 'rgba(2, 2, 3, 0.90)'],
-          [0.20, 'rgba(27, 10, 16, 0.85)'],
-          [0.40, 'rgba(181, 18, 45, 0.85)'],
-          [0.50, 'rgba(255, 23, 68, 0.95)'],
-          [0.60, 'rgba(181, 18, 45, 0.85)'],
-          [0.80, 'rgba(27, 10, 16, 0.85)'],
-          [1.00, 'rgba(2, 2, 3, 0.90)']
+          [0.00, 'rgba(2, 2, 3, 0.92)'],
+          [0.08, 'rgba(24, 5, 10, 0.88)'],
+          [0.20, 'rgba(58, 8, 18, 0.85)'],
+          [0.32, 'rgba(125, 14, 32, 0.85)'],
+          [0.44, 'rgba(205, 20, 48, 0.92)'],
+          [0.52, 'rgba(255, 35, 75, 0.98)'],
+          [0.60, 'rgba(215, 22, 52, 0.92)'],
+          [0.72, 'rgba(135, 14, 35, 0.85)'],
+          [0.84, 'rgba(65, 8, 20, 0.85)'],
+          [0.94, 'rgba(24, 5, 10, 0.88)'],
+          [1.00, 'rgba(2, 2, 3, 0.92)']
         ],
-        holdHaze: 'rgba(255, 23, 68, 0.15)', // Pure dark crimson haze (NO BLUE)
+        refractionCol: 'rgba(255, 23, 68, 0.18)',
+        holdHaze: 'rgba(255, 23, 68, 0.14)', // Pure dark crimson haze (NO BLUE)
         holdVein: '#ff1744',
         holdVeinBloom: 'rgba(255, 23, 68, 0.35)'
       };
@@ -1078,13 +1091,21 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(169, 152, 216, 0.32)',
         specular: '#ffffff',
         finTip: '#ddd5f6',
+        // 11-stop rich layered cross-section: deep lilac -> translucent medium -> soft core
         holdStops: [
-          [0.00, 'rgba(102, 84, 158, 0.14)'],
-          [0.20, 'rgba(169, 152, 216, 0.65)'],
-          [0.50, 'rgba(250, 247, 255, 0.95)'],
-          [0.80, 'rgba(169, 152, 216, 0.65)'],
-          [1.00, 'rgba(102, 84, 158, 0.14)']
+          [0.00, 'rgba(40, 28, 70, 0.08)'],
+          [0.06, 'rgba(65, 48, 108, 0.28)'],
+          [0.16, 'rgba(102, 80, 155, 0.58)'],
+          [0.29, 'rgba(148, 125, 205, 0.78)'],
+          [0.42, 'rgba(195, 178, 235, 0.88)'],
+          [0.52, 'rgba(250, 246, 255, 0.96)'],
+          [0.59, 'rgba(212, 198, 242, 0.90)'],
+          [0.68, 'rgba(155, 132, 210, 0.80)'],
+          [0.82, 'rgba(98, 78, 150, 0.55)'],
+          [0.94, 'rgba(58, 42, 98, 0.25)'],
+          [1.00, 'rgba(30, 20, 60, 0.06)']
         ],
+        refractionCol: 'rgba(169, 152, 216, 0.14)',
         holdHaze: 'rgba(169, 152, 216, 0.12)',
         holdVein: null,
         holdVeinBloom: null
@@ -1111,13 +1132,21 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(133, 137, 217, 0.32)',
         specular: '#ffffff',
         finTip: '#c5c7f6',
+        // 11-stop rich layered cross-section: cold violet edges -> luminous violet core
         holdStops: [
-          [0.00, 'rgba(77, 79, 158, 0.14)'],
-          [0.20, 'rgba(133, 137, 217, 0.65)'],
-          [0.50, 'rgba(241, 240, 255, 0.95)'],
-          [0.80, 'rgba(133, 137, 217, 0.65)'],
-          [1.00, 'rgba(77, 79, 158, 0.14)']
+          [0.00, 'rgba(30, 25, 75, 0.08)'],
+          [0.06, 'rgba(48, 42, 115, 0.28)'],
+          [0.16, 'rgba(75, 70, 160, 0.58)'],
+          [0.29, 'rgba(115, 110, 205, 0.78)'],
+          [0.42, 'rgba(165, 162, 235, 0.88)'],
+          [0.52, 'rgba(240, 239, 255, 0.96)'],
+          [0.59, 'rgba(185, 182, 242, 0.90)'],
+          [0.68, 'rgba(125, 120, 212, 0.80)'],
+          [0.82, 'rgba(70, 65, 155, 0.55)'],
+          [0.94, 'rgba(42, 36, 105, 0.25)'],
+          [1.00, 'rgba(22, 18, 65, 0.06)']
         ],
+        refractionCol: 'rgba(133, 137, 217, 0.14)',
         holdHaze: 'rgba(133, 137, 217, 0.12)',
         holdVein: null,
         holdVeinBloom: null
@@ -1144,13 +1173,21 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(67, 142, 197, 0.32)',
         specular: '#ffffff',
         finTip: '#9ed4f4',
+        // 11-stop rich layered cross-section: Deep azure edges -> rich blue body -> luminous core
         holdStops: [
-          [0.00, 'rgba(23, 83, 133, 0.14)'],
-          [0.20, 'rgba(67, 142, 197, 0.65)'],
-          [0.50, 'rgba(233, 247, 255, 0.95)'],
-          [0.80, 'rgba(67, 142, 197, 0.65)'],
-          [1.00, 'rgba(23, 83, 133, 0.14)']
+          [0.00, 'rgba(18, 55, 90, 0.08)'],
+          [0.06, 'rgba(23, 83, 133, 0.28)'],
+          [0.16, 'rgba(37, 105, 158, 0.58)'],
+          [0.29, 'rgba(67, 142, 197, 0.80)'],
+          [0.42, 'rgba(125, 190, 228, 0.88)'],
+          [0.52, 'rgba(225, 243, 252, 0.96)'],
+          [0.59, 'rgba(151, 207, 237, 0.90)'],
+          [0.68, 'rgba(62, 137, 190, 0.82)'],
+          [0.82, 'rgba(27, 91, 143, 0.55)'],
+          [0.94, 'rgba(18, 62, 102, 0.25)'],
+          [1.00, 'rgba(10, 35, 62, 0.06)']
         ],
+        refractionCol: 'rgba(67, 142, 197, 0.14)',
         holdHaze: 'rgba(67, 142, 197, 0.12)',
         holdVein: null,
         holdVeinBloom: null
@@ -1177,13 +1214,21 @@ export const SANHUA_THEME = {
         resonanceGlow: 'rgba(96, 199, 232, 0.30)',
         specular: '#ffffff',
         finTip: '#bdefff',
+        // 11-stop rich layered cross-section: Deep cyan edges -> vibrant cyan body -> pale cyan core
         holdStops: [
-          [0.00, 'rgba(25, 124, 165, 0.14)'],
-          [0.20, 'rgba(96, 199, 232, 0.60)'],
-          [0.50, 'rgba(239, 252, 255, 0.95)'],
-          [0.80, 'rgba(96, 199, 232, 0.60)'],
-          [1.00, 'rgba(25, 124, 165, 0.14)']
+          [0.00, 'rgba(12, 60, 82, 0.08)'],
+          [0.06, 'rgba(21, 95, 125, 0.28)'],
+          [0.16, 'rgba(38, 140, 178, 0.58)'],
+          [0.29, 'rgba(70, 185, 222, 0.78)'],
+          [0.42, 'rgba(130, 225, 248, 0.88)'],
+          [0.52, 'rgba(225, 250, 255, 0.96)'],
+          [0.59, 'rgba(155, 234, 252, 0.90)'],
+          [0.68, 'rgba(65, 180, 218, 0.80)'],
+          [0.82, 'rgba(30, 130, 168, 0.55)'],
+          [0.94, 'rgba(18, 85, 115, 0.25)'],
+          [1.00, 'rgba(10, 50, 72, 0.06)']
         ],
+        refractionCol: 'rgba(96, 199, 232, 0.14)',
         holdHaze: 'rgba(96, 199, 232, 0.12)',
         holdVein: null,
         holdVeinBloom: null
@@ -1209,13 +1254,21 @@ export const SANHUA_THEME = {
       resonanceGlow: 'rgba(220, 236, 245, 0.25)',
       specular: '#ffffff',
       finTip: '#dcecf5',
+      // 11-stop rich layered cross-section: Slate shadows -> translucent silver -> pure silver core
       holdStops: [
-        [0.00, 'rgba(102, 140, 165, 0.12)'],
-        [0.20, 'rgba(170, 203, 221, 0.55)'],
-        [0.50, 'rgba(247, 251, 255, 0.95)'],
-        [0.80, 'rgba(170, 203, 221, 0.55)'],
-        [1.00, 'rgba(102, 140, 165, 0.12)']
+        [0.00, 'rgba(35, 52, 68, 0.08)'],
+        [0.06, 'rgba(55, 78, 98, 0.28)'],
+        [0.16, 'rgba(90, 120, 142, 0.55)'],
+        [0.29, 'rgba(145, 175, 196, 0.75)'],
+        [0.42, 'rgba(200, 222, 236, 0.88)'],
+        [0.52, 'rgba(248, 252, 255, 0.95)'],
+        [0.59, 'rgba(215, 234, 245, 0.88)'],
+        [0.68, 'rgba(165, 195, 214, 0.78)'],
+        [0.82, 'rgba(105, 135, 156, 0.52)'],
+        [0.94, 'rgba(60, 85, 105, 0.24)'],
+        [1.00, 'rgba(30, 48, 62, 0.06)']
       ],
+      refractionCol: 'rgba(220, 236, 248, 0.12)',
       holdHaze: 'rgba(170, 203, 221, 0.10)',
       holdVein: null,
       holdVeinBloom: null
@@ -1309,29 +1362,80 @@ export const SANHUA_THEME = {
     ctx.lineTo(left + (right - left) * 0.48, cy + 1);
     ctx.stroke();
 
-    // D: Center subtle Hiyuki resonance slit / crystal glint
-    const slitH = Math.max(5, Math.min(10, h * 0.38));
-    const slitX = cx + (pal.isObsidian ? 0 : (right - left) * 0.05);
+    // D: Faceted Ruby Resonance Crystal (Fixed crimson accent across T0-T5)
+    const isObsidian = pal.isObsidian;
+    const crystalW = Math.max(7, Math.min(12, Math.round(w * 0.105)));
+    const crystalH = Math.max(14, Math.min(22, Math.round(h * 0.42)));
+    const cw = crystalW * 0.5;
+    const ch = crystalH * 0.5;
+    const iw = cw * 0.42;
+    const ih = ch * 0.42;
 
-    // Soft resonance glow
-    ctx.fillStyle = pal.resonanceGlow;
+    // Restrained soft red glow around crystal
+    ctx.fillStyle = isObsidian ? 'rgba(255, 23, 68, 0.35)' : 'rgba(220, 20, 60, 0.28)';
     ctx.beginPath();
-    ctx.ellipse(slitX, cy, Math.max(3, w * 0.05), slitH * 0.85, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, cw * 2.2, ch * 1.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Resonance crystalline incision line
-    ctx.strokeStyle = pal.resonance;
-    ctx.lineWidth = 1.4;
+    // Base deep ruby foundation
+    ctx.fillStyle = isObsidian ? '#3a0008' : '#4a0612';
     ctx.beginPath();
-    ctx.moveTo(slitX, cy - slitH);
-    ctx.lineTo(slitX, cy + slitH);
+    ctx.moveTo(cx, cy - ch);
+    ctx.lineTo(cx + cw, cy);
+    ctx.lineTo(cx, cy + ch);
+    ctx.lineTo(cx - cw, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    // Left facet: dark ruby
+    ctx.fillStyle = isObsidian ? '#7f1022' : '#7f1022';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ch);
+    ctx.lineTo(cx - cw, cy);
+    ctx.lineTo(cx, cy + ch);
+    ctx.lineTo(cx - iw, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    // Right facet: medium ruby
+    ctx.fillStyle = isObsidian ? '#b5122d' : '#c51f3d';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ch);
+    ctx.lineTo(cx + cw, cy);
+    ctx.lineTo(cx, cy + ch);
+    ctx.lineTo(cx + iw, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    // Center table face: bright crimson
+    ctx.fillStyle = isObsidian ? '#ff1744' : '#ff3658';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ih);
+    ctx.lineTo(cx + iw, cy);
+    ctx.lineTo(cx, cy + ih);
+    ctx.lineTo(cx - iw, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    // Specular micro reflection / glint
+    ctx.fillStyle = isObsidian ? '#ffffff' : '#ff8a9b';
+    ctx.beginPath();
+    ctx.moveTo(cx - iw * 0.4, cy - ih * 0.5);
+    ctx.lineTo(cx + iw * 0.2, cy - ih * 0.2);
+    ctx.lineTo(cx - iw * 0.1, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    // Crisp crystal perimeter stroke
+    ctx.strokeStyle = isObsidian ? 'rgba(255, 154, 170, 0.75)' : 'rgba(255, 80, 110, 0.65)';
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ch);
+    ctx.lineTo(cx + cw, cy);
+    ctx.lineTo(cx, cy + ch);
+    ctx.lineTo(cx - cw, cy);
+    ctx.closePath();
     ctx.stroke();
-
-    // Specular micro glint at center
-    ctx.fillStyle = pal.specular;
-    ctx.beginPath();
-    ctx.arc(slitX, cy, 1.2, 0, Math.PI * 2);
-    ctx.fill();
 
     ctx.restore(); // Undo clip
 
@@ -1413,11 +1517,17 @@ export const SANHUA_THEME = {
       n.fillRect(0, 0, width, height);
     }
 
+    // 3. Offscreen Hold Buffer Canvas (prevents destination-in on main canvas ctx)
+    const buf = document.createElement('canvas');
+    buf.width = tailWidth;
+    buf.height = 1000;
+
     return (cache.entries[key] = {
       strip,
       tip: strip, // Backwards compatibility alias (no separate tip canvas)
       cap: strip, // Backwards compatibility alias
       head,
+      buf,
       bodyW: tailWidth,
       tailWidth,  // Backwards compatibility alias
       tipHeight: 0,
@@ -1477,108 +1587,145 @@ export const SANHUA_THEME = {
     const pal = paint.palette || this._getHiyukiNotePalette(currentCombo, dead, isLight);
     const left = Math.round(x + (w - paint.tailWidth) / 2);
 
-    // Full-width continuous energy body runs directly from yTail to bottom (NO separate tip canvas)
     const bodyY = yTail;
     const bodyLen = length;
+    const bodyW = paint.bodyW;
 
-    // LAYER A — OUTER MOTION HAZE (palette-driven haze color: red in T5, cool ambient in T0-T4)
-    const hazeW = Math.round(paint.bodyW * 1.08);
-    const hazeX = Math.round(x + (w - hazeW) / 2);
-    ctx.save();
-    ctx.fillStyle = pal.holdHaze;
-    ctx.fillRect(hazeX, bodyY, hazeW, bodyLen);
-    ctx.restore();
+    // Ensure offscreen buffer canvas is tall enough for bodyLen
+    const buf = paint.buf;
+    const targetH = Math.max(1000, Math.ceil(bodyLen));
+    if (buf.height < targetH) {
+      buf.height = targetH;
+    }
+    const bCtx = buf.getContext('2d');
+    bCtx.clearRect(0, 0, bodyW, Math.ceil(bodyLen));
 
-    // LAYER B — MAIN WHITE / OBSIDIAN ENERGY BODY (Broad 96% energy strip)
-    ctx.drawImage(paint.strip, 0, 0, paint.tailWidth, 4, left, bodyY, paint.bodyW, bodyLen);
+    // 1. Base Energy Body (Broad 11-stop cross-section gradient)
+    bCtx.drawImage(paint.strip, 0, 0, paint.tailWidth, 4, 0, 0, bodyW, bodyLen);
 
-    // Subtle breathing edges (no harsh outline, 2-5% long smooth drift)
-    const timeOffset = (now || 0) * 0.0012;
-    const driftLeft = Math.sin(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
-    const driftRight = Math.cos(timeOffset + bodyY * 0.002) * (paint.bodyW * 0.025);
+    // 2. Subtle Internal Refraction Ribbon (Tier-coherent, 0.08–0.18 opacity, slow drift)
+    const timeOffset = (now || 0) * 0.0008;
+    const refW = Math.round(bodyW * 0.32);
+    const refBaseX = bodyW * 0.46;
+    const refDrift0 = Math.sin(timeOffset * 0.6 + bodyY * 0.001) * (bodyW * 0.035);
+    const refDriftMid = Math.cos(timeOffset * 0.5 + (bodyY + bodyLen * 0.5) * 0.001) * (bodyW * 0.04);
+    const refDriftEnd = Math.sin(timeOffset * 0.7 + bottom * 0.001) * (bodyW * 0.03);
 
+    const rx0 = refBaseX + refDrift0;
+    const rxMid = refBaseX + refDriftMid;
+    const rxEnd = refBaseX + refDriftEnd;
+
+    bCtx.save();
+    bCtx.fillStyle = pal.refractionCol || (pal.edge + '20');
+    bCtx.beginPath();
+    bCtx.moveTo(rx0 - refW * 0.5, 0);
+    bCtx.bezierCurveTo(rxMid - refW * 0.5, bodyLen * 0.45, rxEnd - refW * 0.5, bodyLen * 0.85, rxEnd - refW * 0.5, bodyLen);
+    bCtx.lineTo(rxEnd + refW * 0.5, bodyLen);
+    bCtx.bezierCurveTo(rxEnd + refW * 0.5, bodyLen * 0.85, rxMid + refW * 0.5, bodyLen * 0.45, rx0 + refW * 0.5, 0);
+    bCtx.closePath();
+    bCtx.fill();
+    bCtx.restore();
+
+    // 3. Subtle Breathing Luminescent Edges (2-5% drift, tier edge color)
     if (!dead) {
-      ctx.save();
-      // Soft outer edge luminescence matching tier palette
-      ctx.strokeStyle = pal.isObsidian ? 'rgba(255, 23, 68, 0.45)' : pal.edge + '80';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(left + driftLeft, bodyY);
-      ctx.lineTo(left + driftLeft * 0.6, bottom);
-      ctx.moveTo(left + paint.bodyW + driftRight, bodyY);
-      ctx.lineTo(left + paint.bodyW + driftRight * 0.6, bottom);
-      ctx.stroke();
+      const driftLeft = Math.sin(timeOffset + bodyY * 0.002) * (bodyW * 0.025);
+      const driftRight = Math.cos(timeOffset + bodyY * 0.002) * (bodyW * 0.025);
 
-      // LAYER C — ONLY IN T5 (OBSIDIAN BLOOD): BROAD INTERNAL CRIMSON ILLUMINATION
+      bCtx.save();
+      bCtx.strokeStyle = pal.isObsidian ? 'rgba(255, 23, 68, 0.45)' : (pal.edge ? pal.edge + '80' : 'rgba(255, 255, 255, 0.4)');
+      bCtx.lineWidth = 0.8;
+      bCtx.beginPath();
+      bCtx.moveTo(driftLeft, 0);
+      bCtx.lineTo(driftLeft * 0.6, bodyLen);
+      bCtx.moveTo(bodyW + driftRight, 0);
+      bCtx.lineTo(bodyW + driftRight * 0.6, bodyLen);
+      bCtx.stroke();
+      bCtx.restore();
+
+      // 4. LAYER C — ONLY IN T5 (OBSIDIAN BLOOD): BROAD INTERNAL CRIMSON ILLUMINATION
       // STRICTLY DISABLED FOR T0–T4 (NO RED, NO TOOTHPASTE STRIPE)
       if (pal.isObsidian && pal.holdVein) {
-        const veinW = Math.max(6, Math.round(paint.bodyW * 0.20));
-        const redBaseX = left + paint.bodyW * 0.50;
-        const drift0 = Math.sin(timeOffset + bodyY * 0.003) * (paint.bodyW * 0.03);
-        const driftMid = Math.cos(timeOffset * 0.8 + (bodyY + bodyLen * 0.5) * 0.003) * (paint.bodyW * 0.04);
-        const driftEnd = Math.sin(timeOffset * 1.2 + bottom * 0.003) * (paint.bodyW * 0.02);
+        const veinW = Math.max(6, Math.round(bodyW * 0.20));
+        const redBaseX = bodyW * 0.50;
+        const drift0 = Math.sin(timeOffset + bodyY * 0.003) * (bodyW * 0.03);
+        const driftMid = Math.cos(timeOffset * 0.8 + (bodyY + bodyLen * 0.5) * 0.003) * (bodyW * 0.04);
+        const driftEnd = Math.sin(timeOffset * 1.2 + bottom * 0.003) * (bodyW * 0.02);
 
         const x0 = redBaseX + drift0;
         const xMid = redBaseX + driftMid;
         const xEnd = redBaseX + driftEnd;
 
+        bCtx.save();
         // Broad diffuse internal crimson glow (red light trapped beneath black obsidian)
         const bloomW = veinW * 2.5;
-        ctx.fillStyle = pal.holdVeinBloom;
-        ctx.beginPath();
-        ctx.moveTo(x0 - bloomW * 0.5, bodyY);
-        ctx.bezierCurveTo(xMid - bloomW * 0.5, bodyY + bodyLen * 0.45, xEnd - bloomW * 0.5, bodyY + bodyLen * 0.85, xEnd - bloomW * 0.5, bottom);
-        ctx.lineTo(xEnd + bloomW * 0.5, bottom);
-        ctx.bezierCurveTo(xEnd + bloomW * 0.5, bodyY + bodyLen * 0.85, xMid + bloomW * 0.5, bodyY + bodyLen * 0.45, x0 + bloomW * 0.5, bodyY);
-        ctx.closePath();
-        ctx.fill();
+        bCtx.fillStyle = pal.holdVeinBloom;
+        bCtx.beginPath();
+        bCtx.moveTo(x0 - bloomW * 0.5, 0);
+        bCtx.bezierCurveTo(xMid - bloomW * 0.5, bodyLen * 0.45, xEnd - bloomW * 0.5, bodyLen * 0.85, xEnd - bloomW * 0.5, bodyLen);
+        bCtx.lineTo(xEnd + bloomW * 0.5, bodyLen);
+        bCtx.bezierCurveTo(xEnd + bloomW * 0.5, bodyLen * 0.85, xMid + bloomW * 0.5, bodyLen * 0.45, x0 + bloomW * 0.5, 0);
+        bCtx.closePath();
+        bCtx.fill();
 
         // Soft internal core
-        ctx.fillStyle = pal.holdVein;
-        ctx.beginPath();
-        ctx.moveTo(x0 - veinW * 0.5, bodyY);
-        ctx.bezierCurveTo(xMid - veinW * 0.5, bodyY + bodyLen * 0.45, xEnd - veinW * 0.5, bodyY + bodyLen * 0.85, xEnd - veinW * 0.5, bottom);
-        ctx.lineTo(xEnd + veinW * 0.5, bottom);
-        ctx.bezierCurveTo(xEnd + veinW * 0.5, bodyY + bodyLen * 0.85, xMid + veinW * 0.5, bodyY + bodyLen * 0.45, x0 + veinW * 0.5, bodyY);
-        ctx.closePath();
-        ctx.fill();
+        bCtx.fillStyle = pal.holdVein;
+        bCtx.beginPath();
+        bCtx.moveTo(x0 - veinW * 0.5, 0);
+        bCtx.bezierCurveTo(xMid - veinW * 0.5, bodyLen * 0.45, xEnd - veinW * 0.5, bodyLen * 0.85, xEnd - veinW * 0.5, bodyLen);
+        bCtx.lineTo(xEnd + veinW * 0.5, bodyLen);
+        bCtx.bezierCurveTo(xEnd + veinW * 0.5, bodyLen * 0.85, xMid + veinW * 0.5, bodyLen * 0.45, x0 + veinW * 0.5, 0);
+        bCtx.closePath();
+        bCtx.fill();
 
         // Hot specular core streak
-        ctx.strokeStyle = pal.specular;
-        ctx.lineWidth = 1.0;
-        ctx.beginPath();
-        ctx.moveTo(x0, bodyY);
-        ctx.bezierCurveTo(xMid, bodyY + bodyLen * 0.45, xEnd, bodyY + bodyLen * 0.85, xEnd, bottom);
-        ctx.stroke();
+        bCtx.strokeStyle = pal.specular;
+        bCtx.lineWidth = 1.0;
+        bCtx.beginPath();
+        bCtx.moveTo(x0, 0);
+        bCtx.bezierCurveTo(xMid, bodyLen * 0.45, xEnd, bodyLen * 0.85, xEnd, bodyLen);
+        bCtx.stroke();
+        bCtx.restore();
       }
-
-      ctx.restore();
     }
 
-    // ========================================================================
-    // 3. TOP END: SMOOTH TRANSPARENCY FADE VIA ALPHA MASK
-    // Dissolves the top 24–45px with an alpha gradient:
-    // yTail: alpha ≈ 0.30 -> ~25%: 0.45 -> ~50%: 0.65 -> ~80%: 0.85 -> 100%: 1.00
-    // NEVER fades to zero; absolute top end remains ~30% visible.
-    // ========================================================================
-    const fadeH = Math.min(42, Math.max(24, Math.round(length * 0.35)));
+    // 5. TOP END: SMOOTH TRANSPARENCY FADE VIA DESTINATION-IN ON OFFSCREEN BUFFER
+    // Top ~28-35% faintly visible (alpha 0.30 -> 1.00), NEVER masked on main canvas ctx
+    const fadeH = Math.min(42, Math.max(24, Math.round(bodyLen * 0.35)));
     if (fadeH > 2) {
-      ctx.save();
-      ctx.beginPath();
-      // Clip mask strictly to the top section of the hold body + haze
-      ctx.rect(hazeX, yTail, hazeW, fadeH);
-      ctx.clip();
-      ctx.globalCompositeOperation = 'destination-in';
-      const fadeGrad = ctx.createLinearGradient(0, yTail, 0, yTail + fadeH);
+      bCtx.save();
+      bCtx.globalCompositeOperation = 'destination-in';
+      const fadeGrad = bCtx.createLinearGradient(0, 0, 0, fadeH);
       fadeGrad.addColorStop(0.00, 'rgba(0, 0, 0, 0.30)');
       fadeGrad.addColorStop(0.25, 'rgba(0, 0, 0, 0.45)');
       fadeGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.65)');
       fadeGrad.addColorStop(0.80, 'rgba(0, 0, 0, 0.85)');
       fadeGrad.addColorStop(1.00, 'rgba(0, 0, 0, 1.00)');
-      ctx.fillStyle = fadeGrad;
-      ctx.fillRect(hazeX, yTail, hazeW, fadeH);
-      ctx.restore();
+      bCtx.fillStyle = fadeGrad;
+      bCtx.fillRect(0, 0, bodyW, fadeH);
+      bCtx.restore();
     }
+
+    // 6. BLIT TO MAIN CANVAS CTX
+    // LAYER A — OUTER MOTION HAZE (vertical gradient fade on ctx, no destination-in)
+    const hazeW = Math.round(bodyW * 1.08);
+    const hazeX = Math.round(x + (w - hazeW) / 2);
+    ctx.save();
+    if (fadeH > 2 && bodyLen > fadeH) {
+      const hazeGrad = ctx.createLinearGradient(0, bodyY, 0, bodyY + fadeH);
+      hazeGrad.addColorStop(0.00, 'rgba(0, 0, 0, 0)');
+      hazeGrad.addColorStop(1.00, pal.holdHaze);
+      ctx.fillStyle = hazeGrad;
+      ctx.fillRect(hazeX, bodyY, hazeW, fadeH);
+      ctx.fillStyle = pal.holdHaze;
+      ctx.fillRect(hazeX, bodyY + fadeH, hazeW, bodyLen - fadeH);
+    } else {
+      ctx.fillStyle = pal.holdHaze;
+      ctx.fillRect(hazeX, bodyY, hazeW, bodyLen);
+    }
+    ctx.restore();
+
+    // LAYER B — MAIN COMPOSITED ENERGY BODY
+    ctx.drawImage(buf, 0, 0, bodyW, bodyLen, left, bodyY, bodyW, bodyLen);
 
     return true;
   },
@@ -1596,26 +1743,43 @@ export const SANHUA_THEME = {
     const cx = x + w / 2;
     const cy = y + h / 2;
 
+    const combo = (typeof window !== 'undefined' && (window.GameState?.combo ?? window.State?.combo)) || 0;
+    const pal = this._getHiyukiNotePalette(combo, false, isLight);
+
     const bg = ctx.createLinearGradient(x, y, x, y + h);
-    if (isActive) {
-      bg.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
-      bg.addColorStop(0.5, 'rgba(14, 165, 233, 0.30)');
-      bg.addColorStop(1, 'rgba(2, 132, 199, 0.15)');
+    if (pal.isObsidian) {
+      if (isActive) {
+        bg.addColorStop(0, 'rgba(255, 23, 68, 0.45)');
+        bg.addColorStop(0.5, 'rgba(181, 18, 45, 0.30)');
+        bg.addColorStop(1, 'rgba(30, 2, 8, 0.20)');
+      } else {
+        bg.addColorStop(0, 'rgba(25, 4, 9, 0.50)');
+        bg.addColorStop(0.5, 'rgba(14, 2, 5, 0.60)');
+        bg.addColorStop(1, 'rgba(4, 1, 2, 0.70)');
+      }
     } else {
-      bg.addColorStop(0, 'rgba(7, 23, 46, 0.40)');
-      bg.addColorStop(0.5, 'rgba(4, 15, 30, 0.50)');
-      bg.addColorStop(1, 'rgba(2, 6, 15, 0.60)');
+      if (isActive) {
+        bg.addColorStop(0, pal.facetLight);
+        bg.addColorStop(0.5, pal.facetDark);
+        bg.addColorStop(1, 'rgba(6, 14, 26, 0.30)');
+      } else {
+        bg.addColorStop(0, pal.facetDark);
+        bg.addColorStop(0.5, 'rgba(6, 14, 26, 0.55)');
+        bg.addColorStop(1, 'rgba(2, 6, 15, 0.65)');
+      }
     }
     ctx.fillStyle = bg;
     ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
 
-    ctx.strokeStyle = isActive ? '#ffffff' : (isLight ? 'rgba(56, 189, 248, 0.9)' : 'rgba(56, 189, 248, 0.70)');
-    ctx.lineWidth = isActive ? 1.8 : 1.2;
+    // Border: tier-coherent edge color
+    ctx.strokeStyle = isActive ? (pal.isObsidian ? '#ff1744' : (pal.specular || '#ffffff')) : (pal.edge || '#edf4f8');
+    ctx.lineWidth = isActive ? 1.8 : 1.1;
     ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
 
-    ctx.fillStyle = isActive ? '#f43f5e' : 'rgba(56, 189, 248, 0.6)';
+    // Center glint: matches tier family (NO unrelated red dot in normal tiers)
+    ctx.fillStyle = isActive ? (pal.isObsidian ? '#ff5277' : (pal.specular || '#ffffff')) : (pal.resonance || '#edf4f8');
     ctx.beginPath();
-    ctx.arc(cx, cy, isActive ? 2.8 : 1.6, 0, Math.PI * 2);
+    ctx.arc(cx, cy, isActive ? 2.4 : 1.4, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
