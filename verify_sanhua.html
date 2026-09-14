@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Sanhua Glacio Katana Verification — All Combo Tiers</title>
+  <title>Sanhua Pixi Redesign — Shattered Glass Notes & Donghua Crescent Hold Notes</title>
   <style>
     body {
       margin: 0;
-      padding: 20px;
+      padding: 16px;
       background: #020617;
       color: #f8fafc;
       font-family: system-ui, -apple-system, sans-serif;
@@ -15,23 +15,46 @@
       align-items: center;
     }
     h1 {
-      margin: 0 0 8px;
+      margin: 0 0 4px;
       font-size: 20px;
       color: #38bdf8;
       text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
     }
     .subtitle {
-      margin: 0 0 16px;
+      margin: 0 0 14px;
       font-size: 13px;
       color: #94a3b8;
+      text-align: center;
+      max-width: 800px;
+    }
+    .grid {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      justify-content: center;
+    }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .panel h2 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      letter-spacing: 0.5px;
     }
     .canvas-container {
       position: relative;
       border: 2px solid rgba(56, 189, 248, 0.4);
-      border-radius: 12px;
-      box-shadow: 0 0 30px rgba(56, 189, 248, 0.25);
+      border-radius: 10px;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
       background: #08172e;
       overflow: hidden;
+    }
+    .t5-container {
+      border-color: rgba(255, 23, 68, 0.5);
+      box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);
+      background: #140306;
     }
     canvas {
       display: block;
@@ -39,83 +62,115 @@
   </style>
 </head>
 <body>
-  <h1>Sanhua — Katana Scabbard Head (≤ Note Height), Ice Fire Blade & Hilt Tail</h1>
-  <div class="subtitle">Verifying all 6 combo tiers (T0-T5) + Scabbard height constraint</div>
-  <div class="canvas-container">
-    <canvas id="cv" width="700" height="760"></canvas>
+  <h1>Sanhua Theme — Pixi.js WebGL Architecture Verification</h1>
+  <div class="subtitle">
+    1. Fractured Ice/Glass Shards Tap Notes &nbsp;|&nbsp; 
+    2. Donghua Crescent Moon Cutout & Flowing Qi Energy Tail &nbsp;|&nbsp; 
+    3. Crystalline Ice Tree & Giant Moon &nbsp;|&nbsp; 
+    4. T5 Blood-Moon Shift (800+ Combo)
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2 style="color: #38bdf8;">CELESTIAL ICE REALM (T0–T4: Combo 0–799)</h2>
+      <div class="canvas-container">
+        <canvas id="cv-normal" width="460" height="660"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 style="color: #ff1744;">T5 BLOOD-MOON SHIFT (800+ COMBO)</h2>
+      <div class="canvas-container t5-container">
+        <canvas id="cv-t5" width="460" height="660"></canvas>
+      </div>
+    </div>
   </div>
 
   <script type="module">
-    import { SANHUA_THEME } from './src/game/themes/sanhua.js?v=83.0';
+    import { SANHUA_THEME } from './src/game/themes/sanhua.js?v=85.0';
 
-    const canvas = document.getElementById('cv');
-    const ctx = canvas.getContext('2d');
-    const W = 700;
-    const H = 760;
-    const numLanes = 6;
+    const cvNormal = document.getElementById('cv-normal');
+    const ctxNormal = cvNormal.getContext('2d');
+    const cvT5 = document.getElementById('cv-t5');
+    const ctxT5 = cvT5.getContext('2d');
+
+    const W = 460;
+    const H = 660;
+    const numLanes = 4;
     const laneW = W / numLanes;
-    const recY = 620;
-    const recH = 44;
+    const recY = 530;
+    const recH = 46;
 
-    const tiers = [
-      { combo: 0,   name: 'T0: Frost Blade (0-49)', col: '#b91c1c' },
-      { combo: 75,  name: 'T1: Glacio Azure (50-99)', col: '#0ea5e9' },
-      { combo: 150, name: 'T2: Sakura Pink (100-199)', col: '#ec4899' },
-      { combo: 250, name: 'T3: Amber Sun (200-399)', col: '#f59e0b' },
-      { combo: 500, name: 'T4: Sapphire Sky (400-799)', col: '#2563eb' },
-      { combo: 850, name: 'T5: Obsidian Blood (800+)', col: '#ff1744' }
+    const normalTiers = [
+      { combo: 0,   name: 'T0 (0+)',   col: '#94a3b8' },
+      { combo: 75,  name: 'T1 (50+)',  col: '#38bdf8' },
+      { combo: 180, name: 'T2 (100+)', col: '#f472b6' },
+      { combo: 450, name: 'T4 (400+)', col: '#c084fc' }
+    ];
+
+    const t5Tiers = [
+      { combo: 800,  name: 'T5 (800)',  col: '#ff1744' },
+      { combo: 950,  name: 'T5 (950)',  col: '#ff1744' },
+      { combo: 1200, name: 'T5 (1200)', col: '#ff1744' },
+      { combo: 1500, name: 'T5 (1500)', col: '#ff1744' }
     ];
 
     window.__LOGS__ = [];
+
+    function renderView(ctx, isT5, tiersList, now) {
+      ctx.fillStyle = isT5 ? '#140306' : '#071628';
+      ctx.fillRect(0, 0, W, H);
+
+      // Atmosphere: WebGL / Canvas fallback Ice Tree, Moon & Blizzard
+      SANHUA_THEME.updateAndDrawAtmosphere(ctx, now, 1.0, 0, {
+        gameWidth: W,
+        gameHeight: H,
+        bgPulse: Math.sin(now * 0.003) * 0.2 + 0.2,
+        combo: isT5 ? 888 : 200
+      });
+
+      // Lane dividers
+      for (let i = 0; i <= numLanes; i++) {
+        const lx = Math.round(i * laneW);
+        ctx.strokeStyle = isT5 ? 'rgba(255, 23, 68, 0.25)' : 'rgba(56, 189, 248, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(lx, 0); ctx.lineTo(lx, H);
+        ctx.stroke();
+      }
+
+      // Notes & Receptors per lane
+      for (let i = 0; i < numLanes; i++) {
+        const rx = Math.round(i * laneW + 8);
+        const rw = Math.round(laneW - 16);
+        const t = tiersList[i];
+
+        // 1. Shattered Glass Tap Note (Top preview)
+        SANHUA_THEME.bakeTapNote(ctx, rx, 35, rw, recH, false, t.combo);
+
+        // 2. Receptor
+        SANHUA_THEME.drawReceptor(ctx, rx, recY, rw, recH, true, false);
+
+        // Tier text
+        ctx.fillStyle = t.col;
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(t.name, rx + rw / 2, recY - 14);
+
+        // 3. Donghua Hold Note: Flowing Qi tail with crescent moon cutout cap
+        const headY = recY;
+        const tailY = 120 + (i % 2) * 45;
+        const tile = { hit: true, holding: true, failed: false };
+
+        SANHUA_THEME.drawHoldBody(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY, false);
+        SANHUA_THEME.drawHoldTail(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY);
+        SANHUA_THEME.drawNeck(ctx, rx, headY, rw, recH, tile, false, t.combo);
+      }
+    }
+
     function render(now = 0) {
       try {
-        ctx.fillStyle = '#08172e';
-        ctx.fillRect(0, 0, W, H);
-
-        SANHUA_THEME.updateAndDrawAtmosphere(ctx, now, 1.0, 0, {
-          gameWidth: W,
-          gameHeight: H,
-          bgPulse: Math.sin(now * 0.003) * 0.2 + 0.2,
-          combo: 500
-        });
-
-        // Draw lane lines
-        for (let i = 0; i <= numLanes; i++) {
-          const lx = Math.round(i * laneW);
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(lx, 0); ctx.lineTo(lx, H);
-          ctx.stroke();
-        }
-
-        // Draw receptors and labels
-        for (let i = 0; i < numLanes; i++) {
-          const rx = Math.round(i * laneW + 6);
-          const rw = Math.round(laneW - 12);
-          const t = tiers[i];
-
-          SANHUA_THEME.drawReceptor(ctx, rx, recY, rw, recH, true, false);
-
-          // Tier label above receptor
-          ctx.fillStyle = t.col;
-          ctx.font = 'bold 10px system-ui, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(`Tier ${i}`, rx + rw / 2, recY - 14);
-
-          // Draw Hold note
-          const headY = recY;
-          const tailY = 160 + (i % 2) * 30;
-          const tile = { hit: true, holding: true, failed: false };
-
-          SANHUA_THEME.drawHoldBody(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY, false);
-          SANHUA_THEME.drawHoldTail(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY);
-          SANHUA_THEME.drawNeck(ctx, rx, headY, rw, recH, tile, false, t.combo);
-
-          // Also draw a tap note above each lane to verify style and height matching!
-          SANHUA_THEME.bakeTapNote(ctx, rx, 40, rw, recH, false, t.combo);
-        }
-
+        renderView(ctxNormal, false, normalTiers, now);
+        renderView(ctxT5, true, t5Tiers, now);
         window.__LOGS__.push('render_success');
       } catch (e) {
         window.__LOGS__.push('ERROR: ' + e.toString() + ' | ' + e.stack);
@@ -123,10 +178,9 @@
     }
 
     function start() {
-      render(1500);
       let count = 0;
       function loop() {
-        render(1500 + count * 16);
+        render(1600 + count * 16);
         count++;
         if (count < 25) {
           requestAnimationFrame(loop);
