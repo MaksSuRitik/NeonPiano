@@ -1,507 +1,70 @@
-// ============================================================================
-// SANHUA (散华) THEME — VISUAL REBUILD
-// High-Budget Cinematic Donghua / Wuthering Waves Glacio Aesthetic:
-// 1. Enormous Spectral Crystalline Tree with Faceted 3D Ice Prisms & Micro-Fractures
-// 2. Giant Cinematic Celestial Moon & Volumetric Overexposed Light Bloom
-// 3. Shattered Mirror World with Large Floating 3D Glass Plates across 3 Parallax Layers
-// 4. One Elegant Sweeping Crimson Donghua Energy Ribbon
-// 5. T5 Blood Eclipse (800+ Combo) Smooth Transformation
-// 6. Fractured-Glass Tap Notes (Pseudo-Voronoi Shards strictly within [w, h])
-// 7. Celestial Ice Comet Hold Notes ending in a True Crescent Moon Negative-Space Cutout
-// 8. 3-Tier Cinematic Particle System (Micro Snow, Crystal Splinters, Mirror Slabs)
-// ============================================================================
+// Hiyuki / Sanhua — moonlit crystal, with a blood eclipse at 800 combo.
+// Geometry is authored as connected, tapered limbs. Static light and material
+// are baked once per viewport; only sparse snow and the eclipse envelope move.
 
-import { pixiRenderer } from "../render/PixiRenderer.js";
-import { pixiParticleSystem } from "../render/PixiParticleSystem.js";
-
-// ----------------------------------------------------------------------------
-// DETERMINISTIC SEEDED PSEUDO-RANDOM NUMBER GENERATOR (Mulberry32)
-// ----------------------------------------------------------------------------
 function mulberry32(seed) {
-  let s = seed | 0;
-  return function () {
-    s = (s + 0x6D2B79F5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
 
-// ----------------------------------------------------------------------------
-// GEOMETRY & ENVIRONMENT CACHE
-// ----------------------------------------------------------------------------
-let _cachedGw = 0;
-let _cachedGh = 0;
-let _treeSegments = null;
-let _treeCanvasNormal = null;
-let _treeCanvasT5 = null;
-let _moonCanvasNormal = null;
-let _moonCanvasT5 = null;
-let _bloomCanvasNormal = null;
-let _bloomCanvasT5 = null;
-
-// Parallax Glass Plates & Particles
-let _glassPlates = null;
-let _envParticles = null;
-
-// ----------------------------------------------------------------------------
-// FRACTAL CRYSTALLINE SPECTRAL TREE TOPOLOGY GENERATOR (Section 3)
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// HAND-STRUCTURED SPECTRAL CRYSTALLINE TREE (Sections 1, 2, 3, 4, 5)
-// One massive dominant trunk (32–52px) sweeping upward before dividing into
-// 4 primary antler limbs, with ~6 secondary branches and ~11 terminal crystal tips TOTAL.
-// ----------------------------------------------------------------------------
-function createTreeSegment(p1, p2, w1, w2, depth, fractures = null) {
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  const effFractures = [];
-
-  if (fractures) {
-    for (let f = 0; f < fractures.length; f++) {
-      const fr = fractures[f];
-      const fx = p1.x + dx * fr.t;
-      const fy = p1.y + dy * fr.t;
-      const fAng = Math.atan2(dy, dx) + fr.ang;
-      effFractures.push({
-        x1: fx,
-        y1: fy,
-        x2: fx + Math.cos(fAng) * fr.len,
-        y2: fy + Math.sin(fAng) * fr.len
-      });
-    }
-  }
-
-  return {
-    x1: p1.x, y1: p1.y,
-    x2: p2.x, y2: p2.y,
-    w1, w2,
-    depth,
-    fractures: effFractures
-  };
-}
-
-function getTrunkSurfacePoint(pStart, pEnd, wStart, wEnd, t, side, overlapIntoTrunk = 10) {
-  const cx = pStart.x + (pEnd.x - pStart.x) * t;
-  const cy = pStart.y + (pEnd.y - pStart.y) * t;
-  const dx = pEnd.x - pStart.x;
-  const dy = pEnd.y - pStart.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const tx = dx / len;
-  const ty = dy / len;
-  // Perpendicular normal (-ty, tx)
-  const nx = -ty;
-  const ny = tx;
-  const radius = (wStart + (wEnd - wStart) * t) * 0.48;
-  const effR = Math.max(0, radius - overlapIntoTrunk);
-  return {
-    x: cx + nx * effR * side,
-    y: cy + ny * effR * side
-  };
-}
-
-function generateSpectralTree(gw, gh) {
-  const segments = [];
-
-  // 1. COLOSSAL DOMINANT TRUNK (35-45% of screen width, 150-210px)
-  // Preserved exact colossal thickness and dramatic elbow trajectory
-  const trunkW = Math.max(150, Math.min(210, Math.round(gw * 0.40)));
-
-  // Control points: P0 -> P1 -> P2 -> P3 -> P4 (sharp elbow) -> P5 -> P6 (massive sideways body)
-  const p0 = { x: gw * 0.68, y: gh * 1.05 }; // Deep root
-  const p1 = { x: gw * 0.65, y: gh * 0.86 }; // Lower trunk
-  const p2 = { x: gw * 0.62, y: gh * 0.68 }; // Mid vertical trunk
-  const p3 = { x: gw * 0.55, y: gh * 0.53 }; // Beginning of bend
-  const p4 = { x: gw * 0.42, y: gh * 0.45 }; // Dramatic sharp elbow turn (~70 degree hook)
-  const p5 = { x: gw * 0.26, y: gh * 0.42 }; // Massive horizontal trunk body continuation
-  const p6 = { x: gw * 0.12, y: gh * 0.40 }; // Horizontal trunk terminal node
-
-  const w0 = trunkW * 1.05;
-  const w1 = trunkW * 0.95;
-  const w2 = trunkW * 0.86;
-  const w3 = trunkW * 0.78;
-  const w4 = trunkW * 0.70;
-  const w5 = trunkW * 0.60;
-  const w6 = trunkW * 0.50;
-
-  // Connected colossal trunk segments (depth = 0):
-  segments.push(createTreeSegment(p0, p1, w0, w1, 0, [
-    { t: 0.35, len: trunkW * 0.30, ang: 0.65 },
-    { t: 0.70, len: trunkW * 0.32, ang: -0.55 }
-  ]));
-  segments.push(createTreeSegment(p1, p2, w1, w2, 0, [
-    { t: 0.40, len: trunkW * 0.28, ang: 0.70 },
-    { t: 0.75, len: trunkW * 0.26, ang: -0.60 }
-  ]));
-  segments.push(createTreeSegment(p2, p3, w2, w3, 0, [
-    { t: 0.48, len: trunkW * 0.25, ang: 0.55 }
-  ]));
-  // The dramatic elbow transition (P2 -> P3 -> P4):
-  segments.push(createTreeSegment(p3, p4, w3, w4, 0, [
-    { t: 0.50, len: trunkW * 0.28, ang: -0.65 }
-  ]));
-  // The massive sideways trunk body (P4 -> P5 -> P6):
-  segments.push(createTreeSegment(p4, p5, w4, w5, 0, [
-    { t: 0.45, len: trunkW * 0.25, ang: 0.50 }
-  ]));
-  segments.push(createTreeSegment(p5, p6, w5, w6, 0, [
-    { t: 0.50, len: trunkW * 0.22, ang: -0.45 }
-  ]));
-
-  // Lower trunk root spur off P1->P2 outer surface
-  const rootSpur = getTrunkSurfacePoint(p1, p2, w1, w2, 0.85, +1, 10);
-  const pSpur1 = { x: gw * 0.76, y: gh * 0.64 };
-  const pSpur2 = { x: gw * 0.86, y: gh * 0.62 };
-  segments.push(createTreeSegment(rootSpur, pSpur1, trunkW * 0.26, trunkW * 0.16, 1));
-  segments.push(createTreeSegment(pSpur1, pSpur2, trunkW * 0.16, trunkW * 0.08, 2));
-  segments.push(createTreeSegment(pSpur2, { x: gw * 0.93, y: gh * 0.59 }, trunkW * 0.08, 3.5, 3));
-
-  // 2. PRIMARY LIMBS GROWING FROM TRUNK SURFACE WITH DIRECTIONAL DIVERSITY
-
-  // PRIMARY BRANCH A: Sweeps diagonally upper-left from upper surface of horizontal trunk
-  const rootA = getTrunkSurfacePoint(p4, p5, w4, w5, 0.60, +1, 10);
-  const pA1 = { x: gw * 0.22, y: gh * 0.28 };
-  const pA2 = { x: gw * 0.12, y: gh * 0.18 };
-  const pA3 = { x: gw * 0.03, y: gh * 0.11 };
-  segments.push(createTreeSegment(rootA, pA1, trunkW * 0.32, trunkW * 0.22, 1, [
-    { t: 0.5, len: trunkW * 0.16, ang: -0.5 }
-  ]));
-  segments.push(createTreeSegment(pA1, pA2, trunkW * 0.22, trunkW * 0.13, 1));
-  segments.push(createTreeSegment(pA2, pA3, trunkW * 0.13, 3.5, 3));
-
-  // Secondary fork off A1 curving upward
-  const pA_sub = { x: gw * 0.23, y: gh * 0.16 };
-  segments.push(createTreeSegment(pA1, pA_sub, trunkW * 0.16, trunkW * 0.09, 2));
-  segments.push(createTreeSegment(pA_sub, { x: gw * 0.25, y: gh * 0.08 }, trunkW * 0.09, 3.0, 3));
-
-  // PRIMARY BRANCH B: Continues mostly horizontally from Terminal P6 across left screen
-  const rootB = { x: p6.x + 8, y: p6.y }; // 8px overlap into terminal node
-  const pB1 = { x: gw * 0.03, y: gh * 0.39 };  // endY ≈ startY (horizontal spread)
-  const pB2 = { x: -gw * 0.04, y: gh * 0.42 }; // endY > startY (slight downward dip)
-  const pB3 = { x: -gw * 0.09, y: gh * 0.35 }; // curls up at outer edge
-  segments.push(createTreeSegment(rootB, pB1, trunkW * 0.36, trunkW * 0.24, 1));
-  segments.push(createTreeSegment(pB1, pB2, trunkW * 0.24, trunkW * 0.14, 1));
-  segments.push(createTreeSegment(pB2, pB3, trunkW * 0.14, 3.5, 3));
-
-  // Secondary antler fork off B1 heading downward-left
-  const pB_sub = { x: -gw * 0.01, y: gh * 0.50 }; // endY > startY
-  segments.push(createTreeSegment(pB1, pB_sub, trunkW * 0.18, trunkW * 0.10, 2));
-  segments.push(createTreeSegment(pB_sub, { x: -gw * 0.03, y: gh * 0.60 }, trunkW * 0.10, 3.0, 3));
-
-  // PRIMARY BRANCH C: Curves upper-right across sky and moon
-  const rootC = getTrunkSurfacePoint(p3, p4, w3, w4, 0.40, +1, 10);
-  const pC1 = { x: gw * 0.57, y: gh * 0.30 };
-  const pC2 = { x: gw * 0.66, y: gh * 0.21 };
-  const pC3 = { x: gw * 0.74, y: gh * 0.15 };
-  segments.push(createTreeSegment(rootC, pC1, trunkW * 0.36, trunkW * 0.25, 1, [
-    { t: 0.5, len: trunkW * 0.18, ang: 0.5 }
-  ]));
-  segments.push(createTreeSegment(pC1, pC2, trunkW * 0.25, trunkW * 0.15, 1));
-  segments.push(createTreeSegment(pC2, pC3, trunkW * 0.15, 3.5, 3));
-
-  // Secondary branch C-sub1 (curving high above moon)
-  const pC_sub1 = { x: gw * 0.60, y: gh * 0.16 };
-  segments.push(createTreeSegment(pC1, pC_sub1, trunkW * 0.20, trunkW * 0.11, 2));
-  segments.push(createTreeSegment(pC_sub1, { x: gw * 0.58, y: gh * 0.06 }, trunkW * 0.11, 3.0, 3));
-
-  // Secondary tip C-sub2 (sideways reach with slight dip)
-  segments.push(createTreeSegment(pC2, { x: gw * 0.75, y: gh * 0.25 }, trunkW * 0.12, 3.0, 3)); // endY > startY
-
-  // PRIMARY BRANCH D: Moves slightly downward/sideways before curling upward
-  const rootD = getTrunkSurfacePoint(p4, p5, w4, w5, 0.55, -1, 10);
-  const pD1 = { x: gw * 0.24, y: gh * 0.55 }; // endY > startY (temporarily descends)
-  const pD2 = { x: gw * 0.16, y: gh * 0.55 }; // endY ≈ startY (horizontal travel)
-  const pD3 = { x: gw * 0.10, y: gh * 0.49 }; // curls upward
-  segments.push(createTreeSegment(rootD, pD1, trunkW * 0.28, trunkW * 0.19, 1));
-  segments.push(createTreeSegment(pD1, pD2, trunkW * 0.19, trunkW * 0.12, 1));
-  segments.push(createTreeSegment(pD2, pD3, trunkW * 0.12, 3.5, 3));
-
-  // Secondary branch D-sub descending further downward
-  segments.push(createTreeSegment(pD1, { x: gw * 0.21, y: gh * 0.65 }, trunkW * 0.13, 3.0, 3)); // endY > startY
-
-  // PRIMARY BRANCH E: Crown limb sweeping upward/backward near elbow
-  const rootE = getTrunkSurfacePoint(p4, p5, w4, w5, 0.10, +1, 10);
-  const pE1 = { x: gw * 0.39, y: gh * 0.27 };
-  const pE2 = { x: gw * 0.34, y: gh * 0.16 };
-  const pE3 = { x: gw * 0.30, y: gh * 0.06 };
-  segments.push(createTreeSegment(rootE, pE1, trunkW * 0.28, trunkW * 0.18, 1));
-  segments.push(createTreeSegment(pE1, pE2, trunkW * 0.18, trunkW * 0.10, 1));
-  segments.push(createTreeSegment(pE2, pE3, trunkW * 0.10, 3.5, 3));
-
-  // Secondary tip E-sub reaching rightward
-  segments.push(createTreeSegment(pE1, { x: gw * 0.44, y: gh * 0.19 }, trunkW * 0.13, 3.0, 3));
-
-  return segments;
-}
-
-// ----------------------------------------------------------------------------
-// FACETED 3D ICE PRISM RENDERING (Section 4 & 5)
-// ----------------------------------------------------------------------------
-function renderTreePrismsToCanvas(canvas, segments, isT5) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  // Normal: dominant #ffffff, #eef8ff, #d8edf8; shadow faces #7597b5, #465d7a; deep internal #18283f
-  // T5 800+: black obsidian crystal #020203, #070609, #100b0f, #1d0b10 with crimson fractures #ff1744, #ef233c, #ff596e
-  const colShadow = isT5 ? '#020203' : '#18283f';
-  const colDeepIce = isT5 ? 'rgba(16, 11, 15, 0.95)' : '#465d7a';
-  const colMidIce = isT5 ? 'rgba(29, 11, 16, 0.90)' : '#7597b5';
-  const colMilky = isT5 ? 'rgba(38, 14, 21, 0.88)' : '#d8edf8';
-  const colLight = isT5 ? 'rgba(55, 16, 26, 0.85)' : '#eef8ff';
-  const colSpecular = isT5 ? '#ff596e' : '#ffffff';
-  const colRim = isT5 ? '#ff1744' : '#ffffff';
-  const colFracture = isT5 ? '#ef233c' : 'rgba(255, 255, 255, 0.85)';
-
-  const drawSegment = (seg) => {
-    const dx = seg.x2 - seg.x1;
-    const dy = seg.y2 - seg.y1;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-
-    const w1 = seg.w1;
-    const w2 = seg.w2;
-
-    // 5 Facet cross-section vertices:
-    const p1_L = [seg.x1 - nx * w1 * 0.50, seg.y1 - ny * w1 * 0.50];
-    const p2_L = [seg.x2 - nx * w2 * 0.50, seg.y2 - ny * w2 * 0.50];
-
-    const p1_ML = [seg.x1 - nx * w1 * 0.18, seg.y1 - ny * w1 * 0.18];
-    const p2_ML = [seg.x2 - nx * w2 * 0.18, seg.y2 - ny * w2 * 0.18];
-
-    const p1_C = [seg.x1 + nx * w1 * 0.12, seg.y1 + ny * w1 * 0.12];
-    const p2_C = [seg.x2 + nx * w2 * 0.12, seg.y2 + ny * w2 * 0.12];
-
-    const p1_MR = [seg.x1 + nx * w1 * 0.35, seg.y1 + ny * w1 * 0.35];
-    const p2_MR = [seg.x2 + nx * w2 * 0.35, seg.y2 + ny * w2 * 0.35];
-
-    const p1_R = [seg.x1 + nx * w1 * 0.50, seg.y1 + ny * w1 * 0.50];
-    const p2_R = [seg.x2 + nx * w2 * 0.50, seg.y2 + ny * w2 * 0.50];
-
-    // Face 1: Shadow / Underside
-    ctx.fillStyle = colShadow;
-    ctx.beginPath();
-    ctx.moveTo(p1_L[0], p1_L[1]);
-    ctx.lineTo(p2_L[0], p2_L[1]);
-    ctx.lineTo(p2_ML[0], p2_ML[1]);
-    ctx.lineTo(p1_ML[0], p1_ML[1]);
-    ctx.closePath();
-    ctx.fill();
-
-    // Face 2: Deep Blue / Internal Obsidian Ice
-    ctx.fillStyle = colDeepIce;
-    ctx.beginPath();
-    ctx.moveTo(p1_ML[0], p1_ML[1]);
-    ctx.lineTo(p2_ML[0], p2_ML[1]);
-    ctx.lineTo(p2_C[0], p2_C[1]);
-    ctx.lineTo(p1_C[0], p1_C[1]);
-    ctx.closePath();
-    ctx.fill();
-
-    // Face 3: Milky Moonlit / Mid Obsidian Face
-    ctx.fillStyle = colMilky;
-    ctx.beginPath();
-    ctx.moveTo(p1_C[0], p1_C[1]);
-    ctx.lineTo(p2_C[0], p2_C[1]);
-    ctx.lineTo(p2_MR[0], p2_MR[1]);
-    ctx.lineTo(p1_MR[0], p1_MR[1]);
-    ctx.closePath();
-    ctx.fill();
-
-    // Face 4: Top Lit Face (Near-overexposure to white)
-    ctx.fillStyle = colLight;
-    ctx.beginPath();
-    ctx.moveTo(p1_MR[0], p1_MR[1]);
-    ctx.lineTo(p2_MR[0], p2_MR[1]);
-    ctx.lineTo(p2_R[0], p2_R[1]);
-    ctx.lineTo(p1_R[0], p1_R[1]);
-    ctx.closePath();
-    ctx.fill();
-
-    // Hot Specular Ridge along ridge line
-    if (w1 > 6) {
-      ctx.fillStyle = colSpecular;
-      ctx.beginPath();
-      ctx.moveTo(p1_C[0] - nx * 1.5, p1_C[1] - ny * 1.5);
-      ctx.lineTo(p2_C[0] - nx * 1.2, p2_C[1] - ny * 1.2);
-      ctx.lineTo(p2_C[0] + nx * 1.5, p2_C[1] + ny * 1.5);
-      ctx.lineTo(p1_C[0] + nx * 1.8, p1_C[1] + ny * 1.8);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Bright Rim Edge (Moonlight catch)
-    ctx.strokeStyle = colRim;
-    ctx.lineWidth = Math.min(2.0, Math.max(0.8, w2 * 0.05));
-    ctx.beginPath();
-    ctx.moveTo(p1_R[0], p1_R[1]);
-    ctx.lineTo(p2_R[0], p2_R[1]);
-    ctx.stroke();
-
-    // Terminal Crystalline Wedges
-    if (seg.depth >= 3) {
-      const tipX = seg.x2 + (dx / len) * w2 * 2.2;
-      const tipY = seg.y2 + (dy / len) * w2 * 2.2;
-      ctx.fillStyle = colSpecular;
-      ctx.beginPath();
-      ctx.moveTo(p2_L[0], p2_L[1]);
-      ctx.lineTo(tipX, tipY);
-      ctx.lineTo(p2_R[0], p2_R[1]);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Micro-Fractures inside branch body
-    if (seg.fractures && seg.fractures.length > 0) {
-      ctx.strokeStyle = colFracture;
-      ctx.lineWidth = isT5 ? 1.4 : 1.0;
-      ctx.beginPath();
-      for (let f = 0; f < seg.fractures.length; f++) {
-        const fr = seg.fractures[f];
-        ctx.moveTo(fr.x1, fr.y1);
-        ctx.lineTo(fr.x2, fr.y2);
-      }
-      ctx.stroke();
-    }
-  };
-
-  // Render Order:
-  // 1. Distant secondary branches and tips (depth >= 2)
-  // 2. Primary limbs (depth === 1)
-  // 3. MAIN COLOSSAL TRUNK (depth === 0)
-  // Rendering the main trunk over primary limb bases naturally occludes their insertion!
-  const distant = segments.filter(s => s.depth >= 2);
-  const primary = segments.filter(s => s.depth === 1);
-  const trunk = segments.filter(s => s.depth === 0);
-
-  for (let i = 0; i < distant.length; i++) drawSegment(distant[i]);
-  for (let i = 0; i < primary.length; i++) drawSegment(primary[i]);
-  for (let i = 0; i < trunk.length; i++) drawSegment(trunk[i]);
-}
-
-// ----------------------------------------------------------------------------
-// CINEMATIC CELESTIAL MOON BACKLIGHT (Section 2)
-// ----------------------------------------------------------------------------
-function renderMoonToCanvas(canvas, gw, gh, isT5) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  const moonX = Math.round(gw * 0.58);
-  const moonY = Math.round(gh * 0.30);
-  const moonR = Math.min(Math.round(Math.min(gw, gh) * 0.42), 260);
-
-  // A. Outer Atmospheric Bloom (2.4x radius)
-  const bloomGrad = ctx.createRadialGradient(moonX, moonY, moonR * 0.4, moonX, moonY, moonR * 2.4);
-  if (isT5) {
-    bloomGrad.addColorStop(0, 'rgba(255, 77, 103, 0.32)');
-    bloomGrad.addColorStop(0.35, 'rgba(177, 18, 47, 0.16)');
-    bloomGrad.addColorStop(1.0, 'rgba(59, 7, 18, 0)');
-  } else {
-    bloomGrad.addColorStop(0, 'rgba(185, 216, 244, 0.28)');
-    bloomGrad.addColorStop(0.40, 'rgba(120, 175, 230, 0.12)');
-    bloomGrad.addColorStop(1.0, 'rgba(80, 125, 180, 0)');
-  }
-  ctx.fillStyle = bloomGrad;
-  ctx.fillRect(0, 0, gw, gh);
-
-  // B. Diffuse Moon Halo (1.4x radius)
-  const haloGrad = ctx.createRadialGradient(moonX, moonY, moonR * 0.7, moonX, moonY, moonR * 1.45);
-  if (isT5) {
-    haloGrad.addColorStop(0, 'rgba(255, 23, 68, 0.45)');
-    haloGrad.addColorStop(0.6, 'rgba(180, 15, 45, 0.18)');
-    haloGrad.addColorStop(1.0, 'rgba(20, 2, 6, 0)');
-  } else {
-    haloGrad.addColorStop(0, 'rgba(234, 246, 255, 0.45)');
-    haloGrad.addColorStop(0.6, 'rgba(185, 216, 244, 0.20)');
-    haloGrad.addColorStop(1.0, 'rgba(80, 125, 180, 0)');
-  }
-  ctx.fillStyle = haloGrad;
+const environmentCache = new Map();
+const atmosphereStates = new WeakMap();
+function polygon(ctx, points, fill) {
   ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR * 1.45, 0, Math.PI * 2);
-  ctx.fill();
-
-  // C. Celestial Moon Body
-  const bodyGrad = ctx.createRadialGradient(
-    moonX - moonR * 0.12, moonY - moonR * 0.12, moonR * 0.08,
-    moonX, moonY, moonR
-  );
-  if (isT5) {
-    bodyGrad.addColorStop(0, '#fff1f2');
-    bodyGrad.addColorStop(0.30, '#ff4d67');
-    bodyGrad.addColorStop(0.68, '#b1122f');
-    bodyGrad.addColorStop(1.0, 'rgba(59, 7, 18, 0.25)'); // Soft boundary, NO hard stroke!
-  } else {
-    bodyGrad.addColorStop(0, '#ffffff');
-    bodyGrad.addColorStop(0.38, '#eaf6ff');
-    bodyGrad.addColorStop(0.75, '#b9d8f4');
-    bodyGrad.addColorStop(1.0, 'rgba(185, 216, 244, 0.20)');
-  }
-  ctx.fillStyle = bodyGrad;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
-  ctx.fill();
-
-  // D. Subtle Internal Cloudy / Maria Variation
-  const cloudGrad = ctx.createRadialGradient(
-    moonX - moonR * 0.32, moonY + moonR * 0.22, moonR * 0.15,
-    moonX, moonY, moonR * 0.85
-  );
-  if (isT5) {
-    cloudGrad.addColorStop(0, 'rgba(60, 5, 15, 0.40)');
-    cloudGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else {
-    cloudGrad.addColorStop(0, 'rgba(70, 110, 160, 0.18)');
-    cloudGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  }
-  ctx.fillStyle = cloudGrad;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR * 0.9, 0, Math.PI * 2);
-  ctx.fill();
+  points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
 }
 
-// ----------------------------------------------------------------------------
-// VOLUMETRIC LIGHT BLOOM PASS (Section 6)
-// ----------------------------------------------------------------------------
-function renderBloomToCanvas(canvas, gw, gh, isT5) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+// Each limb starts inside its parent. Shared mitered cross-sections prevent
+// detached prism joints, gaps at elbows, and repeated end-cap stripes.
+const LIMBS = [
+  [[.48,.46,.065],[.34,.49,.040],[.19,.47,.024],[.08,.40,.012],[-.04,.38,0]],
+  [[.34,.49,.028],[.27,.59,.016],[.15,.63,0]],
+  [[.52,.40,.057],[.39,.27,.038],[.35,.16,.020],[.26,.075,0]],
+  [[.39,.27,.026],[.23,.22,.016],[.13,.12,0]],
+  [[.35,.16,.018],[.43,.09,.010],[.45,.015,0]],
+  [[.63,.65,.080],[.77,.53,.047],[.88,.48,.025],[1.03,.47,0]],
+  [[.77,.53,.028],[.79,.43,.015],[.88,.37,0]],
+  [[.49,.46,.108],[.53,.32,.074],[.66,.23,.049],[.82,.19,.023],[1.02,.08,0]],
+  [[.66,.23,.033],[.67,.13,.018],[.61,.045,0]],
+  [[.82,.19,.019],[.92,.25,0]],
+  [[.79,1.08,.27],[.71,.87,.225],[.67,.69,.18],[.58,.54,.168],[.46,.42,.135],[.29,.34,.080],[.14,.32,.037],[-.07,.24,0]],
+  [[.29,.34,.044],[.20,.23,.026],[.075,.18,0]],
+  [[.20,.23,.015],[.19,.105,0]],
+];
 
-  const crownX = gw * 0.56;
-  const crownY = gh * 0.35;
-  const bloomR = gw * 0.48;
-
-  const grad = ctx.createRadialGradient(crownX, crownY, 20, crownX, crownY, bloomR);
-  if (isT5) {
-    grad.addColorStop(0, 'rgba(255, 30, 70, 0.35)');
-    grad.addColorStop(0.4, 'rgba(180, 15, 40, 0.14)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else {
-    grad.addColorStop(0, 'rgba(235, 248, 255, 0.30)');
-    grad.addColorStop(0.4, 'rgba(180, 220, 255, 0.12)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  }
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, gw, gh);
+function limbRails(nodes, w, h) {
+  const pts = nodes.map(([x,y,r]) => [x*w,y*h,r*w]);
+  return pts.map((p,i) => {
+    const a = pts[Math.max(0,i-1)], b = pts[Math.min(pts.length-1,i+1)];
+    const dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy)||1;
+    return {x:p[0], y:p[1], nx:-dy/len, ny:dx/len, r:p[2]*.5};
+  });
 }
-
-// ----------------------------------------------------------------------------
-// SHATTERED MIRROR WORLD — 3D GLASS PLATES (Section 7)
-// ----------------------------------------------------------------------------
+function band(rails, a, b) {
+  return [...rails.map(p=>[p.x+p.nx*p.r*a,p.y+p.ny*p.r*a]),
+    ...rails.slice().reverse().map(p=>[p.x+p.nx*p.r*b,p.y+p.ny*p.r*b])];
+}
 function initGlassPlates(gw, gh) {
   const rng = mulberry32(0x3B99E1);
   const plates = [];
 
-  // Layer 0: Background (8 plates, dim, slow)
+  // Layer 0: Background (8 plates, slow, behind moon & tree)
   for (let i = 0; i < 8; i++) {
-    plates.push(createShard(rng, gw, gh, 0.25, 35, 65, 0.30));
+    plates.push(createShard(rng, gw, gh, 0.25, 35, 65, 0.45));
   }
-  // Layer 1: Midground (10 plates, medium)
+  // Layer 1: Midground (10 plates, medium, around tree)
   for (let i = 0; i < 10; i++) {
-    plates.push(createShard(rng, gw, gh, 0.55, 45, 85, 0.50));
+    plates.push(createShard(rng, gw, gh, 0.55, 50, 95, 0.60));
   }
-  // Layer 2: Foreground (4 large plates, bold)
+  // Layer 2: Foreground (4 large plates, bold, in front of tree)
   for (let i = 0; i < 4; i++) {
-    plates.push(createShard(rng, gw, gh, 0.85, 90, 160, 0.68));
+    plates.push(createShard(rng, gw, gh, 0.85, 95, 170, 0.78));
   }
 
   return plates;
@@ -533,28 +96,29 @@ function createShard(rng, gw, gh, depth, minSz, maxSz, baseAlpha) {
 
 function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   const t = now || 0;
-  const rawX = (p.x0 * gw + p.driftX * t) % (gw + 240);
-  const x = rawX < -120 ? rawX + gw + 240 : rawX;
-  const rawY = (p.y0 * gh + p.driftY * t) % (gh + 240);
-  const y = rawY < -120 ? rawY + gh + 240 : rawY;
+  const pad = 140;
+  const spanX = gw + pad * 2;
+  const spanY = gh + pad * 2;
+  const rawX = (((p.x0 * gw + p.driftX * t) % spanX + spanX) % spanX) - pad;
+  const rawY = (((p.y0 * gh + p.driftY * t) % spanY + spanY) % spanY) - pad;
   const rot = p.rot + p.rotSpeed * t;
   const sz = p.size;
   const alpha = p.baseAlpha * alphaMult;
 
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(rawX, rawY);
   ctx.rotate(rot);
 
-  // Shard body
+  // Shard body: translucent broken mirror / glass plate
   const grad = ctx.createLinearGradient(-sz * 0.5, -sz * 0.5, sz * 0.5, sz * 0.5);
   if (isT5) {
-    grad.addColorStop(0, `rgba(40, 8, 15, ${alpha * 0.7})`);
-    grad.addColorStop(0.6, `rgba(18, 3, 7, ${alpha * 0.85})`);
-    grad.addColorStop(1, `rgba(5, 1, 2, ${alpha * 0.9})`);
+    grad.addColorStop(0, `rgba(45, 10, 18, ${alpha * 0.70})`);
+    grad.addColorStop(0.6, `rgba(20, 4, 8, ${alpha * 0.85})`);
+    grad.addColorStop(1, `rgba(6, 1, 3, ${alpha * 0.90})`);
   } else {
-    grad.addColorStop(0, `rgba(210, 238, 255, ${alpha * 0.6})`);
-    grad.addColorStop(0.5, `rgba(100, 165, 220, ${alpha * 0.4})`);
-    grad.addColorStop(1, `rgba(10, 28, 55, ${alpha * 0.7})`);
+    grad.addColorStop(0, `rgba(225, 242, 255, ${alpha * 0.58})`);  // pale silver reflection
+    grad.addColorStop(0.5, `rgba(125, 175, 218, ${alpha * 0.40})`); // subtle cold ice-blue tint
+    grad.addColorStop(1, `rgba(12, 26, 48, ${alpha * 0.68})`);      // dark transparent interior
   }
 
   ctx.fillStyle = grad;
@@ -566,17 +130,17 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   ctx.closePath();
   ctx.fill();
 
-  // Bright moon-facing rim edge
-  ctx.strokeStyle = isT5 ? `rgba(255, 40, 80, ${alpha * 0.95})` : `rgba(255, 255, 255, ${alpha * 0.90})`;
-  ctx.lineWidth = Math.max(0.8, sz * 0.025);
+  // Bright moon-facing rim edge (silver in normal, crimson in T5)
+  ctx.strokeStyle = isT5 ? `rgba(255, 45, 85, ${alpha * 0.95})` : `rgba(255, 255, 255, ${alpha * 0.92})`;
+  ctx.lineWidth = Math.max(1.0, sz * 0.022);
   ctx.beginPath();
   ctx.moveTo(p.verts[0][0] * sz, p.verts[0][1] * sz);
   ctx.lineTo(p.verts[1][0] * sz, p.verts[1][1] * sz);
   if (p.verts.length > 2) ctx.lineTo(p.verts[2][0] * sz, p.verts[2][1] * sz);
   ctx.stroke();
 
-  // Dark shadow edge
-  ctx.strokeStyle = isT5 ? `rgba(10, 1, 3, ${alpha * 0.8})` : `rgba(7, 20, 42, ${alpha * 0.6})`;
+  // Dark shadow edge for 3D glass facet depth
+  ctx.strokeStyle = isT5 ? `rgba(12, 2, 4, ${alpha * 0.8})` : `rgba(8, 22, 45, ${alpha * 0.60})`;
   ctx.lineWidth = 0.8;
   ctx.beginPath();
   const last = p.verts.length - 1;
@@ -584,10 +148,10 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   ctx.lineTo(p.verts[0][0] * sz, p.verts[0][1] * sz);
   ctx.stroke();
 
-  // Internal highlight plane line
+  // Internal cleavage highlight plane line
   if (p.verts.length >= 4) {
-    ctx.strokeStyle = isT5 ? `rgba(255, 80, 110, ${alpha * 0.5})` : `rgba(255, 255, 255, ${alpha * 0.45})`;
-    ctx.lineWidth = 0.6;
+    ctx.strokeStyle = isT5 ? `rgba(255, 90, 120, ${alpha * 0.55})` : `rgba(255, 255, 255, ${alpha * 0.50})`;
+    ctx.lineWidth = 0.7;
     ctx.beginPath();
     ctx.moveTo(p.verts[1][0] * sz * 0.8, p.verts[1][1] * sz * 0.8);
     ctx.lineTo(p.verts[3][0] * sz * 0.8, p.verts[3][1] * sz * 0.8);
@@ -597,258 +161,182 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   ctx.restore();
 }
 
-// ----------------------------------------------------------------------------
-// THE CRIMSON DONGHUA RIBBON (Section 8)
-// ----------------------------------------------------------------------------
-function drawCrimsonRibbon(ctx, now, gw, gh, isT5) {
-  const t = now || 0;
-  ctx.save();
+function bakeEnvironment(w,h,eclipse) {
+  const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d');
+  const sky=ctx.createLinearGradient(0,0,0,h);
+  sky.addColorStop(0,eclipse?'#08060d':'#070d1a');
+  sky.addColorStop(.48,eclipse?'#1c0b19':'#152334');
+  sky.addColorStop(1,'#040810');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,w,h);
+  const mx=w*.66,my=h*.235,r=w*.29;
+  const halo=ctx.createRadialGradient(mx,my,r*.65,mx,my,r*2.0);
+  halo.addColorStop(0,eclipse?'#642334':'rgba(235, 246, 255, 0.35)');
+  halo.addColorStop(0.35,eclipse?'#280c16':'rgba(180, 215, 245, 0.14)');
+  halo.addColorStop(1,'transparent');
+  ctx.fillStyle=halo;ctx.fillRect(0,0,w,h);
 
-  // Elegant S-curve across the scene
-  const p0 = [-gw * 0.05, gh * 0.28];
-  const p1 = [gw * 0.26, gh * (0.16 + Math.sin(t * 0.00038) * 0.03)];
-  const p2 = [gw * 0.66, gh * (0.46 + Math.cos(t * 0.00032) * 0.04)];
-  const p3 = [gw * 1.05, gh * 0.38];
+  const moon=ctx.createLinearGradient(mx-r*.8,my-r*.8,mx+r*.8,my+r*.8);
+  moon.addColorStop(0,eclipse?'#bc5365':'#ffffff');
+  moon.addColorStop(0.40,eclipse?'#7c2b42':'#f8fbff');
+  moon.addColorStop(0.75,eclipse?'#4a1b2d':'#edf2f7');
+  moon.addColorStop(1,eclipse?'#1c0b19':'#dfe7ef');
+  ctx.save();ctx.beginPath();ctx.arc(mx,my,r,0,Math.PI*2);ctx.clip();
+  ctx.fillStyle=moon;ctx.fillRect(mx-r,my-r,r*2,r*2);
 
-  const steps = 24;
-  const upperPts = [];
-  const lowerPts = [];
+  if(!eclipse) {
+    // Subtle, restrained maria variations (soft silver-cool surface plains)
+    const mariaRng=mulberry32(6281);
+    for(let i=0;i<14;i++) {
+      const mxOff=mx+(mariaRng()-.5)*r*1.5;
+      const myOff=my+(mariaRng()-.5)*r*1.5;
+      const sz=r*(.08+mariaRng()*.20);
+      const maria=ctx.createRadialGradient(mxOff,myOff,0,mxOff,myOff,sz);
+      maria.addColorStop(0,'rgba(185, 202, 220, 0.055)');
+      maria.addColorStop(1,'transparent');
+      ctx.fillStyle=maria;ctx.fillRect(mxOff-sz,myOff-sz,sz*2,sz*2);
+    }
 
-  for (let i = 0; i <= steps; i++) {
-    const u = i / steps;
-    const inv = 1 - u;
+    // 3D embedded craters with illuminated rims and soft basins
+    const craterRng=mulberry32(7391);
+    const numCraters=22;
+    for(let i=0;i<numCraters;i++) {
+      const isMajor=i<5;
+      const isMedium=i>=5 && i<12;
+      const angle=craterRng()*Math.PI*2;
+      const dist=Math.sqrt(craterRng())*r*.84;
+      const cx=mx+Math.cos(angle)*dist;
+      const cy=my+Math.sin(angle)*dist;
+      const cr=isMajor?r*(.065+craterRng()*.035):(isMedium?r*(.035+craterRng()*.020):r*(.016+craterRng()*.015));
 
-    // Cubic Bezier position
-    const bx = inv * inv * inv * p0[0] + 3 * inv * inv * u * p1[0] + 3 * inv * u * u * p2[0] + u * u * u * p3[0];
-    const by = inv * inv * inv * p0[1] + 3 * inv * inv * u * p1[1] + 3 * inv * u * u * p2[1] + u * u * u * p3[1];
+      // 1. Soft darker basin depression (shifted slightly away from top-left light source)
+      const basin=ctx.createRadialGradient(cx+cr*.15,cy+cr*.15,0,cx,cy,cr);
+      basin.addColorStop(0,'rgba(148, 168, 192, 0.22)');
+      basin.addColorStop(.65,'rgba(175, 193, 212, 0.12)');
+      basin.addColorStop(1,'rgba(215, 228, 240, 0.0)');
+      ctx.fillStyle=basin;ctx.beginPath();ctx.arc(cx,cy,cr,0,Math.PI*2);ctx.fill();
 
-    // Derivative / Tangent
-    const tx = 3 * inv * inv * (p1[0] - p0[0]) + 6 * inv * u * (p2[0] - p1[0]) + 3 * u * u * (p3[0] - p2[0]);
-    const ty = 3 * inv * inv * (p1[1] - p0[1]) + 6 * inv * u * (p2[1] - p1[1]) + 3 * u * u * (p3[1] - p2[1]);
-    const tLen = Math.hypot(tx, ty) || 1;
-    const nx = -ty / tLen;
-    const ny = tx / tLen;
+      // 2. Bright illuminated rim on top-left (moonlit edge)
+      ctx.strokeStyle='rgba(255, 255, 255, 0.90)';
+      ctx.lineWidth=Math.max(.7,cr*.14);
+      ctx.beginPath();
+      ctx.arc(cx,cy,cr,Math.PI*.85,Math.PI*1.85);
+      ctx.stroke();
 
-    // Organic variable ribbon thickness
-    const thickness = Math.max(2.5, Math.sin(u * Math.PI) * (isT5 ? 24 : 18) * (0.85 + 0.35 * Math.sin(u * 3.5)));
-    const halfThick = thickness * 0.5;
+      // 3. Delicate inner shadow on bottom-right
+      ctx.strokeStyle='rgba(130, 150, 175, 0.18)';
+      ctx.lineWidth=Math.max(.6,cr*.10);
+      ctx.beginPath();
+      ctx.arc(cx,cy,cr,-Math.PI*.15,Math.PI*.85);
+      ctx.stroke();
 
-    upperPts.push([bx + nx * halfThick, by + ny * halfThick]);
-    lowerPts.push([bx - nx * halfThick, by - ny * halfThick]);
-  }
-
-  // 1. Dark Red Outer Body
-  const ribGrad = ctx.createLinearGradient(p0[0], p0[1], p3[0], p3[1]);
-  if (isT5) {
-    ribGrad.addColorStop(0, '#5b0a18');
-    ribGrad.addColorStop(0.35, '#dc2626');
-    ribGrad.addColorStop(0.55, '#ff1744');
-    ribGrad.addColorStop(0.80, '#ef334f');
-    ribGrad.addColorStop(1, '#5b0a18');
+      // 4. Central peak / highlight in larger craters
+      if(isMajor) {
+        ctx.fillStyle='rgba(255, 255, 255, 0.80)';
+        ctx.beginPath();
+        ctx.arc(cx-cr*.08,cy-cr*.08,Math.max(.8,cr*.12),0,Math.PI*2);
+        ctx.fill();
+      }
+    }
   } else {
-    ribGrad.addColorStop(0, '#5b0a18');
-    ribGrad.addColorStop(0.35, '#b91c2b');
-    ribGrad.addColorStop(0.60, '#ef334f');
-    ribGrad.addColorStop(0.85, '#ff6075');
-    ribGrad.addColorStop(1, '#b91c2b');
-  }
-
-  ctx.fillStyle = ribGrad;
-  ctx.beginPath();
-  ctx.moveTo(upperPts[0][0], upperPts[0][1]);
-  for (let i = 1; i < upperPts.length; i++) ctx.lineTo(upperPts[i][0], upperPts[i][1]);
-  for (let i = lowerPts.length - 1; i >= 0; i--) ctx.lineTo(lowerPts[i][0], lowerPts[i][1]);
-  ctx.closePath();
-  ctx.fill();
-
-  // 2. White-Red Hot Crest Edge
-  ctx.strokeStyle = isT5 ? '#ffffff' : '#ff8da1';
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.moveTo(upperPts[0][0], upperPts[0][1]);
-  for (let i = 1; i < upperPts.length; i++) ctx.lineTo(upperPts[i][0], upperPts[i][1]);
-  ctx.stroke();
-
-  // 3. Subtle Additive Bloom
-  ctx.globalCompositeOperation = 'screen';
-  ctx.strokeStyle = isT5 ? 'rgba(255, 23, 68, 0.45)' : 'rgba(239, 51, 79, 0.35)';
-  ctx.lineWidth = 6.0;
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-// ----------------------------------------------------------------------------
-// 3-FAMILY PARTICLE SYSTEM (Section 16: No circular ctx.arc!)
-// ----------------------------------------------------------------------------
-function initEnvParticles(gw, gh) {
-  const rng = mulberry32(0x91F5AA);
-  const list = [];
-
-  // A. Micro Snow / Ice Dust (45 particles, tiny 4-point cross flecks)
-  for (let i = 0; i < 45; i++) {
-    list.push({
-      family: 'snow',
-      x: rng() * (gw + 100) - 50,
-      y: rng() * gh,
-      sz: 1.2 + rng() * 2.2,
-      vy: 1.0 + rng() * 1.5,
-      vx: -(1.2 + rng() * 1.8),
-      alpha: 0.25 + rng() * 0.35,
-      rot: rng() * Math.PI,
-      vrot: (rng() - 0.5) * 0.02
-    });
-  }
-
-  // B. Crystal Splinters (18 particles, narrow rotating shards)
-  for (let i = 0; i < 18; i++) {
-    list.push({
-      family: 'splinter',
-      x: rng() * (gw + 100) - 50,
-      y: rng() * gh,
-      sz: 4.0 + rng() * 7.0,
-      vy: 1.4 + rng() * 1.8,
-      vx: -(1.5 + rng() * 2.2),
-      alpha: 0.40 + rng() * 0.45,
-      rot: rng() * Math.PI * 2,
-      vrot: (rng() - 0.5) * 0.04
-    });
-  }
-
-  // C. Large Mirror Fragments (4 rare particles, 16-32px)
-  for (let i = 0; i < 4; i++) {
-    list.push({
-      family: 'mirror',
-      x: rng() * (gw + 120) - 60,
-      y: rng() * gh,
-      sz: 16.0 + rng() * 16.0,
-      vy: 0.6 + rng() * 1.0,
-      vx: -(0.8 + rng() * 1.2),
-      alpha: 0.35 + rng() * 0.35,
-      rot: rng() * Math.PI * 2,
-      vrot: (rng() - 0.5) * 0.012
-    });
-  }
-
-  return list;
-}
-
-function updateAndDrawParticles(ctx, particles, gw, gh, isT5) {
-  ctx.save();
-  for (let i = 0; i < particles.length; i++) {
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.rot += p.vrot;
-
-    if (p.y > gh + 20 || p.x < -40) {
-      p.y = -20;
-      p.x = Math.random() * (gw + 60);
-    }
-
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rot);
-    ctx.globalAlpha = p.alpha;
-
-    if (p.family === 'snow') {
-      // 4-Point cross fleck (no arc!)
-      const s = p.sz;
-      ctx.fillStyle = isT5 ? '#ff1744' : '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(0, -s);
-      ctx.lineTo(s * 0.4, 0);
-      ctx.lineTo(0, s);
-      ctx.lineTo(-s * 0.4, 0);
-      ctx.closePath();
-      ctx.fill();
-    } else if (p.family === 'splinter') {
-      // Elongated asymmetric triangle splinter
-      const len = p.sz;
-      const w = Math.max(1.2, p.sz * 0.3);
-      ctx.fillStyle = isT5 ? '#dc2626' : 'rgba(215, 240, 255, 0.85)';
-      ctx.beginPath();
-      ctx.moveTo(0, -len * 0.7);
-      ctx.lineTo(w, len * 0.3);
-      ctx.lineTo(0, len * 0.6);
-      ctx.lineTo(-w * 0.6, 0);
-      ctx.closePath();
-      ctx.fill();
-
-      // Glint edge
-      ctx.strokeStyle = isT5 ? '#ff6075' : '#ffffff';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    } else {
-      // Large mirror fragment
-      const s = p.sz;
-      ctx.fillStyle = isT5 ? 'rgba(35, 6, 12, 0.75)' : 'rgba(180, 220, 250, 0.45)';
-      ctx.beginPath();
-      ctx.moveTo(-s * 0.4, -s * 0.5);
-      ctx.lineTo(s * 0.5, -s * 0.3);
-      ctx.lineTo(s * 0.3, s * 0.5);
-      ctx.lineTo(-s * 0.5, s * 0.2);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = isT5 ? '#ff1744' : 'rgba(255, 255, 255, 0.85)';
-      ctx.lineWidth = 1.0;
-      ctx.stroke();
-    }
-
-    ctx.restore();
+    // Eclipse dark moon disc
+    ctx.fillStyle='#100a15';
+    ctx.beginPath();
+    ctx.arc(mx-r*.12,my-r*.08,r*.89,0,Math.PI*2);
+    ctx.fill();
   }
   ctx.restore();
+
+  // Background sky atmosphere fog and vignette
+  const fog=ctx.createLinearGradient(0,h*.45,0,h);
+  fog.addColorStop(0,'transparent');fog.addColorStop(.6,'rgba(4,9,18,.38)');fog.addColorStop(1,'rgba(3,7,14,.88)');
+  ctx.fillStyle=fog;ctx.fillRect(0,0,w,h);
+  const vignette=ctx.createRadialGradient(w*.55,h*.33,w*.12,w*.5,h*.45,h*.74);
+  vignette.addColorStop(0,'rgba(3,7,16,.08)');vignette.addColorStop(1,'rgba(2,5,12,.65)');
+  ctx.fillStyle=vignette;ctx.fillRect(0,0,w,h);
+
+  // Snapshot the background (sky + moon + atmosphere) before clearing to bake tree
+  const skyCanvas=document.createElement('canvas');skyCanvas.width=w;skyCanvas.height=h;
+  skyCanvas.getContext('2d').drawImage(canvas,0,0);canvas.sky=skyCanvas;
+  ctx.clearRect(0,0,w,h);
+
+  LIMBS.forEach((nodes,index)=>{
+    const rails=limbRails(nodes,w,h);
+
+    // Base crystal volume: luminous white with soft cool-ice shading
+    const shade=ctx.createLinearGradient(w*.35,0,w*.85,h);
+    shade.addColorStop(0,eclipse?'#261924':'#ffffff');
+    shade.addColorStop(.35,eclipse?'#1a121e':'#f8fbff');
+    shade.addColorStop(.70,eclipse?'#130f1a':'#eef7ff');
+    shade.addColorStop(1,eclipse?'#060910':'#d9e8f2');
+    polygon(ctx,band(rails,-1,1),shade);
+
+    // Moonlit primary facet (bright specular white)
+    const light=ctx.createLinearGradient(0,h*.08,0,h*.95);
+    light.addColorStop(0,eclipse?'#8e3852':'#ffffff');
+    light.addColorStop(.38,eclipse?'#48243a':'#f8fbff');
+    light.addColorStop(1,eclipse?'#0f101a':'#eef7ff');
+    polygon(ctx,band(rails,.15,.75),light);
+
+    // Cool shadow facet for 3D depth and crystalline refraction (#8fa5b7 / #6d8396)
+    const shadow=ctx.createLinearGradient(0,0,w*.5,h);
+    shadow.addColorStop(0,eclipse?'#100c16':'#c5d8e5');
+    shadow.addColorStop(.45,eclipse?'#0c0e18':'#8fa5b7');
+    shadow.addColorStop(1,eclipse?'#060810':'#6d8396');
+    polygon(ctx,band(rails,-1,-.45),shadow);
+
+    // Deep crevice accent only on the backmost edge (#405469)
+    polygon(ctx,band(rails,-1,-.80),eclipse?'#04050a':'#405469');
+
+    // Irregular internal crystalline fracture facet (bright refraction)
+    if(rails.length>3) {
+      const p=rails[1], q=rails[rails.length-2], a=rails[0];
+      polygon(ctx,[[a.x,a.y],[p.x+p.nx*p.r*.7,p.y+p.ny*p.r*.7],
+        [q.x,q.y],[p.x-p.nx*p.r*.3,p.y-p.ny*p.r*.3]],eclipse?'rgba(175,50,80,.16)':'rgba(255,255,255,.45)');
+    }
+
+    // Moonlit crystalline crest highlight along the upper ridge
+    ctx.beginPath();
+    rails.slice(1).forEach((p,i)=>i?ctx.lineTo(p.x+p.nx*p.r*.75,p.y+p.ny*p.r*.75):ctx.moveTo(p.x+p.nx*p.r*.75,p.y+p.ny*p.r*.75));
+    ctx.strokeStyle=eclipse?'rgba(235,85,110,.55)':'rgba(255,255,255,.95)';
+    ctx.lineWidth=index===10?1.6:.9;ctx.stroke();
+
+    // Additional fine specular sparkle line on the thick trunk (index 10)
+    if(index===10) {
+      ctx.beginPath();
+      rails.slice(1).forEach((p,i)=>i?ctx.lineTo(p.x+p.nx*p.r*.35,p.y+p.ny*p.r*.35):ctx.moveTo(p.x+p.nx*p.r*.35,p.y+p.ny*p.r*.35));
+      ctx.strokeStyle=eclipse?'rgba(200,60,85,.35)':'rgba(255,255,255,.65)';
+      ctx.lineWidth=0.8;ctx.stroke();
+    }
+  });
+
+  // Peripheral crystal masses
+  const rng=mulberry32(6281);
+  for(let i=0;i<7;i++) {
+    const x=(i%2 ? .97:.025)*w, y=(.32+i*.105)*h,sz=w*(.025+rng()*.04);
+    polygon(ctx,[[x,y-sz],[x+sz*.6,y],[x+sz*.15,y+sz*1.7],[x-sz*.4,y+sz*.3]],eclipse?'#241422':'#d9e8f2');
+    polygon(ctx,[[x,y-sz],[x+sz*.6,y],[x+sz*.15,y+sz*1.7]],eclipse?'#422033':'#ffffff');
+  }
+
+  // Gentle ground haze only at the very bottom base
+  const groundHaze=ctx.createLinearGradient(0,h*.86,0,h);
+  groundHaze.addColorStop(0,'transparent');
+  groundHaze.addColorStop(1,eclipse?'rgba(12,4,10,.65)':'rgba(3,7,14,.55)');
+  ctx.fillStyle=groundHaze;
+  ctx.fillRect(0,h*.86,w,h*.14);
+  return canvas;
+}
+function ensureEnvCache(w,h) {
+  const key=`${w}:${h}`;
+  if(environmentCache.has(key)) return environmentCache.get(key);
+  const rng=mulberry32(413);
+  const entry={normal:bakeEnvironment(w,h,false),eclipse:bakeEnvironment(w,h,true),
+    glass:initGlassPlates(w,h),
+    snow:Array.from({length:32},()=>({x:rng()*w,y:rng()*h,s:.5+rng()*1.3,speed:2+rng()*5,alpha:.10+rng()*.2}))};
+  if(environmentCache.size>=2) environmentCache.delete(environmentCache.keys().next().value);
+  environmentCache.set(key,entry);return entry;
 }
 
-// ----------------------------------------------------------------------------
-// CHECK AND REBUILD STATIC ENVIRONMENT CANVAS CACHES
-// ----------------------------------------------------------------------------
-function ensureEnvCache(gw, gh) {
-  if (_cachedGw === gw && _cachedGh === gh && _treeCanvasNormal && _treeCanvasT5) return;
-
-  _cachedGw = gw;
-  _cachedGh = gh;
-
-  _treeSegments = generateSpectralTree(gw, gh);
-
-  _treeCanvasNormal = document.createElement('canvas');
-  _treeCanvasNormal.width = gw;
-  _treeCanvasNormal.height = gh;
-  renderTreePrismsToCanvas(_treeCanvasNormal, _treeSegments, false);
-
-  _treeCanvasT5 = document.createElement('canvas');
-  _treeCanvasT5.width = gw;
-  _treeCanvasT5.height = gh;
-  renderTreePrismsToCanvas(_treeCanvasT5, _treeSegments, true);
-
-  _moonCanvasNormal = document.createElement('canvas');
-  _moonCanvasNormal.width = gw;
-  _moonCanvasNormal.height = gh;
-  renderMoonToCanvas(_moonCanvasNormal, gw, gh, false);
-
-  _moonCanvasT5 = document.createElement('canvas');
-  _moonCanvasT5.width = gw;
-  _moonCanvasT5.height = gh;
-  renderMoonToCanvas(_moonCanvasT5, gw, gh, true);
-
-  _bloomCanvasNormal = document.createElement('canvas');
-  _bloomCanvasNormal.width = gw;
-  _bloomCanvasNormal.height = gh;
-  renderBloomToCanvas(_bloomCanvasNormal, gw, gh, false);
-
-  _bloomCanvasT5 = document.createElement('canvas');
-  _bloomCanvasT5.width = gw;
-  _bloomCanvasT5.height = gh;
-  renderBloomToCanvas(_bloomCanvasT5, gw, gh, true);
-
-  _glassPlates = initGlassPlates(gw, gh);
-  _envParticles = initEnvParticles(gw, gh);
-}
-
-// ============================================================================
-// SANHUA THEME DEFINITION
-// ============================================================================
 export const SANHUA_THEME = {
   id: 'sanhua',
   nameKey: 'themeSanhua',
@@ -877,8 +365,6 @@ export const SANHUA_THEME = {
     { min: 800, max: Infinity, name: 'subzero_domain',    border: '#ff1744',                  glow: 'rgba(255, 23, 68, 0.95)',  particleColors: ['#ff1744', '#dc2626', '#18181b', '#000000'] }
   ],
 
-  _t5Blend: 0,
-  _lastNow: 0,
   _holdPaintCache: null,
 
   getTier(combo) {
@@ -937,57 +423,15 @@ export const SANHUA_THEME = {
         goldTrim: '#991b1b', crestCol: '#ff1744'
       };
     }
-    if (tier >= 400) {
-      return {
-        bgTop: '#1e1b4b', bgMid: '#0d1527', bgBot: '#020617',
-        border: '#a855f7', core: '#ffffff', laserGlow: 'rgba(0, 229, 255, 0.90)',
-        laserCore: '#f43f5e', petalCol: '#ec4899', trackBg: 'rgba(20, 16, 48, 0.45)',
-        goldTrim: '#fbbf24', crestCol: '#f43f5e'
-      };
-    }
-    if (tier >= 200) {
-      return {
-        bgTop: '#0c4a6e', bgMid: '#072740', bgBot: '#03101c',
-        border: '#00f5ff', core: '#ffffff', laserGlow: 'rgba(0, 245, 255, 0.85)',
-        laserCore: '#ff2a5f', petalCol: '#f43f5e', trackBg: 'rgba(8, 36, 64, 0.45)',
-        goldTrim: '#f59e0b', crestCol: '#e11d48'
-      };
-    }
-    if (tier >= 100) {
-      return {
-        bgTop: '#0e3952', bgMid: '#071f30', bgBot: '#020a12',
-        border: '#38bdf8', core: '#ffffff', laserGlow: 'rgba(56, 189, 248, 0.80)',
-        laserCore: '#f43f5e', petalCol: '#fda4af', trackBg: 'rgba(10, 30, 50, 0.45)',
-        goldTrim: '#f59e0b', crestCol: '#e11d48'
-      };
-    }
-    if (tier >= 50) {
-      return {
-        bgTop: '#072e4a', bgMid: '#051b2e', bgBot: '#020a14',
-        border: '#0ea5e9', core: '#e0f2fe', laserGlow: 'rgba(14, 165, 233, 0.70)',
-        laserCore: '#e11d48', petalCol: '#fb7185', trackBg: 'rgba(6, 25, 45, 0.45)',
-        goldTrim: '#f59e0b', crestCol: '#e11d48'
-      };
-    }
-
-    return {
-      bgTop: '#07253d', bgMid: '#041524', bgBot: '#020a12',
-      border: '#38bdf8', core: '#ffffff', laserGlow: 'rgba(56, 189, 248, 0.65)',
-      laserCore: '#e11d48', petalCol: '#f43f5e', trackBg: 'rgba(4, 20, 36, 0.45)',
-      goldTrim: '#f59e0b', crestCol: '#e11d48'
-    };
+    const pal = this._getHiyukiNotePalette(tier);
+    return { bgTop: pal.bgStops[0][1], bgMid: pal.bgStops[2][1], bgBot: '#070d19',
+      border: pal.edge, core: pal.specular, laserGlow: pal.resonanceGlow,
+      laserCore: pal.resonance, petalCol: pal.resonance, trackBg: 'rgba(7,13,25,.5)',
+      goldTrim: pal.edge, crestCol: pal.resonance };
   },
 
-  // ==========================================================================
-  // SHARED HIYUKI NOTE PALETTE (Combo-Based Color Evolution for Tap + Hold)
-  // Guarantees Tap and Hold notes share the same material and evolve together.
-  // T0: Frost Blade (0-49) — White 70%, Blue 25%, Red 5%
-  // T1: Biting Frost (50-99) — Saturated cold blue + clearer red
-  // T2: Sakura Flutter (100-199) — White ice with soft crimson/pink resonance
-  // T3: Crystal Surge (200-399) — Bright white/cyan with intense crimson incision
-  // T4: Glacial Fracture (400-799) — Luxurious white/ice-blue/pale-violet crystalline
-  // T5: Obsidian Hiyuki (800+) — Polished black obsidian + vivid burning crimson
-  // ==========================================================================
+  // Shared silver → cyan → azure → violet → amethyst → obsidian material.
+
   _getHiyukiNotePalette(comboOrTier, dead = false, isLight = false) {
     const tier = this._resolveTierNum(comboOrTier);
     const isT5 = tier >= 800;
@@ -1017,15 +461,6 @@ export const SANHUA_THEME = {
           [0.75, 'rgba(100, 116, 139, 0.70)'],// 75% up
           [1.00, 'rgba(71, 85, 105, 0.56)']  // TOP: free end at yTail
         ],
-        holdStops: [
-          [0.00, '#1e293b'],
-          [0.50, '#475569'],
-          [1.00, '#334155']
-        ],
-        sheenCol: null,
-        holdHaze: 'rgba(51, 65, 85, 0.10)',
-        holdVein: null,
-        holdVeinBloom: null
       };
     }
 
@@ -1057,15 +492,6 @@ export const SANHUA_THEME = {
           [0.75, 'rgba(197, 30, 62, 0.75)'], // MID-HIGH: #c51e3e (75%)
           [1.00, 'rgba(143, 20, 46, 0.62)']  // TOP: #8f142e (free end at yTail)
         ],
-        holdStops: [
-          [0.00, '#080306'],
-          [0.50, '#c51e3e'],
-          [1.00, '#260812']
-        ],
-        sheenCol: 'rgba(255, 35, 75, 0.10)',
-        holdHaze: 'rgba(197, 30, 62, 0.14)',
-        holdVein: null,
-        holdVeinBloom: null
       };
     }
 
@@ -1097,15 +523,6 @@ export const SANHUA_THEME = {
           [0.75, 'rgba(209, 194, 234, 0.70)'],// MID-HIGH: #d1c2ea (75%)
           [1.00, 'rgba(170, 150, 210, 0.56)'] // TOP: #aa96d2 (free end at yTail)
         ],
-        holdStops: [
-          [0.00, '#55427e'],
-          [0.50, '#d1c2ea'],
-          [1.00, '#7862a9']
-        ],
-        sheenCol: 'rgba(209, 194, 234, 0.08)',
-        holdHaze: 'rgba(120, 98, 169, 0.12)',
-        holdVein: null,
-        holdVeinBloom: null
       };
     }
 
@@ -1137,15 +554,6 @@ export const SANHUA_THEME = {
           [0.75, 'rgba(182, 177, 235, 0.70)'],// MID-HIGH: #b6b1eb (75%)
           [1.00, 'rgba(142, 136, 214, 0.56)'] // TOP: #8e88d6 (free end at yTail)
         ],
-        holdStops: [
-          [0.00, '#403b82'],
-          [0.50, '#b6b1eb'],
-          [1.00, '#625db4']
-        ],
-        sheenCol: 'rgba(182, 177, 235, 0.08)',
-        holdHaze: 'rgba(98, 93, 180, 0.12)',
-        holdVein: null,
-        holdVeinBloom: null
       };
     }
 
@@ -1177,15 +585,6 @@ export const SANHUA_THEME = {
           [0.75, 'rgba(145, 207, 236, 0.70)'],// MID-HIGH: #91cfec (75%)
           [1.00, 'rgba(94, 173, 216, 0.56)']  // TOP: #5eadd8 (free end at yTail)
         ],
-        holdStops: [
-          [0.00, '#174d7c'],
-          [0.50, '#91cfec'],
-          [1.00, '#2677ad']
-        ],
-        sheenCol: 'rgba(145, 207, 236, 0.08)',
-        holdHaze: 'rgba(38, 119, 173, 0.12)',
-        holdVein: null,
-        holdVeinBloom: null
       };
     }
 
@@ -1217,15 +616,6 @@ export const SANHUA_THEME = {
           [0.75, 'rgba(167, 239, 248, 0.70)'],// MID-HIGH: #a7eff8 (75%)
           [1.00, 'rgba(114, 215, 233, 0.56)'] // TOP: #72d7e9 (free end at yTail)
         ],
-        holdStops: [
-          [0.00, '#147d9b'],
-          [0.50, '#a7eff8'],
-          [1.00, '#28b5d2']
-        ],
-        sheenCol: 'rgba(167, 239, 248, 0.08)',
-        holdHaze: 'rgba(40, 181, 210, 0.12)',
-        holdVein: null,
-        holdVeinBloom: null
       };
     }
 
@@ -1256,21 +646,12 @@ export const SANHUA_THEME = {
         [0.75, 'rgba(238, 245, 248, 0.70)'], // MID-HIGH: #eef5f8 (75%)
         [1.00, 'rgba(197, 217, 228, 0.56)']  // TOP: #c5d9e4 (free end at yTail)
       ],
-      holdStops: [
-        [0.00, '#647f92'],
-        [0.50, '#eef5f8'],
-        [1.00, '#a8c2d2']
-      ],
-      sheenCol: 'rgba(238, 245, 248, 0.08)',
-      holdHaze: 'rgba(168, 194, 210, 0.12)',
-      holdVein: null,
-      holdVeinBloom: null
     };
   },
 
   // ==========================================================================
-  // 1. PHROLOVA-STYLE HIYUKI ENERGY TAP NOTES
-  // Compact rounded body with lateral ice fin accents (matching Phrolova's proportions)
+  // 1. FACETED HIYUKI TAP NOTES
+  // Compact beveled body with lateral ice fin accents
   // styled with Hiyuki multi-facet translucent frozen ice and combo-evolving colors.
   // ==========================================================================
   bakeTapNote(ctx, x, yTop, w, h, isLight, style) {
@@ -1282,35 +663,35 @@ export const SANHUA_THEME = {
     const r = Math.min(8, h * 0.22);
     const finH = Math.max(3, h * 0.22);
     const finExt = Math.max(3, Math.min(5, w * 0.045));
-    const left = x + 2;
-    const right = x + w - 2;
+    const left = x + finExt + 1;
+    const right = x + w - finExt - 1;
     const top = yTop + 2;
     const bot = yTop + h - 2;
 
     ctx.save();
 
-    // 1. Phrolova-Style Silhouette Path (Compact rounded body with lateral ice fin accents)
+    // 1. Beveled Crystal Silhouette (Compact rounded body with lateral ice fin accents)
     const traceSilhouette = (pCtx) => {
       pCtx.beginPath();
       // Top-left corner & top edge
       pCtx.moveTo(left + r, top);
       pCtx.lineTo(right - r, top);
-      pCtx.quadraticCurveTo(right, top, right, top + r);
+      pCtx.lineTo(right, top + r);
       // Right edge down to right ice fin
       pCtx.lineTo(right, cy - finH);
       pCtx.lineTo(right + finExt, cy);
       pCtx.lineTo(right, cy + finH);
       pCtx.lineTo(right, bot - r);
-      pCtx.quadraticCurveTo(right, bot, right - r, bot);
+      pCtx.lineTo(right - r, bot);
       // Bottom edge
       pCtx.lineTo(left + r, bot);
-      pCtx.quadraticCurveTo(left, bot, left, bot - r);
+      pCtx.lineTo(left, bot - r);
       // Left edge up to left ice fin
       pCtx.lineTo(left, cy + finH);
       pCtx.lineTo(left - finExt, cy);
       pCtx.lineTo(left, cy - finH);
       pCtx.lineTo(left, top + r);
-      pCtx.quadraticCurveTo(left, top, left + r, top);
+      pCtx.lineTo(left + r, top);
       pCtx.closePath();
     };
 
@@ -1334,7 +715,7 @@ export const SANHUA_THEME = {
     ctx.beginPath();
     ctx.moveTo(left + r, top);
     ctx.lineTo(right - r, top);
-    ctx.lineTo(left + (right - left) * 0.48, cy + 2);
+    ctx.lineTo(left + (right - left) * 0.35, top + (bot - top) * 0.22);
     ctx.closePath();
     ctx.fill();
 
@@ -1352,7 +733,7 @@ export const SANHUA_THEME = {
     ctx.lineWidth = 1.0;
     ctx.beginPath();
     ctx.moveTo(left + r + 2, top + 1);
-    ctx.lineTo(left + (right - left) * 0.48, cy + 1);
+    ctx.lineTo(right - r - 2, top + 1);
     ctx.stroke();
 
     // D: Faceted Ruby Resonance Crystal (Fixed crimson accent across T0-T5)
@@ -1365,7 +746,7 @@ export const SANHUA_THEME = {
     const ih = ch * 0.42;
 
     // Restrained soft red glow around crystal
-    ctx.fillStyle = isObsidian ? 'rgba(255, 23, 68, 0.35)' : 'rgba(220, 20, 60, 0.28)';
+    ctx.fillStyle = isObsidian ? 'rgba(255, 23, 68, 0.16)' : 'rgba(72, 13, 35, 0.14)';
     ctx.beginPath();
     ctx.ellipse(cx, cy, cw * 2.2, ch * 1.5, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -1463,12 +844,7 @@ export const SANHUA_THEME = {
     return this.bakeTapNote(ctx, x, yTop, w, h, isLight, comboTier);
   },
 
-  // ==========================================================================
-  // 2. FLOWING HIYUKI ENERGY SLASH HOLD NOTES
-  // EXACT CURRENT SHAPE AND GEOMETRY PRESERVED.
-  // Full-width flowing energy body (94-98% of w), fast diagonal blade slash tip,
-  // gently wandering crimson energy ribbon, specular hotspot, and combo-adaptive colors.
-  // ==========================================================================
+  // Dense, broad hold material with a smooth receptor-to-free-end gradient.
   _getHoldPaintCache(w, h, comboTier, dead = false, isLight = false) {
     const width = Math.max(1, Math.round(w));
     const height = Math.max(1, Math.round(h));
@@ -1485,18 +861,24 @@ export const SANHUA_THEME = {
     // Hold body occupies ~96% of note width
     const tailWidth = Math.max(1, Math.round(width * 0.96));
 
-    // 1. Energy Ribbon Gradient Strip (Hiyuki Cross-Section from shared palette)
+    // A normalized longitudinal texture: constant memory for every hold length.
     const strip = document.createElement('canvas');
-    strip.width = tailWidth;
-    strip.height = 4;
+    strip.width = tailWidth; strip.height = 512;
     const g = strip.getContext('2d');
-    const grad = g.createLinearGradient(0, 0, tailWidth, 0);
-
-    for (const [stop, col] of pal.holdStops) {
-      grad.addColorStop(stop, col);
-    }
-    g.fillStyle = grad;
-    g.fillRect(0, 0, tailWidth, 4);
+    const grad = g.createLinearGradient(0, 512, 0, 0);
+    for (const [stop, col] of pal.holdVerticalStops) grad.addColorStop(stop, col);
+    g.fillStyle = grad; g.fillRect(0, 0, tailWidth, 512);
+    // Broad inner plane and narrow bevels give the body volume without a stripe.
+    const cross = g.createLinearGradient(0, 0, tailWidth, 0);
+    cross.addColorStop(0, 'rgba(2,6,14,.30)');
+    cross.addColorStop(.055, pal.isObsidian ? 'rgba(214,48,78,.32)' : 'rgba(222,238,250,.16)');
+    cross.addColorStop(.13, 'rgba(2,6,14,.12)');
+    cross.addColorStop(.36, 'rgba(2,6,14,0)');
+    cross.addColorStop(.72, pal.isObsidian ? 'rgba(162,35,62,.10)' : 'rgba(220,234,249,.08)');
+    cross.addColorStop(.91, 'rgba(2,6,14,.10)');
+    cross.addColorStop(.97, pal.isObsidian ? 'rgba(214,48,78,.35)' : 'rgba(222,238,250,.17)');
+    cross.addColorStop(1, 'rgba(2,6,14,.24)');
+    g.fillStyle=cross;g.fillRect(0,0,tailWidth,512);
 
     // 2. Receptor Head
     const head = document.createElement('canvas');
@@ -1510,22 +892,9 @@ export const SANHUA_THEME = {
       n.fillRect(0, 0, width, height);
     }
 
-    // 3. Offscreen Hold Buffer Canvas (prevents destination-in on main canvas ctx)
-    const buf = document.createElement('canvas');
-    buf.width = tailWidth;
-    buf.height = 1000;
-
     return (cache.entries[key] = {
-      strip,
-      tip: strip, // Backwards compatibility alias (no separate tip canvas)
-      cap: strip, // Backwards compatibility alias
-      head,
-      buf,
-      bodyW: tailWidth,
-      tailWidth,  // Backwards compatibility alias
-      tipHeight: 0,
-      capHeight: 0,
-      palette: pal
+      strip, tip: strip, cap: strip, head, buf: strip,
+      bodyW: tailWidth, tailWidth, tipHeight: 0, capHeight: 0, palette: pal
     });
   },
 
@@ -1577,85 +946,16 @@ export const SANHUA_THEME = {
 
     const dead = isReleased || !!(tile?.failed || tile?.released);
     const paint = this._getHoldPaintCache(w, headH, currentCombo, dead, isLight);
-    const pal = paint.palette || this._getHiyukiNotePalette(currentCombo, dead, isLight);
     const left = Math.round(x + (w - paint.tailWidth) / 2);
-
-    const bodyY = yTail;
-    const bodyLen = length;
     const bodyW = paint.bodyW;
-
-    // Ensure offscreen buffer canvas is tall enough for bodyLen
-    const buf = paint.buf;
-    const targetH = Math.max(1000, Math.ceil(bodyLen));
-    if (buf.height < targetH) {
-      buf.height = targetH;
-    }
-    const bCtx = buf.getContext('2d');
-    bCtx.clearRect(0, 0, bodyW, Math.ceil(bodyLen));
-
-    // 1. Base Energy Body: Vertical Color Gradient (Bottom bodyLen -> Top 0)
-    // Dense magical energy near receptor (alpha ~0.94-0.96), smoothly and gradually
-    // dissipating toward the free end at yTail (alpha ~0.55-0.62) across the entire body length.
-    const vGrad = bCtx.createLinearGradient(0, bodyLen, 0, 0);
-    for (const [stop, col] of pal.holdVerticalStops) {
-      vGrad.addColorStop(stop, col);
-    }
-    bCtx.fillStyle = vGrad;
-    bCtx.fillRect(0, 0, bodyW, bodyLen);
-
-    // 2. Subtle Horizontal Edge Shading (Solid cross-section, ~10% darker left, ~5% lighter right)
-    const hShade = bCtx.createLinearGradient(0, 0, bodyW, 0);
-    hShade.addColorStop(0.00, 'rgba(0, 0, 0, 0.12)');
-    hShade.addColorStop(0.12, 'rgba(0, 0, 0, 0.00)');
-    hShade.addColorStop(0.88, 'rgba(255, 255, 255, 0.00)');
-    hShade.addColorStop(1.00, 'rgba(255, 255, 255, 0.06)');
-    bCtx.fillStyle = hShade;
-    bCtx.fillRect(0, 0, bodyW, bodyLen);
-
-    // 3. Subtle Longitudinal Surface Sheen (Low opacity 0.08-0.10 active specular drift)
-    if (pal.sheenCol && !dead) {
-      const timeOffset = (now || 0) * 0.0008;
-      const sheenW = Math.max(4, Math.round(bodyW * 0.28));
-      const sheenBaseX = bodyW * 0.50;
-      const drift0 = Math.sin(timeOffset * 0.6 + bodyY * 0.001) * (bodyW * 0.04);
-      const driftMid = Math.cos(timeOffset * 0.5 + (bodyY + bodyLen * 0.5) * 0.001) * (bodyW * 0.04);
-      const driftEnd = Math.sin(timeOffset * 0.7 + bottom * 0.001) * (bodyW * 0.03);
-
-      const sx0 = sheenBaseX + drift0;
-      const sxMid = sheenBaseX + driftMid;
-      const sxEnd = sheenBaseX + driftEnd;
-
-      bCtx.save();
-      bCtx.fillStyle = pal.sheenCol;
-      bCtx.beginPath();
-      bCtx.moveTo(sx0 - sheenW * 0.5, 0);
-      bCtx.bezierCurveTo(sxMid - sheenW * 0.5, bodyLen * 0.45, sxEnd - sheenW * 0.5, bodyLen * 0.85, sxEnd - sheenW * 0.5, bodyLen);
-      bCtx.lineTo(sxEnd + sheenW * 0.5, bodyLen);
-      bCtx.bezierCurveTo(sxEnd + sheenW * 0.5, bodyLen * 0.85, sxMid + sheenW * 0.5, bodyLen * 0.45, sx0 + sheenW * 0.5, 0);
-      bCtx.closePath();
-      bCtx.fill();
-      bCtx.restore();
-    }
-
-    // 4. Outer Soft Haze (Subtle 0.10-0.14 glow outside the body)
-    if (pal.holdHaze && !dead) {
-      const hazePad = Math.max(2, Math.round(bodyW * 0.04));
-      const hazeX = left - hazePad;
-      const hazeW = bodyW + hazePad * 2;
-      ctx.save();
-      const hGlow = ctx.createLinearGradient(hazeX, 0, hazeX + hazeW, 0);
-      hGlow.addColorStop(0.00, 'rgba(0, 0, 0, 0)');
-      hGlow.addColorStop(0.35, pal.holdHaze);
-      hGlow.addColorStop(0.65, pal.holdHaze);
-      hGlow.addColorStop(1.00, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = hGlow;
-      ctx.fillRect(hazeX, bodyY, hazeW, bodyLen);
-      ctx.restore();
-    }
-
-    // 5. Composited Solid Energy Body Blit
-    ctx.drawImage(buf, 0, 0, bodyW, bodyLen, left, bodyY, bodyW, bodyLen);
-
+    const bevel = Math.min(7, length * .18, bodyW * .08);
+    ctx.save();
+    polygon(ctx, [[left+bevel,yTail],[left+bodyW-bevel,yTail],
+      [left+bodyW,yTail+bevel],[left+bodyW,bottom],
+      [left,bottom],[left,yTail+bevel]]);
+    ctx.clip();
+    ctx.drawImage(paint.strip,0,0,bodyW,512,left,yTail,bodyW,length);
+    ctx.restore();
     return true;
   },
 
@@ -1668,51 +968,24 @@ export const SANHUA_THEME = {
   // 3. RECEPTOR LINE — CELESTIAL GLACIO RECEPTORS
   // ==========================================================================
   drawReceptor(ctx, x, y, w, h, isActive, isLight) {
-    ctx.save();
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-
-    const combo = (typeof window !== 'undefined' && (window.GameState?.combo ?? window.State?.combo)) || 0;
+    const combo = typeof window !== 'undefined' ? window.GameState?.combo || 0 : 0;
     const pal = this._getHiyukiNotePalette(combo, false, isLight);
-
-    const bg = ctx.createLinearGradient(x, y, x, y + h);
-    if (pal.isObsidian) {
-      if (isActive) {
-        bg.addColorStop(0, 'rgba(255, 23, 68, 0.45)');
-        bg.addColorStop(0.5, 'rgba(181, 18, 45, 0.30)');
-        bg.addColorStop(1, 'rgba(30, 2, 8, 0.20)');
-      } else {
-        bg.addColorStop(0, 'rgba(25, 4, 9, 0.50)');
-        bg.addColorStop(0.5, 'rgba(14, 2, 5, 0.60)');
-        bg.addColorStop(1, 'rgba(4, 1, 2, 0.70)');
-      }
-    } else {
-      if (isActive) {
-        bg.addColorStop(0, pal.facetLight);
-        bg.addColorStop(0.5, pal.facetDark);
-        bg.addColorStop(1, 'rgba(6, 14, 26, 0.30)');
-      } else {
-        bg.addColorStop(0, pal.facetDark);
-        bg.addColorStop(0.5, 'rgba(6, 14, 26, 0.55)');
-        bg.addColorStop(1, 'rgba(2, 6, 15, 0.65)');
-      }
-    }
-    ctx.fillStyle = bg;
-    ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
-
-    // Border: tier-coherent edge color
-    ctx.strokeStyle = isActive ? (pal.isObsidian ? '#ff1744' : (pal.specular || '#ffffff')) : (pal.edge || '#edf4f8');
-    ctx.lineWidth = isActive ? 1.8 : 1.1;
-    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
-
-    // Center glint: matches tier family (NO unrelated red dot in normal tiers)
-    ctx.fillStyle = isActive ? (pal.isObsidian ? '#ff5277' : (pal.specular || '#ffffff')) : (pal.resonance || '#edf4f8');
+    ctx.save();
+    const edge = isLight ? pal.bgStops.at(-1)[1] : pal.edge;
+    polygon(ctx, [[x+6,y+2],[x+w-6,y+2],[x+w-1,y+7],
+      [x+w-1,y+h-3],[x+1,y+h-3],[x+1,y+7]],
+      isActive ? pal.facetDark : 'rgba(7,12,23,.68)');
+    ctx.globalAlpha *= isActive ? .95 : .50;
+    ctx.strokeStyle=edge;ctx.lineWidth=1;
+    ctx.stroke();
     ctx.beginPath();
-    ctx.arc(cx, cy, isActive ? 2.4 : 1.4, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-    return true;
+    ctx.moveTo(x+2,y+h-5);ctx.lineTo(x+2,y+7);ctx.lineTo(x+8,y+2);ctx.lineTo(x+19,y+2);
+    ctx.moveTo(x+w-19,y+2);ctx.lineTo(x+w-8,y+2);ctx.lineTo(x+w-2,y+7);ctx.lineTo(x+w-2,y+h-5);
+    ctx.strokeStyle=isActive?pal.specular:edge;ctx.lineWidth=isActive?2:1.4;ctx.stroke();
+    if(isActive) {
+      ctx.fillStyle=pal.resonance;ctx.fillRect(x+w*.32,y+h-3,w*.36,2);
+    }
+    ctx.restore();return true;
   },
 
   // ==========================================================================
@@ -1727,20 +1000,21 @@ export const SANHUA_THEME = {
     ctx.globalCompositeOperation = 'screen';
 
     const pal = this._getPalette(combo);
-    const colBlade = isPerfect ? (combo >= 800 ? '#ffffff' : '#7dd3fc') : pal.border;
+    const colBlade = pal.border;
     const colCore = isPerfect ? '#ffffff' : (combo >= 800 ? '#ffffff' : pal.laserCore);
 
     // Expanding Glacio shockwave ring
     const ringR = (w * 0.15) + easeOut * (w * 0.58);
-    const ringAlpha = Math.max(0, (1.0 - p) * 0.75);
+
     ctx.lineWidth = Math.max(1, 2.0 * (1.0 - p));
-    ctx.strokeStyle = (combo >= 800) ? `rgba(255, 23, 68, ${ringAlpha})` : `rgba(56, 189, 248, ${ringAlpha})`;
+    ctx.globalAlpha *= alpha;
+    ctx.strokeStyle = pal.border;
     ctx.beginPath();
     ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
     ctx.stroke();
 
     // Shattered ice shards
-    const numShards = 8;
+    const numShards = 5;
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(p * 0.25);
@@ -1757,7 +1031,7 @@ export const SANHUA_THEME = {
       ctx.translate(sx, sy);
       ctx.rotate(angle + Math.PI / 2);
 
-      ctx.fillStyle = (combo >= 800) ? `rgba(255, 23, 68, ${alpha * 0.85})` : `rgba(186, 230, 253, ${alpha * 0.85})`;
+      ctx.fillStyle = pal.border;
       ctx.beginPath();
       ctx.moveTo(0, -shardLen);
       ctx.lineTo(shardW, 0);
@@ -1788,148 +1062,59 @@ export const SANHUA_THEME = {
     ctx.restore();
   },
 
-  // ==========================================================================
-  // 5. ATMOSPHERE — HIGH-BUDGET CINEMATIC REBUILD
-  // Visual Hierarchy:
-  // 1. Giant Luminous Spectral Tree
-  // 2. Moon / White Celestial Backlight
-  // 3. Large Floating Glass Plates across 3 Parallax Layers
-  // 4. Dark Atmospheric Depth and Fog
-  // 5. Crimson Donghua Energy Ribbon
-  // 6. Gameplay Lanes and Notes
-  // 7. Tiny 3-Family Particles (Micro-Snow, Splinters, Mirror Fragments)
-  // ==========================================================================
+  // Environment stays below notes and receptor contrast.
   updateAndDrawAtmosphere(ctx, songTime, warpMult, speedBoost, State) {
-    const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
-    const gw = State?.gameWidth > 0 ? State.gameWidth : (ctx.canvas?.clientWidth || ctx.canvas?.width / dpr || 400);
-    const gh = State?.gameHeight > 0 ? State.gameHeight : (ctx.canvas?.clientHeight || ctx.canvas?.height / dpr || 700);
-    const combo = State?.combo || 0;
-    const now = songTime || 0;
-
-    // Smooth T5 Blood Eclipse Transition (Section 9: ~0.8s damping)
-    const targetT5 = combo >= 800 ? 1.0 : 0.0;
-    const stateObj = (State && typeof State === 'object') ? State : this;
-    if (typeof stateObj._t5Blend !== 'number') {
-      stateObj._t5Blend = targetT5;
-      stateObj._lastNow = now;
-    } else {
-      const dt = Math.min(0.1, Math.max(0.001, (now - (stateObj._lastNow || now)) * 0.001));
-      stateObj._lastNow = now;
-      stateObj._t5Blend += (targetT5 - stateObj._t5Blend) * (1.0 - Math.exp(-3.2 * dt));
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+    const w = Math.round(State?.gameWidth || ctx.canvas.width / dpr || 400);
+    const h = Math.round(State?.gameHeight || ctx.canvas.height / dpr || 700);
+    const now = songTime || 0, target = (State?.combo || 0) >= 800 ? 1 : 0;
+    const owner = State && typeof State === 'object' ? State : this;
+    let state = atmosphereStates.get(owner);
+    if (!state || now < state.now) {
+      state = {blend:target, now, target, event:-10000};
+      atmosphereStates.set(owner,state);
     }
-    const t5b = Math.max(0, Math.min(1, stateObj._t5Blend));
-    this._t5Blend = t5b;
-    const isT5 = t5b > 0.5;
-
-    // Ensure pre-rendered fractal tree, celestial moon, and glass plates are cached
-    ensureEnvCache(gw, gh);
-
+    if (target && !state.target) state.event = now;
+    const dt = Math.max(0,Math.min(.1,(now-state.now)/1000));
+    state.blend += (target-state.blend)*(1-Math.exp(-dt*3.8));
+    state.now=now; state.target=target;
+    const env=ensureEnvCache(w,h), blend=state.blend;
     ctx.save();
+    const sceneAlpha=ctx.globalAlpha;
+    ctx.drawImage(env.normal.sky,0,0);
+    if(blend>.001) {ctx.globalAlpha=sceneAlpha*blend;ctx.drawImage(env.eclipse.sky,0,0);}
+    ctx.globalAlpha=sceneAlpha;
+    // Layer 0: Background mirror shards (behind tree limbs)
+    for(let i=0;i<8;i++) drawGlassPlate(ctx,env.glass[i],now,w,h,blend>.5,0.85);
 
-    // ------------------------------------------------------------------------
-    // LAYER 1: Deep Navy / Indigo Atmospheric Sky (or Wine-Red at T5)
-    // ------------------------------------------------------------------------
-    const skyGrad = ctx.createLinearGradient(gw * 0.5, 0, gw * 0.5, gh);
-    if (t5b > 0.01) {
-      // T5 Blood Eclipse Sky
-      skyGrad.addColorStop(0, '#050002');
-      skyGrad.addColorStop(0.4, '#140306');
-      skyGrad.addColorStop(1.0, '#22050b');
-    } else {
-      // Normal Deep Navy Sky
-      skyGrad.addColorStop(0, '#030712');
-      skyGrad.addColorStop(0.4, '#071426');
-      skyGrad.addColorStop(1.0, '#101a35');
+    // Tree limbs (normal and eclipse)
+    ctx.globalAlpha=sceneAlpha*(1-blend);ctx.drawImage(env.normal,0,0);
+    if(blend>.001) {ctx.globalAlpha=sceneAlpha*blend;ctx.drawImage(env.eclipse,0,0);}
+    ctx.globalAlpha=sceneAlpha;
+
+    // Layer 1: Midground mirror shards (around tree)
+    for(let i=8;i<18;i++) drawGlassPlate(ctx,env.glass[i],now,w,h,blend>.5,1.0);
+
+    // Layer 2: Foreground mirror shards (bold, in front)
+    for(let i=18;i<env.glass.length;i++) drawGlassPlate(ctx,env.glass[i],now,w,h,blend>.5,0.92);
+    ctx.restore();
+    ctx.save();
+    const inheritedAlpha = ctx.globalAlpha;
+    // A single, slow wind field; positions derive from time, not frame count.
+    for(const p of env.snow) {
+      const px=((p.x-now*.001*p.speed*.32)%(w+12)+w+12)%(w+12)-6;
+      const py=(p.y+now*.001*p.speed)%(h+12)-6;
+      ctx.globalAlpha=inheritedAlpha*p.alpha*(py>h*.73 ? .45 : 1);
+      ctx.fillStyle=blend>.5?'#b86b81':'#b3c6d6';
+      ctx.fillRect(px,py,p.s*.65,p.s);
     }
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, gw, gh);
-
-    // ------------------------------------------------------------------------
-    // LAYER 2: Background Mirror Shards (Parallax Layer 0: behind moon & tree)
-    // ------------------------------------------------------------------------
-    if (_glassPlates) {
-      for (let i = 0; i < 8; i++) {
-        drawGlassPlate(ctx, _glassPlates[i], now, gw, gh, isT5, 1.0);
-      }
+    // One restrained eclipse wave, behind gameplay, when the tier is crossed.
+    const event=(now-state.event)/1500;
+    if(event>=0 && event<1) {
+      ctx.globalAlpha=inheritedAlpha*Math.sin(event*Math.PI)*.25;
+      ctx.strokeStyle='#c87187';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(w*.66,h*.235,w*(.29+event*.65),0,Math.PI*2);ctx.stroke();
     }
-
-    // ------------------------------------------------------------------------
-    // LAYER 3: Cinematic Celestial Moon (Backlight, partially occluded by tree)
-    // ------------------------------------------------------------------------
-    if (_moonCanvasNormal && _moonCanvasT5) {
-      if (t5b < 0.99) {
-        ctx.globalAlpha = 1.0 - t5b;
-        ctx.drawImage(_moonCanvasNormal, 0, 0);
-      }
-      if (t5b > 0.01) {
-        ctx.globalAlpha = t5b;
-        ctx.drawImage(_moonCanvasT5, 0, 0);
-      }
-      ctx.globalAlpha = 1.0;
-    }
-
-    // ------------------------------------------------------------------------
-    // LAYER 4: Giant Luminous Spectral Tree (Faceted 3D Ice Prisms)
-    // ------------------------------------------------------------------------
-    if (_treeCanvasNormal && _treeCanvasT5) {
-      if (t5b < 0.99) {
-        ctx.globalAlpha = 1.0 - t5b;
-        ctx.drawImage(_treeCanvasNormal, 0, 0);
-      }
-      if (t5b > 0.01) {
-        ctx.globalAlpha = t5b;
-        ctx.drawImage(_treeCanvasT5, 0, 0);
-      }
-      ctx.globalAlpha = 1.0;
-    }
-
-    // ------------------------------------------------------------------------
-    // LAYER 5: Overexposed Volumetric Light Bloom (Screen blending)
-    // ------------------------------------------------------------------------
-    if (_bloomCanvasNormal && _bloomCanvasT5) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      if (t5b < 0.99) {
-        ctx.globalAlpha = (1.0 - t5b) * 0.90;
-        ctx.drawImage(_bloomCanvasNormal, 0, 0);
-      }
-      if (t5b > 0.01) {
-        ctx.globalAlpha = t5b * 0.95;
-        ctx.drawImage(_bloomCanvasT5, 0, 0);
-      }
-      ctx.restore();
-    }
-
-    // ------------------------------------------------------------------------
-    // LAYER 6: Midground Mirror Shards (Parallax Layer 1: around tree)
-    // ------------------------------------------------------------------------
-    if (_glassPlates) {
-      for (let i = 8; i < 18; i++) {
-        drawGlassPlate(ctx, _glassPlates[i], now, gw, gh, isT5, 1.0);
-      }
-    }
-
-    // ------------------------------------------------------------------------
-    // LAYER 7: The Crimson Donghua Energy Ribbon (Sweeping S-Curve)
-    // ------------------------------------------------------------------------
-    drawCrimsonRibbon(ctx, now, gw, gh, isT5);
-
-    // ------------------------------------------------------------------------
-    // LAYER 8: Foreground Huge Mirror Plates (Parallax Layer 2: in front)
-    // ------------------------------------------------------------------------
-    if (_glassPlates) {
-      for (let i = 18; i < _glassPlates.length; i++) {
-        drawGlassPlate(ctx, _glassPlates[i], now, gw, gh, isT5, 0.85);
-      }
-    }
-
-    // ------------------------------------------------------------------------
-    // LAYER 9: 3-Family Cinematic Particle System (Micro-Snow, Splinters, Mirror)
-    // ------------------------------------------------------------------------
-    if (_envParticles) {
-      updateAndDrawParticles(ctx, _envParticles, gw, gh, isT5);
-    }
-
     ctx.restore();
     return true;
   },

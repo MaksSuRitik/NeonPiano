@@ -12,8 +12,8 @@ function context(alpha = 1) {
     lineWidth: 1,
     draws,
     canvas: { clientHeight: 800, width: 800, height: 600 },
-    save() { stack.push(this.globalAlpha); },
-    restore() { this.globalAlpha = stack.pop() ?? 1; },
+    save() { stack.push({alpha:this.globalAlpha, composite:this.globalCompositeOperation}); },
+    restore() { const state=stack.pop(); if(state) { this.globalAlpha=state.alpha; this.globalCompositeOperation=state.composite; } },
     createLinearGradient() { return { addColorStop() {} }; },
     createRadialGradient() { return { addColorStop() {} }; },
     drawImage(...args) { draws.push({ args, alpha: this.globalAlpha }); },
@@ -121,4 +121,33 @@ test('T5 Blood-Moon shift triggers at 800+ combo with crimson obsidian palette',
   const cacheT5 = S._getHoldPaintCache(90, 44, 800);
   assert.notEqual(cacheBase.strip, cacheT5.strip);
   assert.notEqual(cacheBase.cap, cacheT5.cap);
+});
+
+
+test('hold texture allocation stays bounded even for extremely long and shrinking holds', () => {
+  const c = context(.37);
+  S.drawHoldBody(c, 0, -50000, 90, 44, tile, false, 0, 50500, 400, 500);
+  const texture = c.draws.at(-1).args[0], allocated = canvases;
+  assert.equal(texture.height, 512);
+  for (const length of [1, 10, 100, 1000, 100000]) {
+    S.drawHoldBody(c, 0, 0, 90, 44, tile, false, 0, length, 400, length);
+    assert.equal(c.draws.at(-1).args[0], texture);
+  }
+  assert.equal(canvases, allocated);
+  assert.equal(c.globalAlpha, .37);
+  assert.equal(c.globalCompositeOperation, 'source-over');
+});
+
+test('environment crossfades at 800 and keeps caller state and gameplay state untouched', () => {
+  const c = context(.4), state = {gameWidth:400, gameHeight:720, combo:799};
+  S.updateAndDrawAtmosphere(c, 0, 1, 0, state);
+  const normal=c.draws.at(-1).args[0], allocated=canvases;
+  state.combo=800;
+  for(let i=1;i<=120;i++) S.updateAndDrawAtmosphere(c,i*16.67,1,0,state);
+  assert.notEqual(c.draws.at(-1).args[0],normal);
+  assert.ok(c.draws.at(-1).alpha>.39 && c.draws.at(-1).alpha<=.4);
+  assert.equal(canvases,allocated);
+  assert.equal(c.globalAlpha,.4);
+  assert.equal(c.globalCompositeOperation,'source-over');
+  assert.deepEqual(state,{gameWidth:400,gameHeight:720,combo:800});
 });

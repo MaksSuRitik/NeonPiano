@@ -51,14 +51,8 @@ export class PixiParticleSystem {
       diamond: null,
       petal: null,
       star: null,
-      silk: null,
-      snowflake: null
+      silk: null
     };
-
-    // Sanhua High-Density Swarm (260 particles)
-    this.MAX_SANHUA_SWARM = 260;
-    this.sanhuaContainer = null;
-    this.sanhuaSwarm = [];
 
     this.lastTime = 0;
   }
@@ -80,7 +74,6 @@ export class PixiParticleSystem {
       this._buildHitPool();
       if (this.backgroundLayer) {
         this._buildAmbientPool();
-        this._buildSanhuaSwarmPool();
       }
 
       this.isReady = true;
@@ -171,26 +164,7 @@ export class PixiParticleSystem {
     ctxSilk.stroke();
     this.textures.silk = this.PIXI.Texture.from(cSilk);
 
-    // 6. Crystalline 6-point Snowflake (32x32)
-    const cSnow = document.createElement('canvas');
-    cSnow.width = 32;
-    cSnow.height = 32;
-    const ctxSnow = cSnow.getContext('2d');
-    ctxSnow.strokeStyle = '#ffffff';
-    ctxSnow.lineWidth = 1.3;
-    ctxSnow.lineCap = 'round';
-    ctxSnow.save();
-    ctxSnow.translate(16, 16);
-    for (let i = 0; i < 6; i++) {
-      ctxSnow.beginPath();
-      ctxSnow.moveTo(0, 0); ctxSnow.lineTo(0, 14);
-      ctxSnow.moveTo(0, 6); ctxSnow.lineTo(4, 10);
-      ctxSnow.moveTo(0, 6); ctxSnow.lineTo(-4, 10);
-      ctxSnow.stroke();
-      ctxSnow.rotate(Math.PI / 3);
-    }
-    ctxSnow.restore();
-    this.textures.snowflake = this.PIXI.Texture.from(cSnow);
+
   }
 
   /**
@@ -212,12 +186,6 @@ export class PixiParticleSystem {
       this.ambientContainer = new this.PIXI.Container();
       this.ambientContainer.label = 'ambientContainer';
       this.backgroundLayer.addChild(this.ambientContainer);
-
-      // Sanhua High-Density Swarm container
-      this.sanhuaContainer = new this.PIXI.Container();
-      this.sanhuaContainer.label = 'sanhuaContainer';
-      this.sanhuaContainer.visible = false;
-      this.backgroundLayer.addChild(this.sanhuaContainer);
     }
   }
 
@@ -361,41 +329,6 @@ export class PixiParticleSystem {
   }
 
   /**
-   * Pre-allocates high-density Sanhua WebGL snowflake and ice shard swarm.
-   */
-  _buildSanhuaSwarmPool() {
-    if (!this.sanhuaContainer) return;
-    this.sanhuaSwarm = [];
-    const count = this.MAX_SANHUA_SWARM;
-    const w = this.app?.screen?.width || 500;
-    const h = this.app?.screen?.height || 800;
-    for (let i = 0; i < count; i++) {
-      const isSnow = (i % 2 === 0);
-      const tex = isSnow ? this.textures.snowflake : this.textures.diamond;
-      const sprite = new this.PIXI.Sprite(tex);
-      sprite.anchor.set(0.5);
-      sprite.visible = false;
-      sprite.blendMode = 'add';
-      this.sanhuaContainer.addChild(sprite);
-
-      this.sanhuaSwarm.push({
-        sprite: sprite,
-        isSnow: isSnow,
-        x: Math.random() * (w + 100) - 50,
-        y: Math.random() * h,
-        size: isSnow ? (Math.random() * 0.28 + 0.18) : (Math.random() * 0.35 + 0.15),
-        speedY: Math.random() * 1.8 + 0.8,
-        speedX: -(Math.random() * 2.2 + 0.8), // gentle wind drifting left
-        rot: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 0.05,
-        swaySpeed: Math.random() * 0.003 + 0.002,
-        swayOffset: Math.random() * 1000,
-        baseAlpha: Math.random() * 0.45 + 0.35
-      });
-    }
-  }
-
-  /**
    * Computes colors for Phrolova theme strictly following authentic obsidian/crimson/ash-platinum palette.
    * STRICT CONSTRAINT: Absolutely NO yellow (#eab308, #ffd700) or orange (#f97316).
    */
@@ -519,7 +452,7 @@ export class PixiParticleSystem {
       slot.starSprite.position.set(cx, cy);
 
       // 2. Launch 8-16 explosive directional sparks into particle pool
-      const sparkCount = isPerfect ? 16 : 8;
+      const sparkCount = themeId === 'sanhua' ? (isPerfect ? 6 : 4) : (isPerfect ? 16 : 8);
       this.spawnSparks(cx, cy, sparkCount, colBlade, themeId, isPerfect ? 'perfect' : 'good', combo);
     } catch (err) {
       console.warn("[PixiParticleSystem] spawnHit error:", err);
@@ -793,20 +726,11 @@ export class PixiParticleSystem {
   }
 
   /**
-   * Updates ambient Lycoris petals / Sanhua snowflake swarm in backgroundLayer.
+   * Updates ambient Lycoris petals in backgroundLayer.
    */
   _updateAmbient(nowMs, combo = 0, activeTheme = null) {
-    if (activeTheme && activeTheme.id === 'sanhua') {
-      if (this.ambientContainer) this.ambientContainer.visible = false;
-      if (this.sanhuaContainer) {
-        this.sanhuaContainer.visible = true;
-        this._updateSanhuaSwarm(nowMs, combo);
-      }
-      return;
-    }
-
-    if (this.sanhuaContainer) this.sanhuaContainer.visible = false;
-
+    // Sanhua owns its sparse Canvas atmosphere; a GPU overlay would duplicate
+    // it above the notes and compromise gameplay hierarchy.
     if (!activeTheme || activeTheme.id !== 'phrolova') {
       if (this.ambientContainer) this.ambientContainer.visible = false;
       return;
@@ -843,54 +767,11 @@ export class PixiParticleSystem {
   }
 
   /**
-   * Updates Sanhua high-density WebGL snowflake and ice shard swarm (60 FPS locked).
-   * T5 Blood-Moon Shift instantly shifts particles into dark blood-red and crimson embers.
-   */
-  _updateSanhuaSwarm(nowMs, combo = 0) {
-    const gw = this.app?.screen?.width || 500;
-    const gh = this.app?.screen?.height || 800;
-    const isT5 = combo >= 800;
-
-    for (let i = 0; i < this.sanhuaSwarm.length; i++) {
-      const p = this.sanhuaSwarm[i];
-      p.y += p.speedY;
-      p.rot += p.rotSpeed;
-      const sway = Math.sin((nowMs + p.swayOffset) * p.swaySpeed) * 1.2;
-      p.x += (p.speedX + sway);
-
-      if (p.y > gh + 20 || p.x < -30) {
-        p.y = -20;
-        p.x = Math.random() * (gw + 120);
-      }
-
-      p.sprite.visible = true;
-      p.sprite.position.set(p.x, p.y);
-      p.sprite.rotation = p.rot;
-      p.sprite.scale.set(p.size);
-      p.sprite.alpha = p.baseAlpha;
-
-      // Dynamic tint adapting to active combo tier & T5 Blood-Moon shift
-      if (isT5) {
-        // T5 Blood-Moon: blood-red snowflakes & dark crimson blood-ice shards
-        p.sprite.tint = p.isSnow ? 0xff1744 : (i % 2 === 0 ? 0xdc2626 : 0x7f1d1d);
-      } else if (combo >= 400) {
-        p.sprite.tint = p.isSnow ? 0xe0e7ff : (i % 2 === 0 ? 0xa855f7 : 0x38bdf8);
-      } else if (combo >= 200) {
-        p.sprite.tint = p.isSnow ? 0xffffff : (i % 2 === 0 ? 0x38bdf8 : 0xf59e0b);
-      } else if (combo >= 100) {
-        p.sprite.tint = p.isSnow ? 0xffffff : (i % 2 === 0 ? 0xf472b6 : 0x38bdf8);
-      } else {
-        p.sprite.tint = p.isSnow ? 0xffffff : (i % 2 === 0 ? 0x38bdf8 : 0xbae6fd);
-      }
-    }
-  }
-
-  /**
    * Resets all visual effects and returns all objects to pool.
    */
   destroy() {
     this.reset();
-    for (const container of [this.particlesContainer, this.hitsContainer, this.ambientContainer, this.sanhuaContainer]) {
+    for (const container of [this.particlesContainer, this.hitsContainer, this.ambientContainer]) {
       if (container) container.destroy({ children: true });
     }
     for (const key of Object.keys(this.textures)) {
@@ -900,8 +781,7 @@ export class PixiParticleSystem {
     this.particlePool = [];
     this.hitPool = [];
     this.ambientPool = [];
-    this.sanhuaSwarm = [];
-    this.particlesContainer = this.hitsContainer = this.ambientContainer = this.sanhuaContainer = null;
+    this.particlesContainer = this.hitsContainer = this.ambientContainer = null;
     this.effectsLayer = this.backgroundLayer = this.app = this.PIXI = null;
     this.isReady = false;
   }
@@ -920,10 +800,6 @@ export class PixiParticleSystem {
         hit.active = false;
         if (hit.container) hit.container.visible = false;
       }
-    }
-    for (let i = 0; i < this.sanhuaSwarm.length; i++) {
-      const p = this.sanhuaSwarm[i];
-      if (p && p.sprite) p.sprite.visible = false;
     }
     this.particleIndex = 0;
     this.hitIndex = 0;

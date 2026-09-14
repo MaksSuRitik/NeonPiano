@@ -1,217 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Sanhua Pixi Redesign — Shattered Glass Notes & Donghua Crescent Hold Notes</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 16px;
-      background: #020617;
-      color: #f8fafc;
-      font-family: system-ui, -apple-system, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h1 {
-      margin: 0 0 4px;
-      font-size: 20px;
-      color: #38bdf8;
-      text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
-    }
-    .subtitle {
-      margin: 0 0 14px;
-      font-size: 13px;
-      color: #94a3b8;
-      text-align: center;
-      max-width: 800px;
-    }
-    .grid {
-      display: flex;
-      flex-direction: row;
-      gap: 16px;
-      justify-content: center;
-    }
-    .panel {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .panel h2 {
-      margin: 0 0 6px;
-      font-size: 14px;
-      letter-spacing: 0.5px;
-    }
-    .canvas-container {
-      position: relative;
-      border: 2px solid rgba(56, 189, 248, 0.4);
-      border-radius: 10px;
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
-      background: #08172e;
-      overflow: hidden;
-    }
-    .t5-container {
-      border-color: rgba(255, 23, 68, 0.5);
-      box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);
-      background: #140306;
-    }
-    canvas {
-      display: block;
-    }
-  </style>
-</head>
-<body>
-  <h1>Sanhua Theme — Pixi.js WebGL Architecture Verification</h1>
-  <div class="subtitle">
-    1. Miniature Hiyuki Energy Slash Tap Notes &nbsp;|&nbsp; 
-    2. Full-Width Flowing Hiyuki Energy Hold Body & Blade Slash Tip &nbsp;|&nbsp; 
-    3. Crystalline Ice Tree & Giant Moon &nbsp;|&nbsp; 
-    4. T5 Blood-Moon Shift (800+ Combo)
-  </div>
-
-  <div class="grid">
-    <div class="panel">
-      <h2 style="color: #38bdf8;">CELESTIAL ICE REALM (T0–T4: Combo 0–799)</h2>
-      <div class="canvas-container">
-        <canvas id="cv-normal" width="460" height="660"></canvas>
-      </div>
-    </div>
-    <div class="panel">
-      <h2 style="color: #ff1744;">T5 BLOOD-MOON SHIFT (800+ COMBO)</h2>
-      <div class="canvas-container t5-container">
-        <canvas id="cv-t5" width="460" height="660"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    import { SANHUA_THEME } from './src/game/themes/sanhua.js?v=92.0';
-    window.SANHUA_THEME = SANHUA_THEME;
-
-    const cvNormal = document.getElementById('cv-normal');
-    const ctxNormal = cvNormal.getContext('2d');
-    const cvT5 = document.getElementById('cv-t5');
-    const ctxT5 = cvT5.getContext('2d');
-
-    const W = 460;
-    const H = 660;
-    const numLanes = 4;
-    const laneW = W / numLanes;
-    const recY = 530;
-    const recH = 46;
-
-    const normalTiers = [
-      { combo: 0,   name: 'T0 Silver',    col: '#aacbdd' },
-      { combo: 75,  name: 'T1 Cyan',      col: '#60c7e8' },
-      { combo: 150, name: 'T2 Azure',     col: '#438ec5' },
-      { combo: 500, name: 'T4 Amethyst',  col: '#a998d8' }
-    ];
-
-    const t5Tiers = [
-      { combo: 800,  name: 'T5 (800)',  col: '#ff1744' },
-      { combo: 950,  name: 'T5 (950)',  col: '#ff1744' },
-      { combo: 1200, name: 'T5 (1200)', col: '#ff1744' },
-      { combo: 1500, name: 'T5 (1500)', col: '#ff1744' }
-    ];
-
-    const stateNormal = { gameWidth: W, gameHeight: H, bgPulse: 0, combo: 200 };
-    const stateT5 = { gameWidth: W, gameHeight: H, bgPulse: 0, combo: 888 };
-
-    window.__LOGS__ = [];
-
-    function renderView(ctx, isT5, tiersList, now) {
-      ctx.fillStyle = isT5 ? '#140306' : '#071628';
-      ctx.fillRect(0, 0, W, H);
-
-      const st = isT5 ? stateT5 : stateNormal;
-      st.bgPulse = Math.sin(now * 0.003) * 0.2 + 0.2;
-
-      // Atmosphere: WebGL / Canvas fallback Ice Tree, Moon & Blizzard
-      SANHUA_THEME.updateAndDrawAtmosphere(ctx, now, 1.0, 0, st);
-
-      // Lane dividers
-      for (let i = 0; i <= numLanes; i++) {
-        const lx = Math.round(i * laneW);
-        ctx.strokeStyle = isT5 ? 'rgba(255, 23, 68, 0.25)' : 'rgba(56, 189, 248, 0.25)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(lx, 0); ctx.lineTo(lx, H);
-        ctx.stroke();
-      }
-
-      // 4 Horizontal Hit Strings
-      const strColors = SANHUA_THEME.getStringColors(st.combo);
-      const strYs = [-9, -3, 3, 9];
-      const hitCenterY = recY + recH / 2;
-      for (let s = 0; s < 4; s++) {
-        ctx.strokeStyle = strColors[s] || '#ffffff';
-        ctx.lineWidth = 1.4 + s * 0.4;
-        ctx.beginPath();
-        ctx.moveTo(0, hitCenterY + strYs[s]);
-        ctx.lineTo(W, hitCenterY + strYs[s]);
-        ctx.stroke();
-      }
-
-      // Notes & Receptors per lane
-      for (let i = 0; i < numLanes; i++) {
-        const rx = Math.round(i * laneW + 8);
-        const rw = Math.round(laneW - 16);
-        const t = tiersList[i];
-
-        // 1. Shattered Glass Tap Note (Top preview)
-        SANHUA_THEME.bakeTapNote(ctx, rx, 35, rw, recH, false, t.combo);
-
-        // 2. Receptor
-        window.GameState = { combo: t.combo };
-        SANHUA_THEME.drawReceptor(ctx, rx, recY, rw, recH, true, false);
-
-        // Tier text
-        ctx.fillStyle = t.col;
-        ctx.font = 'bold 11px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(t.name, rx + rw / 2, recY - 14);
-
-        // 3. Donghua Hold Note: Flowing Qi tail with crescent moon cutout cap
-        const headY = recY;
-        const tailY = 120 + (i % 2) * 45;
-        const tile = { hit: true, holding: true, failed: false };
-
-        SANHUA_THEME.drawHoldBody(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY, false);
-        SANHUA_THEME.drawHoldTail(ctx, rx, tailY, rw, recH, tile, false, now, headY - tailY, t.combo, headY);
-        SANHUA_THEME.drawNeck(ctx, rx, headY, rw, recH, tile, false, t.combo);
-      }
-    }
-
-    function render(now = 0) {
-      try {
-        renderView(ctxNormal, false, normalTiers, now);
-        renderView(ctxT5, true, t5Tiers, now);
-        window.__LOGS__.push('render_success');
-      } catch (e) {
-        window.__LOGS__.push('ERROR: ' + e.toString() + ' | ' + e.stack);
-      }
-    }
-
-    function start() {
-      let count = 0;
-      function loop() {
-        render(1600 + count * 16);
-        count++;
-        if (count < 25) {
-          requestAnimationFrame(loop);
-        } else {
-          window.__READY__ = true;
-        }
-      }
-      requestAnimationFrame(loop);
-    }
-
-    if (document.readyState === 'complete') {
-      start();
-    } else {
-      window.addEventListener('load', start);
-    }
-  </script>
-</body>
-</html>
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hiyuki — Moonlit Crystal / Visual Review</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070b13;color:#bac7d6;font:14px system-ui}main{max-width:1150px;margin:28px auto;padding:0 24px}h1{font-size:26px;font-weight:500;color:#edf1f7;margin:8px 0}p{line-height:1.6;color:#8393aa}small{letter-spacing:3px;font-size:10px}header{margin-bottom:22px}nav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0}button,select{background:#131e2e;color:#d5deec;border:1px solid #344156;padding:10px 14px;border-radius:5px;cursor:pointer}label{display:flex;align-items:center;gap:8px}.views{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}canvas{width:min(100%,500px);height:auto;border:1px solid #28354a;border-radius:8px;background:#070d1a}aside{flex:1;min-width:260px}#palette{width:100%}#metrics{font:12px monospace;white-space:pre-wrap;color:#a6bacd}a{color:#bacce4}</style>
+<main><header><small>NEON PIANO / THEME STUDY</small><h1>Hiyuki · Moonlit crystal</h1><p>Silver ice, a monumental tree and a quiet celestial sky. At 800 combo, the moon eclipses into obsidian and crimson.</p></header>
+<nav><label>Combo palette <select id="combo"><option value="0">0 · Frozen silver</option><option value="50">50 · Cyan</option><option value="100">100 · Azure</option><option value="200">200 · Cold violet</option><option value="400">400 · Lunar amethyst</option><option value="800">800 · Blood eclipse</option></select></label><button id="motion">Play motion</button><button id="eclipse">Cross 800 combo</button><label><input id="environment" type="checkbox">Environment only</label><button id="bench">Validate & measure</button></nav>
+<div class="views"><canvas id="scene" width="500" height="720" aria-label="Live Hiyuki theme scene"></canvas><aside><small>MATERIAL PROGRESSION</small><p>Tap notes and broad holds share one color family. The ruby is a small focal accent. All six tiers shown below.</p><canvas id="palette" width="540" height="450" aria-label="Six combo materials"></canvas><p>The large scene uses the game's 210 px note height and 89% hit position. Motion here is a visual fixture; <a href="/">open the game</a> for the actual theme trial.</p><pre id="metrics">Ready for review.</pre></aside></div></main>
+<script type="module">
+import {SANHUA_THEME as S} from './src/game/themes/sanhua.js?v=95.0';
+const c=document.querySelector('#scene'),ctx=c.getContext('2d'),p=document.querySelector('#palette'),pc=p.getContext('2d');
+const control=document.querySelector('#combo'),only=document.querySelector('#environment'),out=document.querySelector('#metrics');
+const state={gameWidth:500,gameHeight:720,combo:0};window.GameState=state;
+let moving=false,t=1600,last=0,transitionUntil=0;
+const tile={hit:true,holding:true};
+function render(now){
+ S.updateAndDrawAtmosphere(ctx,now,1,0,state);
+ if(only.checked)return;
+ const colors=S.getStringColors(state.combo),hitY=720*.89;
+ ctx.strokeStyle='rgba(141,165,194,.12)';ctx.lineWidth=1;
+ for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(i*125,0);ctx.lineTo(i*125,720);ctx.stroke()}
+ for(let i=0;i<4;i++)S.drawReceptor(ctx,i*125+5,hitY-13,115,26,i===1,false);
+ for(let i=0;i<4;i++){ctx.strokeStyle=colors[i];ctx.lineWidth=1.4+i*.45;ctx.beginPath();ctx.moveTo(0,hitY-9+i*6);ctx.lineTo(500,hitY-9+i*6);ctx.stroke()}
+ const offset=moving?((now-1600)*.17)%480:0;
+ S.bakeTapNote(ctx,6,70+offset,113,210,false,state.combo);
+ S.bakeTapNote(ctx,381,-150+offset,113,210,false,state.combo);
+ const top=70+(moving?offset*.35:0),bottom=hitY-210;
+ S.drawHoldBody(ctx,131,top,113,210,tile,false,now,bottom-top,state.combo,bottom);
+ S.drawNeck(ctx,131,bottom,113,210,tile,false,state.combo);
+ ctx.fillStyle='#718197';ctx.font='12px system-ui';ctx.textAlign='center';
+ for(let i=0;i<4;i++)ctx.fillText(['S','D','J','K'][i],i*125+62.5,690);
+}
+function palette(){pc.fillStyle='#0b121f';pc.fillRect(0,0,540,450);[0,50,100,200,400,800].forEach((combo,i)=>{
+ const x=i*90+8;pc.fillStyle='#92a3b9';pc.font='11px system-ui';pc.fillText(String(combo),x+24,22);
+ S.bakeTapNote(pc,x,42,74,110,false,combo);S.drawHoldBody(pc,x,185,74,44,tile,false,t,200,combo,385);S.drawNeck(pc,x,385,74,44,tile,false,combo);
+})}
+control.onchange=()=>{state.combo=+control.value;transitionUntil=t+2400;render(t)};
+only.onchange=()=>render(t);
+document.querySelector('#motion').onclick=e=>{moving=!moving;e.target.textContent=moving?'Pause motion':'Play motion'};
+document.querySelector('#eclipse').onclick=()=>{state.combo=400;S.updateAndDrawAtmosphere(ctx,t,1,0,state);state.combo=800;control.value='800';transitionUntil=t+2400};
+window.addEventListener('error',e=>out.textContent='ERROR: '+e.message);
+function loop(now){const dt=last?Math.min(40,now-last):0;last=now;if(moving||t<transitionUntil){t+=dt;render(t)}requestAnimationFrame(loop)}
+document.querySelector('#bench').onclick=()=>{
+ const samples=[];const saved=state.combo;
+ for(let i=0;i<180;i++){state.combo=[0,50,100,200,400,800][i%6];const start=performance.now();render(t+i*16.67);samples.push(performance.now()-start)}
+ samples.sort((a,b)=>a-b);state.combo=saved;render(t);
+ const scratch=document.createElement('canvas');scratch.width=100;scratch.height=900;const g=scratch.getContext('2d');let good=true,minAlpha=255;
+ for(const combo of [0,50,100,200,400,800]){
+  g.clearRect(0,0,100,900);S.drawHoldBody(g,5,0,90,44,tile,false,0,800,combo,800);
+  minAlpha=Math.min(minAlpha,g.getImageData(50,1,1,1).data[3]);
+  g.globalAlpha=.37;g.globalCompositeOperation='source-over';
+  S.drawHoldBody(g,5,0,90,44,tile,false,0,1,combo,1);
+  S.drawReceptor(g,5,820,90,26,true,false);S.bakeTapNote(g,5,0,90,44,false,combo);
+  good&&=g.globalAlpha===.37&&g.globalCompositeOperation==='source-over';g.globalAlpha=1;
+ }
+ out.textContent=`Six tiers checked\nCanvas alpha/composite preserved: ${good}\nFree-end center opacity ≥ ${(minAlpha/255*100).toFixed(0)}%\nScene CPU submission: median ${samples[90].toFixed(2)} ms / p95 ${samples[171].toFixed(2)} ms\nDesktop browser measurement; GPU/device timing varies.`;
+};
+palette();render(t);requestAnimationFrame(loop);
+</script></html>
