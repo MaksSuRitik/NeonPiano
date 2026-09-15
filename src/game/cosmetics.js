@@ -854,7 +854,7 @@ export function readCosmeticsHistory(songs = []) {
     const diffs = Array.isArray(data.completedDifficulties) ? data.completedDifficulties : [];
     const hardcore = data.hardcoreCompleted;
     const victory = hardcore || ['easy', 'normal', 'hard'].includes(data.difficulty) || diffs.some(d => ['easy', 'normal', 'hard'].includes(d));
-    const hard = data.difficulty === 'hard' || diffs.includes('hard');
+    const hard = data.difficulty === 'hard' || diffs.includes('hard') || (data.legacyDifficulty === 'hardcore' && !diffs.includes('easy') && !diffs.includes('normal'));
     const types = Array.isArray(data.starTypes) ? data.starTypes : [];
     const gold = types.length ? types.filter(t => t === 1).length : number(data.stars);
     totals.totalGoldStars += gold;

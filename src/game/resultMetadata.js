@@ -12,7 +12,7 @@ export function normalizeResultMetadata(record = {}) {
     : legacy && Number.isFinite(record.speed) && record.speed > 0 ? difficultyFromSpeed(record.speed) : '';
   const isHardcore = record.isHardcore === true || legacy;
   const hardcoreCompleted = record.hardcoreCompleted === true || isHardcore || completed.includes('hardcore');
-  const isHard = difficulty === 'hard' || completed.filter(valid).includes('hard');
+  const isHard = difficulty === 'hard' || completed.filter(valid).includes('hard') || (legacy && !completed.includes('easy') && !completed.includes('normal'));
   return {
     ...record,
     ...(legacy ? { legacyDifficulty: 'hardcore' } : {}),
