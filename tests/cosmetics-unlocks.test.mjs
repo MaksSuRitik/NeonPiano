@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { filterAdminLevels } from '../src/ui/adminLevelSearch.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FRAMES, TITLES, checkCosmeticsUnlocks, checkRetroactiveCosmeticsUnlocks, getLocalCosmetics, resetLocalCosmetics } from '../src/game/cosmetics.js';
+import { FRAMES, TITLES, checkCosmeticsUnlocks, checkRetroactiveCosmeticsUnlocks, getLocalCosmetics, resetLocalCosmetics, recordCosmeticsMatch, getCosmeticsProgress, mergeCosmeticsProgress, seedCosmeticsProgress } from '../src/game/cosmetics.js';
 import ru from '../src/i18n/ru.js';
 import ua from '../src/i18n/ua.js';
 import en from '../src/i18n/en.js';
@@ -103,118 +105,169 @@ test('i18n dictionaries across RU, UA, and EN have all translation keys for all 
   }
 });
 
-test('checkCosmeticsUnlocks unlocks title_one_with_phonk and frame_street_drift on Phonk + Hardcore victory', () => {
-  resetLocalCosmetics();
-  const notifications = [];
-  const mockShowNotification = (msg) => notifications.push(msg);
-  const mockGetText = (key) => ru[key] || key;
 
-  const unlocked = checkCosmeticsUnlocks({
-    playedSong: true,
-    victory: true,
-    isHardcore: true,
-    isPhonk: true,
-    score: 120000,
-    maxCombo: 300,
-    starsEarned: 3
-  }, mockGetText, mockShowNotification);
+test.beforeEach(() => localStorage.clear());
+const run = (ctx) => checkCosmeticsUnlocks({ playedAt: new Date(2026, 0, 1, 12).getTime(), ...ctx });
+const won = { victory: true, totalMisses: 0, track: { isPhonk: true }, isHardcore: true };
 
-  assert.ok(unlocked.includes('title_one_with_phonk'), 'Must unlock title_one_with_phonk');
-  assert.ok(unlocked.includes('frame_street_drift'), 'Must unlock frame_street_drift');
-
-  const cosmetics = getLocalCosmetics();
-  assert.ok(cosmetics.unlockedTitles.includes('title_one_with_phonk'));
-  assert.ok(cosmetics.unlockedFrames.includes('frame_street_drift'));
+test('unique stable IDs and exactly 7 physical frames / 16 new titles', () => {
+  assert.equal(new Set(FRAMES.map(x => x.id)).size, 14);
+  assert.equal(new Set(TITLES.map(x => x.id)).size, 25);
+  assert.ok(!TITLES.some(x => x.id.includes('grandmaster')));
 });
 
-test('checkRetroactiveCosmeticsUnlocks awards titles and frames based on existing progress in localStorage', () => {
-  resetLocalCosmetics();
-  // Simulate an experienced player's stored progress in localStorage:
-  // 1. Total pure playtime: 20,000 seconds (> 5 hours / 18,000s)
-  localStorage.setItem('neon_total_playtime', '20000');
-
-  // 2. 16 completed tracks, including 3 diamond stars, 64 total stars, and a Phonk hardcore completion
-  const songsList = [
-    { title: 'Phonk Killer', isPhonk: true },
-    { title: 'Midnight City', isPhonk: false }
+test('strict live conditions and their negative boundaries', () => {
+  const cases = [
+    ['title_one_with_phonk', won, {...won, track: {isPhonk: false}, isPhonk: true}],
+    ['frame_street_drift', won, {...won, victory: false}],
+    ['frame_cyber_alloy', {victory: true, speed: 1.4}, {completedLevelsCount: 15, speed: 1.399, victory: true}],
+    ['frame_cyber_alloy', {hardCompletedLevelsCount: 15}, {hardCompletedLevelsCount: 14}],
+    ['frame_baroque_gold', {totalGoldStars: 50}, {totalStarsInGame: 50, totalGoldStars: 49}],
+    ['frame_baroque_gold', {globalRank: 3}, {globalRank: 4}],
+    ['frame_gothic_thorn', {hardcoreVictoryCount: 10}, {hardcoreVictoryCount: 9}],
+    ['frame_gothic_thorn', {...won, isSecret: true}, {...won, isSecret: false}],
+    ['frame_frostbound', {themeId: 'sanhua', maxCombo: 700}, {themeId: 'classic', maxCombo: 900}],
+    ['frame_sakura_urushi', {...won, accuracy: 100}, {...won, accuracy: 99.9}],
+    ['title_night_drift_king', {...won, speed: 1.3, holdsDropped: 0}, {...won, speed: 1.299, holdsDropped: 0}],
+    ['title_night_drift_king', {...won, speed: 1.3, holdsDropped: 0}, {...won, speed: 1.3}],
+    ['title_808_impulse', {track: {isPhonk: true}, maxCombo: 600}, {track: {title: 'Phonk'}, maxCombo: 900}],
+    ['title_surgical_precision', {...won, perfectHits: 19, totalJudgedNotes: 20}, {...won, perfectHits: 9499, totalJudgedNotes: 10000}],
+    ['title_surgical_precision', {...won, perfectHits: 95, totalJudgedNotes: 100}, {victory: false, perfectHits: 100, totalJudgedNotes: 100}],
+    ['title_blade_dancer', {...won, enteredCriticalDanger: true}, {...won, survivedCritical: true}],
+    ['title_supersonic', {...won, difficulty: 'hard', speed: 1.4}, {...won, difficulty: 'hard', speed: 1.399}],
+    ['title_absolute_ear', {diamondTracksCount: 3}, {diamondsEarned: 3, diamondTracksCount: 1}],
+    ['title_blood_moon', {themeId: 'sanhua', maxCombo: 800}, {themeId: 'hiyuki', maxCombo: 800}],
+    ['title_crystal_heart', {...won, themeId: 'sanhua', totalHolds: 3, completedHolds: 3}, {...won, themeId: 'sanhua', totalHolds: 3, holdsDropped: 0}],
+    ['title_synth_pulse', {completedLevelsCount: 25}, {completedLevelsCount: 24}],
+    ['title_one_sec_away', {victory: false, songProgress: .95}, {victory: false, songProgress: .9499}],
+    ['title_lucky_777', {hitCombo777: true, maxCombo: 800}, {maxCombo: 778, score: 777, perfectHits: 777}],
+    ['title_iron_patience', {totalPlaytimeSeconds: 18000}, {totalPlaytimeSeconds: 17999}],
+    ['frame_steampunk_chrono', {totalPlaytimeSeconds: 18000}, {totalPlaytimeSeconds: 17999}],
   ];
+  for (const [id, positive, negative] of cases) {
+    localStorage.clear();
+    assert.ok(!run(negative).includes(id), `${id} negative`);
+    localStorage.clear();
+    assert.ok(run(positive).includes(id), `${id} positive`);
+  }
+  localStorage.clear();
+  assert.ok(!run({...won, perfectHits: 0, totalJudgedNotes: 0}).includes('title_surgical_precision'));
+});
 
-  // Set 16 song progress records
-  for (let i = 1; i <= 16; i++) {
-    const isDiamond = i <= 3;
-    const isHardcore = i === 1; // Song 1 is Phonk on Hardcore
-    const title = i === 1 ? 'Phonk Killer' : `Track_${i}`;
-    localStorage.setItem(`neon_rhythm_${title}`, JSON.stringify({
-      score: 100000,
-      stars: 4, // 16 * 4 = 64 total stars (> 50)
-      starTypes: isDiamond ? [2, 2, 2, 2, 0] : [1, 1, 1, 1, 0],
-      isHardcore: isHardcore,
-      completedDifficulties: isHardcore ? ['hard', 'hardcore'] : ['normal']
+test('Highway Ghost uses local run time across midnight and requires victory plus gold', () => {
+  for (const hour of [23, 0, 3, 4, 22]) {
+    localStorage.clear();
+    const ctx = {...won, goldStarsEarned: 3, playedAt: new Date(2026, 0, 1, hour).getTime()};
+    assert.equal(run(ctx).includes('title_highway_ghost'), hour >= 23 || hour < 4);
+    localStorage.clear();
+    assert.ok(!run({...ctx, victory: false}).includes('title_highway_ghost'));
+  }
+});
+
+test('match counters persist; evaluation alone never increments; streak resets on loss or miss', () => {
+  const ctx = {...won, difficulty: 'hard', playedAt: new Date(2026, 0, 1, 4, 59).getTime()};
+  for (let i = 0; i < 3; i++) recordCosmeticsMatch(ctx);
+  assert.ok(run({}).includes('title_flawless_streak'));
+  assert.ok(getLocalCosmetics().unlockedTitles.includes('title_neon_insomnia'));
+  const before = getCosmeticsProgress();
+  run(ctx); run(ctx); checkRetroactiveCosmeticsUnlocks();
+  assert.deepEqual(getCosmeticsProgress(), before);
+  recordCosmeticsMatch({...ctx, victory: false, playedAt: new Date(2026, 0, 1, 5).getTime()});
+  assert.equal(getCosmeticsProgress().neonInsomniaMatches, 3);
+  assert.equal(getCosmeticsProgress().flawlessVictoryStreak, 0);
+  recordCosmeticsMatch(ctx);
+  recordCosmeticsMatch({...ctx, totalMisses: 1});
+  assert.equal(getCosmeticsProgress().flawlessVictoryStreak, 0);
+});
+
+test('retroactive evidence, distinct diamonds, exact metadata and idempotent notifications', () => {
+  localStorage.setItem('neon_total_playtime', '20000');
+  const songs = [{title: 'Bass', isPhonk: true}];
+  for (let i = 0; i < 25; i++) {
+    localStorage.setItem('neon_rhythm_' + (i ? `Track ${i}` : 'Bass'), JSON.stringify({
+      score: 100, stars: 3, starTypes: i < 3 ? [2,2,2] : [1,1,1],
+      completedDifficulties: ['hard'], isHardcore: i === 0, maxCombo: i === 0 ? 650 : 0
     }));
   }
-
   const notifications = [];
-  const unlocked = checkRetroactiveCosmeticsUnlocks(songsList, (k) => ru[k] || k, (m) => notifications.push(m));
-
-  // Should have retroactively unlocked:
-  // - frame_cyber_alloy (15+ completed levels)
-  // - frame_baroque_gold (50+ stars)
-  // - frame_street_drift (Phonk hardcore win)
-  // - frame_steampunk_chrono (5+ hours playtime)
-  // - frame_prismatic (diamond star)
-  // - title_one_with_phonk (Phonk hardcore win)
-  // - title_absolute_ear (3+ diamond stars)
-  // - title_star_collector (20+ stars)
-  // - title_iron_patience (5+ hours playtime)
-  assert.ok(unlocked.includes('frame_cyber_alloy'), 'Retroactively unlocks cyber alloy frame');
-  assert.ok(unlocked.includes('frame_baroque_gold'), 'Retroactively unlocks baroque gold frame');
-  assert.ok(unlocked.includes('frame_street_drift'), 'Retroactively unlocks street drift frame');
-  assert.ok(unlocked.includes('frame_steampunk_chrono'), 'Retroactively unlocks steampunk chrono frame');
-  assert.ok(unlocked.includes('title_one_with_phonk'), 'Retroactively unlocks One with Phonk title');
-  assert.ok(unlocked.includes('title_absolute_ear'), 'Retroactively unlocks Absolute Ear title');
-  assert.ok(unlocked.includes('title_star_collector'), 'Retroactively unlocks Star Collector title');
-  assert.ok(unlocked.includes('title_iron_patience'), 'Retroactively unlocks Iron Patience title');
-
-  // Verify cosmetics state
-  const cosm = getLocalCosmetics();
-  assert.ok(cosm.unlockedFrames.includes('frame_cyber_alloy'));
-  assert.ok(cosm.unlockedFrames.includes('frame_baroque_gold'));
-  assert.ok(cosm.unlockedFrames.includes('frame_street_drift'));
-  assert.ok(cosm.unlockedFrames.includes('frame_steampunk_chrono'));
-  assert.ok(cosm.unlockedTitles.includes('title_one_with_phonk'));
-  assert.ok(cosm.unlockedTitles.includes('title_absolute_ear'));
-  assert.ok(cosm.unlockedTitles.includes('title_star_collector'));
-  assert.ok(cosm.unlockedTitles.includes('title_iron_patience'));
-
-  // Ensure equipped selections are never clobbered
-  assert.equal(cosm.selectedFrame, 'frame_none');
-  assert.equal(cosm.selectedTitle, 'title_novice');
+  const delta = checkRetroactiveCosmeticsUnlocks(songs, k => en[k], text => notifications.push(text));
+  for (const id of ['title_one_with_phonk','frame_street_drift','title_absolute_ear','title_synth_pulse','title_iron_patience','frame_steampunk_chrono','title_808_impulse','frame_cyber_alloy','frame_baroque_gold']) assert.ok(delta.includes(id), id);
+  const count = notifications.length;
+  assert.deepEqual(checkRetroactiveCosmeticsUnlocks(songs, k => en[k], text => notifications.push(text)), []);
+  assert.equal(notifications.length, count);
+  for (const id of ['title_lucky_777','title_blade_dancer','title_night_drift_king','title_one_sec_away','title_surgical_precision','title_blood_moon']) assert.ok(!delta.includes(id), id);
 });
 
-test('Admin level search filter function correctly filters tracks by title or artist', () => {
-  const songsDB = [
-    { title: 'Tokyo Drift Phonk', artist: 'Ghostface Playa' },
-    { title: 'Moonlight Sonata', artist: 'Beethoven' },
-    { title: 'Neon Blade', artist: 'MoonDeity' },
-    { title: 'Gurenge', artist: 'LiSA' },
-    { title: 'Metamorphosis', artist: 'INTERWORLD' }
-  ];
+test('partial scores, Phonk names, malformed values and missing historical fields prove nothing', () => {
+  for (let i = 0; i < 25; i++) localStorage.setItem('neon_rhythm_Phonk '+i, JSON.stringify({score: 500, stars: 0}));
+  localStorage.setItem('neon_rhythm_Phonk', JSON.stringify({isHardcore: true, maxCombo: 800}));
+  localStorage.setItem('neon_rhythm_broken', '{');
+  const delta = checkRetroactiveCosmeticsUnlocks([{title: 'Phonk', genre: 'phonk', isPhonk: false}]);
+  assert.ok(!delta.includes('title_one_with_phonk'));
+  assert.ok(!delta.includes('title_synth_pulse'));
+  assert.ok(!delta.includes('frame_cyber_alloy'));
+  assert.ok(!delta.includes('title_night_pianist'));
+  localStorage.setItem('neon_cosmetics_progress', 'null');
+  assert.equal(getCosmeticsProgress().completedLevelsCount, 0);
+  mergeCosmeticsProgress(null);
+  mergeCosmeticsProgress({completedLevelsCount: 'invalid'});
+  assert.equal(getCosmeticsProgress().completedLevelsCount, 0);
+});
 
-  function filterLevels(query) {
-    const q = (query || '').toLowerCase().trim();
-    return songsDB.filter(song => {
-      if (!song || !song.title) return false;
-      if (!q) return true;
-      const titleMatch = (song.title || '').toLowerCase().includes(q);
-      const artistMatch = (song.artist || '').toLowerCase().includes(q);
-      return titleMatch || artistMatch;
-    });
+test('historical baseline counts once; newer zero streak replaces older positive streak', () => {
+  localStorage.setItem('neon_rhythm_A', JSON.stringify({completedDifficulties: ['hard']}));
+  seedCosmeticsProgress();
+  assert.equal(getCosmeticsProgress().completedLevelsCount, 1);
+  recordCosmeticsMatch(won);
+  seedCosmeticsProgress();
+  assert.equal(getCosmeticsProgress().completedLevelsCount, 2);
+  mergeCosmeticsProgress({flawlessVictoryStreak: 0, updatedAt: Date.now() + 1000});
+  assert.equal(getCosmeticsProgress().flawlessVictoryStreak, 0);
+});
+
+test('admin search uses production filter for titles, artists, normalized whitespace and no results', () => {
+  const songs = Object.freeze([
+    {artist: 'MoonDeity', title: 'Neon Blade'},
+    {artist: 'Kordhell', title: 'Murder In My Mind'},
+    {artist: 'Unknown', title: 'Piano Song'}
+  ]);
+  for (const [query, title] of [['moon','Neon Blade'], ['kord','Murder In My Mind'], ['piano','Piano Song'], ['  MURDER   in  ', 'Murder In My Mind']]) {
+    assert.deepEqual(filterAdminLevels(songs, query).map(s => s.title), [title]);
   }
+  assert.equal(filterAdminLevels(songs, '').length, 3);
+  assert.equal(filterAdminLevels(songs, 'not found').length, 0);
+});
 
-  assert.equal(filterLevels('').length, 5);
-  assert.equal(filterLevels('phonk').length, 1);
-  assert.equal(filterLevels('phonk')[0].title, 'Tokyo Drift Phonk');
-  assert.equal(filterLevels('moon').length, 2); // Moonlight Sonata + MoonDeity (artist)
-  assert.equal(filterLevels('lisa').length, 1);
-  assert.equal(filterLevels('unknown_query_xyz').length, 0);
+test('legacy match history proves combos and night plays, but not victories or exact 777', () => {
+  const history = Array.from({length: 3}, (_, i) => ({id: String(i), trackTitle: 'Bass', maxCombo: 800,
+    perfectCount: 110, playedAt: new Date(2026, 0, 1 + i, 4, 59).toISOString()}));
+  const delta = checkRetroactiveCosmeticsUnlocks([{title: 'Bass', isPhonk: true}], null, null, [...history, history[0]]);
+  for (const id of ['title_808_impulse','title_neon_insomnia','title_steel_fingers','title_night_pianist']) assert.ok(delta.includes(id), id);
+  for (const id of ['title_lucky_777','title_surgical_precision','title_highway_ghost','title_one_with_phonk']) assert.ok(!delta.includes(id), id);
+  assert.deepEqual(checkRetroactiveCosmeticsUnlocks([{title: 'Bass', isPhonk: true}], null, null, history), []);
+});
+
+
+test('production admin renderer preserves selection, selects first match, and disables empty option', () => {
+  const source = readFileSync(new URL('../src/danceCore.js', import.meta.url), 'utf8');
+  const start = source.indexOf('        function renderAdminLevelOptions(');
+  const end = source.indexOf('        if (adminLevelSearch)', start);
+  const select = {
+    options: [], selectedIndex: 0,
+    set innerHTML(value) { this.options = []; this.selectedIndex = 0; },
+    get value() { return this.options[this.selectedIndex]?.value || ''; },
+    set value(value) { this.selectedIndex = this.options.findIndex(o => o.value === value); },
+    appendChild(option) { this.options.push(option); }
+  };
+  const songs = [{title: 'Neon Blade', artist: 'MoonDeity'}, {title: 'Piano Song', artist: 'Unknown'}];
+  const render = new Function('adminSelectLevel', 'songsDB', 'filterAdminLevels', 'getText', 'document',
+    source.slice(start, end) + '; return renderAdminLevelOptions;')(select, songs, filterAdminLevels, k => en[k], {createElement: () => ({})});
+  render(); select.value = 'Piano Song'; render('piano');
+  assert.equal(select.value, 'Piano Song');
+  render('moon'); assert.equal(select.value, 'Neon Blade');
+  render('missing'); assert.equal(select.value, '');
+  assert.equal(select.options.length, 1);
+  assert.equal(select.options[0].disabled, true);
+  assert.equal(select.options[0].textContent, 'No tracks found');
+  render(); assert.equal(select.options.length, 2);
 });

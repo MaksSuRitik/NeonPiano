@@ -46,7 +46,7 @@ if (typeof OffscreenCanvasRenderingContext2D !== 'undefined' &&
 
 // Імпорт модулів Firebase та локальних сервісів
 import {
-    db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp
+    db, collection, addDoc, getDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, setDoc, serverTimestamp, arrayUnion
 } from "./config/firebase.js";
 import { saveAudioToIndexedDB, getAudioFromIndexedDB, deleteAudioFromIndexedDB } from "./services/localAudioStorage.js";
 import { addTrackByUrl, uploadTrack, updateTrackAdmin, calculateAudioDuration, deleteTrack, deletePlayerAdmin, updatePlayerNameAdmin, getAllTracks, requireAdmin, calculateAudioDurationFromUrl, fetchSpotifyTrackMetadata, fetchYouTubeTrackMetadata, fetchMusicTrackMetadata, findDuplicateTrack, calculateFileHash, getThemeSettings, saveThemeSettings } from "./services/admin.js?v=77.0";
@@ -120,6 +120,8 @@ const PALETTES = {
 
 import { i18n } from "./i18n/index.js?v=39.0";
 import { icons } from "./ui/icons.js?v=39.0";
+import { getUserStats } from "./services/stats.js";
+import { filterAdminLevels } from "./ui/adminLevelSearch.js";
 import * as Cosmetics from "./game/cosmetics.js?v=59.0";
 import { loadUserFriends, getCachedFriends, getCachedIncomingRequests, getCachedOutgoingRequests, isFriend, hasOutgoingRequest, hasIncomingRequest, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, removeFriend, searchPlayerGlobal } from "./services/friends.js?v=39.0";
 
@@ -965,6 +967,7 @@ function bootGame() {
             }
 
             // 1.1. Синхронізація тем ігрового поля з хмари
+            Cosmetics.mergeCosmeticsProgress(cloudData.cosmeticsProgress);
             FieldThemes.applyCloudThemes(cloudData);
             if (typeof applyActiveThemeVisuals === 'function') {
                 applyActiveThemeVisuals();
@@ -1175,7 +1178,7 @@ function bootGame() {
 
             // 5. Ретроактивна перевірка розблокування косметичних предметів (титулів та рамок)
             try {
-                Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, null);
+                checkRetroactiveCosmetics();
             } catch (e) {
                 console.warn("[Cosmetics] Error in retroactive unlock check after sync:", e);
             }
@@ -1185,6 +1188,57 @@ function bootGame() {
     }
 
     // Завантаження прогресу пройдених рівнів для акаунта з Firestore (викликає двосторонню синхронізацію)
+    // Ownership writes contain only new IDs. Failed writes remain pending for the next check.
+    const pendingCosmeticUnlocks = new Map();
+    let cosmeticsWrite = null;
+    const cosmeticHistorySessions = new Map();
+    async function persistCosmeticsDelta(delta = []) {
+        const userId = getCurrentUser()?.id;
+        if (!userId) return;
+        const pending = pendingCosmeticUnlocks.get(userId) || new Set();
+        delta.forEach(id => pending.add(id));
+        pendingCosmeticUnlocks.set(userId, pending);
+        if (!pending.size || cosmeticsWrite) return;
+        const ids = [...pending];
+        const frames = ids.filter(id => id.startsWith('frame_'));
+        const titles = ids.filter(id => id.startsWith('title_'));
+        const payload = {};
+        if (frames.length) payload.unlockedFrames = arrayUnion(...frames);
+        if (titles.length) payload.unlockedTitles = arrayUnion(...titles);
+        cosmeticsWrite = setDoc(doc(db, 'user_progress', userId), payload, { merge: true });
+        try {
+            await cosmeticsWrite;
+            ids.forEach(id => pending.delete(id));
+        } catch (e) { console.warn('[Cosmetics] Ownership sync will retry', e); }
+        finally { cosmeticsWrite = null; }
+        if (!ids.some(id => pending.has(id)) && pending.size && getCurrentUser()?.id === userId) void persistCosmeticsDelta();
+    }
+
+    function checkRetroactiveCosmetics(notify = null) {
+        const delta = Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, notify);
+        void persistCosmeticsDelta(delta);
+        const userId = getCurrentUser()?.id;
+        if (userId && !cosmeticHistorySessions.has(userId)) {
+            // One history/rank read per signed-in user per session, never per menu opening.
+            cosmeticHistorySessions.set(userId, true);
+            void Promise.allSettled([
+                getUserStats(),
+                getDocs(query(collection(db, 'global_leaderboard'), orderBy('totalScore', 'desc'), limit(3)))
+            ]).then(([history, ranking]) => {
+                if (getCurrentUser()?.id !== userId) return;
+                const earned = history.status === 'fulfilled'
+                    ? Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, notify, history.value) : [];
+                if (ranking.status === 'fulfilled') {
+                    const rank = ranking.value.docs.findIndex(d => d.id === userId);
+                    if (rank >= 0) earned.push(...Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: rank + 1 }, getText, notify));
+                }
+                void persistCosmeticsDelta(earned);
+                if (typeof renderCustomizationModal === 'function') renderCustomizationModal();
+            }).catch(e => console.warn('[Cosmetics] Historical lookup', e));
+        }
+        return delta;
+    }
+
     async function loadCloudUserProgress(userId) {
         return syncUserProgressBidirectional(userId);
     }
@@ -1241,7 +1295,7 @@ function bootGame() {
 
         // Ретроактивна перевірка розблокування косметичних предметів (титулів та рамок)
         try {
-            Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, null);
+            checkRetroactiveCosmetics();
         } catch (e) {
             console.warn("[Cosmetics] Error in retroactive init unlock check:", e);
         }
@@ -1324,8 +1378,9 @@ function bootGame() {
                 selectedTitle: cosm.selectedTitle || 'title_novice',
                 userStatus: cosm.userStatus || '',
                 favoriteTrack: cosm.favoriteTrack || '',
-                unlockedFrames: cosm.unlockedFrames || ['frame_none'],
-                unlockedTitles: cosm.unlockedTitles || ['title_novice'],
+                cosmeticsProgress: Cosmetics.getCosmeticsProgress(),
+                unlockedFrames: arrayUnion(...cosm.unlockedFrames),
+                unlockedTitles: arrayUnion(...cosm.unlockedTitles),
                 unlockedFieldThemes: FieldThemes.getUnlockedThemes(),
                 activeFieldTheme: FieldThemes.getActiveThemeId(),
                 spentCoins: parseInt(localStorage.getItem('neon_spent_coins') || '0', 10)
@@ -1967,6 +2022,11 @@ function bootGame() {
         State.totalMisses = 0; // ЗМІНА: Змінна для підрахунку загальної кількості промахів гравця за всю гру.
         State.totalHits = 0;
         State.perfectHits = 0;
+        State.completedHolds = 0;
+        State.hitCombo777 = false;
+        State.cosmeticsResultRecorded = false;
+        State.cosmeticsPlayedAt = Date.now();
+        Cosmetics.seedCosmeticsProgress(songsDB);
         State.holdsDropped = 0;
         State.totalHolds = 0;
         State.maxConsecutiveMisses = 0;
@@ -2709,6 +2769,7 @@ function update(songTime) {
                         tile.hitVisualY = Math.min(yStart, hitY);
                         tile.hitRating = (Math.abs(yStart - hitY) <= 75) ? 'perfect' : 'good';
                         State.totalHits++;
+                        if (tile.hitRating === 'perfect') State.perfectHits++;
                         tile.lastValidHoldTime = now;
                         State.holdingTiles[tile.lane] = tile;
                         toggleHoldEffect(tile.lane, true);
@@ -2739,6 +2800,7 @@ function update(songTime) {
                             const mult = getComboMultiplier();
                             State.score += Math.round(CONFIG.scoreHoldTick * mult * State.scoreMultiplier);
                             State.combo += 10;
+                            if (State.combo === 777) State.hitCombo777 = true;
                             State.lastComboUpdateTime = now;
                             if (State.combo > State.maxCombo) State.maxCombo = State.combo;
                             updateScoreUI(true); 
@@ -2797,6 +2859,7 @@ function update(songTime) {
 
     // Допоміжна функція для інкапсуляції логіки успішного завершення довгої ноти, щоб уникнути дублювання коду.
     function completeLongNote(tile) {
+        State.completedHolds++;
         tile.completed = true;
         tile.holding = false;
         
@@ -2807,7 +2870,8 @@ function update(songTime) {
 
         const mult = getComboMultiplier();
         State.score += Math.round((CONFIG.scoreHoldTick * 5) * mult * State.scoreMultiplier);
-        State.combo++; 
+        State.combo++;
+        if (State.combo === 777) State.hitCombo777 = true;
         State.lastComboUpdateTime = Date.now();
         if (State.combo > State.maxCombo) State.maxCombo = State.combo;
         updateScoreUI(true);
@@ -3849,6 +3913,7 @@ function handleInputDown(lane, touchY, touchX) {
                 showRating(getText('perfect'), "rating-perfect");
             } else {
                 State.combo++;
+                if (State.combo === 777) State.hitCombo777 = true;
                 if (State.combo > State.maxCombo) State.maxCombo = State.combo;
             }
 
@@ -3934,6 +3999,7 @@ function handleInputDown(lane, touchY, touchX) {
             State.survivedCritical = true;
         }
         State.totalMisses++; // ЗМІНА: Я фіксую промах у глобальному лічильнику. Це критично для визначення того, чи отримає гравець діамантову зірку в кінці рівня.
+        if (State.combo === 777) State.hitCombo777 = true;
         State.combo = 0;
         State.lastComboUpdateTime = 0; 
         updateScoreUI(); 
@@ -4387,6 +4453,7 @@ function updateRipples(dt) {
         State.analyser.connect(State.masterGain);
 
         const startDelay = 2;
+        State.cosmeticsPlayedAt = Date.now();
         State.startTime = State.audioCtx.currentTime + startDelay;
         // Мелодія завжди звучить у природному темпі 1.0x (pitch та темп чисті, без спотворень)
         State.sourceNode.playbackRate.value = 1.0;
@@ -4648,31 +4715,33 @@ function updateRipples(dt) {
 
         // Перевірка та нарахування розблокованих косметичних предметів (рамок та титулів)
         try {
-            let totalStarsInGame = 0;
-            let totalDiamondsInGame = 0;
-            let completedLevelsCount = 0;
-            let hardcoreCompletionsCount = 0;
-
-            songsDB.forEach(s => {
-                if (!s || !s.title || s.isSecret) return;
-                const d = getSavedData(s.title);
-                if (d) {
-                    if (d.stars > 0) totalStarsInGame += d.stars;
-                    if (d.stars > 0 || d.score > 0) completedLevelsCount++;
-                    if (d.isHardcore || (Array.isArray(d.completedDifficulties) && d.completedDifficulties.includes('hardcore'))) {
-                        hardcoreCompletionsCount++;
-                    }
-                    if (Array.isArray(d.starTypes) && d.starTypes.some(t => t === 2)) {
-                        totalDiamondsInGame++;
-                    }
-                }
-            });
-
-            const isPhonkTrack = Boolean(currentSong && (currentSong.isPhonk || (currentSong.genre && currentSong.genre.toLowerCase().includes('phonk')) || (currentSong.title && currentSong.title.toLowerCase().includes('phonk'))));
-            const activeThemeId = (FieldThemes.getActiveThemeId ? FieldThemes.getActiveThemeId() : (FieldThemes.activeTheme || 'classic'));
+            const { totals } = Cosmetics.readCosmeticsHistory(songsDB);
+            const activeThemeId = FieldThemes.getActiveThemeId();
+            // Difficulty is derived from speed by the existing game rules.
             const currentDiff = getDifficultyKey();
-
-            Cosmetics.checkCosmeticsUnlocks({
+            const matchContext = {
+                victory: Boolean(victory), difficulty: currentDiff,
+                isHardcore: Boolean(State.isHardcore), totalMisses: State.totalMisses || 0,
+                playedAt: State.cosmeticsPlayedAt
+            };
+            if (!State.cosmeticsResultRecorded) {
+                State.cosmeticsResultRecorded = true;
+                Cosmetics.recordCosmeticsMatch(matchContext);
+                const userId = getCurrentUser()?.id;
+                if (userId) void setDoc(doc(db, 'user_progress', userId), {
+                    cosmeticsProgress: Cosmetics.getCosmeticsProgress()
+                }, { merge: true }).catch(e => console.warn('[Cosmetics] Counter sync', e));
+            }
+            const delta = Cosmetics.checkCosmeticsUnlocks({
+                ...totals,
+                ...Cosmetics.getCosmeticsProgress(),
+                ...matchContext,
+                track: currentSong,
+                totalJudgedNotes: totalProcessed,
+                completedHolds: State.completedHolds,
+                hitCombo777: State.hitCombo777,
+                enteredCriticalDanger: State.survivedCritical,
+                goldStarsEarned: goldCount,
                 playedSong: true,
                 victory: Boolean(victory),
                 score: State.score,
@@ -4686,22 +4755,16 @@ function updateRipples(dt) {
                 starsEarned: starsCount,
                 diamondsEarned: diamondsCount,
                 isSecret: Boolean(isSecret),
-                totalStarsInGame: totalStarsInGame,
-                totalDiamondsInGame: totalDiamondsInGame,
-                completedLevelsCount: completedLevelsCount,
-                hardcoreCompletionsCount: hardcoreCompletionsCount,
-                isPhonk: isPhonkTrack,
                 themeId: activeThemeId,
                 holdsDropped: State.holdsDropped || 0,
                 totalHolds: State.totalHolds || 0,
                 difficulty: currentDiff,
                 isHardDifficulty: currentDiff === 'hard',
-                survivedCritical: Boolean(State.survivedCritical || (State.maxConsecutiveMisses && State.maxConsecutiveMisses >= 3)),
-                maxConsecutiveMisses: State.maxConsecutiveMisses || 0,
-                songProgress: (currentSong && State.audioBuffer && State.audioBuffer.duration > 0)
-                    ? Math.min(1.0, (State.pauseSongTime || (Date.now() - State.startTime) / 1000) / State.audioBuffer.duration)
-                    : 1.0
+                songProgress: State.audioBuffer?.duration > 0 && State.audioCtx
+                    ? Math.max(0, Math.min(1, (State.audioCtx.currentTime - State.startTime) / State.audioBuffer.duration))
+                    : 0
             }, getText, showNotification);
+            void persistCosmeticsDelta(delta);
         } catch (err) {
             console.warn("[Cosmetics] Error checking unlocks:", err);
         }
@@ -5760,6 +5823,8 @@ function updateRipples(dt) {
                 allPlayers.push({ id: docSnap.id, ...docSnap.data() });
             });
 
+            const ownRank = allPlayers.findIndex(p => p.id === getCurrentUser()?.id);
+            if (ownRank >= 0 && ownRank < 3) void persistCosmeticsDelta(Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: ownRank + 1 }, getText, showNotification));
             if (allPlayers.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; opacity:0.6;">${getText('lbNoRecords')}</td></tr>`;
                 return;
@@ -7307,6 +7372,7 @@ function updateRipples(dt) {
 
         let adminCurrentStarTypes = [0, 0, 0, 0, 0];
         let adminCachedPlayers = [];
+        let adminProgressSnapshot = null;
 
         // Перемикання вкладок в адмінці
         function switchAdminTab(tab) {
@@ -7359,6 +7425,7 @@ function updateRipples(dt) {
             // 3. Колекція user_progress
             try {
                 const progSnap = await getDocs(collection(db, "user_progress"));
+                adminProgressSnapshot = progSnap;
                 progSnap.forEach(d => {
                     if (!playersMap.has(d.id)) {
                         playersMap.set(d.id, { id: d.id, name: "Player_" + d.id.slice(0, 5), isAdmin: false });
@@ -7463,23 +7530,17 @@ function updateRipples(dt) {
         }
 
         // Фільтрація та рендеринг рівнів у селекті з підтримкою пошуку
-        function renderAdminLevelOptions(query = '') {
+        function renderAdminLevelOptions(filterQuery = '') {
             if (!adminSelectLevel) return;
-            const q = (query || '').toLowerCase().trim();
-            const filtered = songsDB.filter(song => {
-                if (!song || !song.title) return false;
-                if (!q) return true;
-                const titleMatch = (song.title || '').toLowerCase().includes(q);
-                const artistMatch = (song.artist || '').toLowerCase().includes(q);
-                return titleMatch || artistMatch;
-            });
-
+            const filtered = filterAdminLevels(songsDB, filterQuery);
             const currentVal = adminSelectLevel.value;
             adminSelectLevel.innerHTML = '';
             if (filtered.length === 0) {
                 const noOpt = document.createElement('option');
                 noOpt.value = '';
-                noOpt.textContent = `(${getText('adminNoLevelsFound') || 'Рівнів не знайдено'})`;
+                noOpt.textContent = getText('adminNoLevelsFound');
+                noOpt.disabled = true;
+                noOpt.selected = true;
                 adminSelectLevel.appendChild(noOpt);
                 return;
             }
@@ -7487,7 +7548,7 @@ function updateRipples(dt) {
             filtered.forEach(song => {
                 const opt = document.createElement('option');
                 opt.value = song.title;
-                opt.textContent = `${song.title} (${song.artist || 'Невідомий'})${song.isSecret ? ' [SECRET]' : ''}`;
+                opt.textContent = song.artist ? `${song.title} (${song.artist})` : song.title;
                 adminSelectLevel.appendChild(opt);
             });
 
@@ -7500,9 +7561,12 @@ function updateRipples(dt) {
 
         if (adminLevelSearch) {
             adminLevelSearch.oninput = async (e) => {
+                const previous = adminSelectLevel.value;
                 renderAdminLevelOptions(e.target.value);
-                await loadSelectedPlayerScore();
-                await renderAdminLevelLeaderboard(adminSelectLevel.value);
+                if (previous === adminSelectLevel.value) return;
+                clearAdminTrackResults();
+                await loadSelectedPlayerScore(true);
+                await renderAdminLevelLeaderboard(adminSelectLevel.value, true);
             };
         }
 
@@ -7539,10 +7603,24 @@ function updateRipples(dt) {
         }
 
         // Завантаження результатів конкретного гравця на обраному треку
-        async function loadSelectedPlayerScore() {
+        function clearAdminTrackResults() {
+            if (adminLevelPlayersTbody) adminLevelPlayersTbody.textContent = '';
+            if (adminEditPlayerSubtitle) adminEditPlayerSubtitle.textContent = '';
+            if (adminEditStatusBadge) adminEditStatusBadge.textContent = '';
+            if (adminInputScore) adminInputScore.value = 0;
+            if (adminInputStars) adminInputStars.value = 0;
+            if (adminInputDifficulty) adminInputDifficulty.value = '';
+            if (adminInputIsHardcore) adminInputIsHardcore.checked = false;
+            adminCurrentStarTypes = [0, 0, 0, 0, 0];
+            renderAdminStarTypesSelector();
+            if (adminBtnSaveScore) adminBtnSaveScore.disabled = !adminSelectLevel.value;
+            if (adminBtnResetScore) adminBtnResetScore.disabled = !adminSelectLevel.value;
+        }
+
+        async function loadSelectedPlayerScore(useCache = false) {
             const trackTitle = adminSelectLevel?.value;
             const userId = adminSelectPlayer?.value;
-            if (!trackTitle || !userId) return;
+            if (!trackTitle || !userId) { clearAdminTrackResults(); return; }
 
             const playerObj = adminCachedPlayers.find(p => p.id === userId);
             const playerName = playerObj ? playerObj.name : userId;
@@ -7556,7 +7634,9 @@ function updateRipples(dt) {
 
             try {
                 const progressRef = doc(db, "user_progress", userId);
-                const snap = await getDoc(progressRef);
+                const cached = adminProgressSnapshot?.docs.find(d => d.id === userId);
+                const snap = useCache ? (cached || { exists: () => false }) : await getDoc(progressRef);
+                if (adminSelectLevel.value !== trackTitle || adminSelectPlayer.value !== userId) return;
                 const tracks = snap.exists() ? (snap.data().tracks || {}) : {};
                 const safeKey = toFirestoreTrackKey(trackTitle);
 
@@ -8217,12 +8297,16 @@ function updateRipples(dt) {
         }
 
         // Рендеринг таблиці результатів усіх гравців на вибраному рівні
-        async function renderAdminLevelLeaderboard(trackTitle) {
-            if (!adminLevelPlayersTbody || !trackTitle) return;
+        async function renderAdminLevelLeaderboard(trackTitle, useCache = false) {
+            if (!adminLevelPlayersTbody) return;
+            if (!trackTitle) { adminLevelPlayersTbody.textContent = ''; return; }
             adminLevelPlayersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-color); opacity: 0.6;">${getText('lbLoading') || 'Завантаження...'}</td></tr>`;
 
             try {
-                const progSnap = await getDocs(collection(db, "user_progress"));
+                const progSnap = useCache ? adminProgressSnapshot : await getDocs(collection(db, "user_progress"));
+                if (adminSelectLevel.value !== trackTitle) return;
+                if (!progSnap) { adminLevelPlayersTbody.textContent = ''; return; }
+                adminProgressSnapshot = progSnap;
                 const safeKey = toFirestoreTrackKey(trackTitle);
                 const results = [];
 
@@ -8350,6 +8434,7 @@ function updateRipples(dt) {
                 });
             } catch (err) {
                 console.error("Помилка завантаження таблиці рівня:", err);
+                if (adminSelectLevel.value !== trackTitle) return;
                 adminLevelPlayersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ff4444;">Помилка завантаження результатів</td></tr>`;
             }
         }
@@ -8829,6 +8914,7 @@ function updateRipples(dt) {
                     const data = d.data();
                     if (d.id === userId || data.userId === userId || (data.name && data.name.toLowerCase() === playerName.toLowerCase())) {
                         rankText = `#${currentRank}`;
+                        if (d.id === getCurrentUser()?.id && currentRank <= 3) void persistCosmeticsDelta(Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: currentRank }, getText, showNotification));
                     }
                     currentRank++;
                 });
@@ -10677,6 +10763,11 @@ function updateRipples(dt) {
             });
         }
 
+        i18n.onLanguageChange(() => {
+            renderAdminLevelOptions(adminLevelSearch?.value || '');
+            renderCustomizationModal();
+        });
+
         renderCustomizationModal = function() {
             switchCustomizationTab(activeCustTab);
         };
@@ -10685,7 +10776,7 @@ function updateRipples(dt) {
             if (!customizationModal) return;
             playClick();
             try {
-                Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, showNotification);
+                checkRetroactiveCosmetics(showNotification);
             } catch (e) { console.warn("[Cosmetics] Retroactive check on open error:", e); }
             i18n.updateDOM();
             renderCustomizationModal();

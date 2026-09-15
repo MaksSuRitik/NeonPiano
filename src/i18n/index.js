@@ -52,6 +52,8 @@ export const i18n = {
       filterSecret: "Секретні",
       filterPhonk: currentLang === "RU" ? "Фонк" : (currentLang === "EN" ? "Phonk" : "Фонк"),
       trackTagPhonk: currentLang === "EN" ? "Phonk" : "Фонк",
+      adminSearchLevelPlaceholder: currentLang === "RU" ? "Поиск трека или исполнителя..." : (currentLang === "EN" ? "Search track or artist..." : "Пошук треку або виконавця..."),
+      adminNoLevelsFound: currentLang === "RU" ? "Треки не найдены" : (currentLang === "EN" ? "No tracks found" : "Треки не знайдено"),
       adminPhonkLabel: currentLang === "RU" ? "Фонк" : (currentLang === "EN" ? "Phonk" : "Фонк"),
       adminPhonkMark: currentLang === "RU" ? "Пометить как фонк" : (currentLang === "EN" ? "Mark as Phonk" : "Позначити як фонк"),
       adminPhonkHint: currentLang === "RU" ? "Трек будет отображаться с пометкой «Фонк» и будет доступен в фильтре фонка." : (currentLang === "EN" ? 'The track will display a "Phonk" tag and appear in the Phonk filter.' : "Трек відображатиметься з позначкою «Фонк» і буде доступний у фільтрі фонку."),

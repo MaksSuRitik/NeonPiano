@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>Cosmetics visual verification</title>
+<link rel="stylesheet" href="../../css/style.css">
+<style>body {display:block!important;overflow:auto!important;padding:28px!important; background:#101421!important;color:#eee;font:14px system-ui} body[data-theme=light]{background:#f0ede7!important;color:#292733} header{display:flex;gap:12px;align-items:center;margin-bottom:24px} main{display:grid;grid-template-columns:repeat(4,1fr);gap:20px} article{padding:20px;border:1px solid #80808055;border-radius:10px} .samples{display:flex;align-items:center;gap:25px;min-height:110px} .lb-avatar{width:28px;height:28px;display:grid;place-items:center} .profile-avatar-pill{margin:0} h2{font:600 14px system-ui} p{font-size:12px;opacity:.8;line-height:1.5} #titles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:22px} button{padding:8px;cursor:pointer} #search{margin-top:24px}</style>
+<header><h1>Physical frames</h1><button id="theme">Light / Dark</button><select id="lang"><option>EN</option><option>UA</option><option>RU</option></select></header>
+<main></main><div id="titles"></div>
+<div id="search"><input id="admin-level-search" data-i18n-placeholder="adminSearchLevelPlaceholder"><select id="admin-select-level"></select></div>
+<script type="module">
+import {FRAMES,TITLES} from '../../src/game/cosmetics.js';
+import {i18n} from '../../src/i18n/index.js';
+import {filterAdminLevels} from '../../src/ui/adminLevelSearch.js';
+const songs=[{title:'Neon Blade',artist:'MoonDeity'},{title:'Murder In My Mind',artist:'Kordhell'},{title:'Piano Song',artist:'Unknown'}];
+function options(){const select=document.querySelector('#admin-select-level');const old=select.value;const list=filterAdminLevels(songs,document.querySelector('#admin-level-search').value);select.replaceChildren(...list.map(s=>new Option(s.title+' — '+s.artist,s.title)));if(!list.length){const opt=new Option(i18n.t('adminNoLevelsFound'),'');opt.disabled=true;opt.selected=true;select.add(opt)}else if(list.some(s=>s.title===old))select.value=old;}
+function render(){document.querySelector('main').innerHTML=FRAMES.slice(7).map(f=>`<article><div class="samples"><div class="cust-frame-preview ${f.cssClass}">★</div><div class="profile-avatar-pill ${f.cssClass}"><span class="avatar-letter">N</span></div><div class="lb-avatar ${f.cssClass}">N</div></div><h2>${i18n.t(f.nameKey)}</h2><p>${i18n.t(f.descKey)}</p></article>`).join('');document.querySelector('#titles').innerHTML=TITLES.slice(9).map(t=>`<div><strong>${i18n.t(t.nameKey)}</strong><p>${i18n.t(t.descKey)}</p></div>`).join('');i18n.updateDOM();options()}
+document.querySelector('#theme').onclick=()=>{document.body.dataset.theme=document.body.dataset.theme==='light'?'dark':'light'};
+document.querySelector('#lang').onchange=e=>{i18n.setLanguage(e.target.value);render()};
+document.querySelector('#admin-level-search').oninput=options;
+i18n.setLanguage('EN');render();
+</script>

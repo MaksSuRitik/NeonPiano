@@ -10516,144 +10516,138 @@ body[data-theme=light] .res-stat-card {
    chrome/rubber, gothic wrought-iron, brass chrono & urushi lacquer
    ------------------------------------------ */
 
-/* 7. Cyber Alloy: Brushed Titanium & Carbon Chamfer */
+/* Static material frames share the existing avatar classes and preserve the portrait. */
+:is(.frame-cyber-alloy, .frame-baroque-gold, .frame-frostbound, .frame-street-drift, .frame-gothic-thorn, .frame-steampunk-chrono, .frame-sakura-urushi) {
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+  border: 1px solid var(--frame-edge, #80766b) !important;
+  border-radius: var(--frame-radius, 20%) !important;
+  box-shadow: 0 3px 6px #0008, inset 0 1px 2px #fff5 !important;
+  animation: none !important;
+}
+:is(.frame-cyber-alloy, .frame-baroque-gold, .frame-frostbound, .frame-street-drift, .frame-gothic-thorn, .frame-steampunk-chrono, .frame-sakura-urushi)::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  inset: -5px;
+  padding: 6px;
+  border-radius: inherit;
+  background: var(--frame-material);
+  /* Hollow construction: the material never paints over the avatar. */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+:is(.frame-cyber-alloy, .frame-baroque-gold, .frame-frostbound, .frame-street-drift, .frame-gothic-thorn, .frame-steampunk-chrono, .frame-sakura-urushi)::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  inset: -7px;
+  background: var(--frame-ornament) left top / 12px 12px no-repeat,
+              var(--frame-ornament) right top / 12px 12px no-repeat,
+              var(--frame-ornament) left bottom / 12px 12px no-repeat,
+              var(--frame-ornament) right bottom / 12px 12px no-repeat;
+  filter: drop-shadow(0 1px 1px #0009);
+}
+:is(.frame-cyber-alloy, .frame-baroque-gold, .frame-frostbound, .frame-street-drift, .frame-gothic-thorn, .frame-steampunk-chrono, .frame-sakura-urushi) > .avatar-photo {
+  border-radius: inherit;
+}
+body[data-theme="light"] :is(.frame-cyber-alloy, .frame-baroque-gold, .frame-frostbound, .frame-street-drift, .frame-gothic-thorn, .frame-steampunk-chrono, .frame-sakura-urushi) {
+  box-shadow: 0 3px 7px #17202d50, inset 0 1px 2px #fff8 !important;
+}
+
+/* Machined titanium, woven carbon side panels, slotted steel fasteners. */
 .frame-cyber-alloy {
-  border: 3px solid #94a3b8 !important;
-  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.75),
-              inset 0 -2.5px 4px rgba(15, 23, 42, 0.9),
-              0 0 0 2px #1e293b,
-              0 0 0 4px #475569,
-              0 0 0 5.5px #0f172a,
-              0 4px 12px rgba(0, 0, 0, 0.75) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  --frame-radius: 12%;
+  --frame-edge: #899398;
+  --frame-material: repeating-linear-gradient(90deg, #13191b 0 1px, transparent 1px 3px) 50% 100% / 35% 4px no-repeat,
+    linear-gradient(90deg, transparent 14%, #6d767b 15%, #a6adb0 48%, #4b555a 52%, #293237 85%, transparent 86%),
+    repeating-linear-gradient(45deg, #101619 0 2px, #3c454a 2px 4px, #202a2f 4px 6px);
+  --frame-ornament: radial-gradient(circle, #e5e8e8 0 16%, #a6b1b6 19% 27%, #273236 29% 38%, transparent 40%);
 }
-.frame-cyber-alloy:hover {
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9),
-              inset 0 -2.5px 5px rgba(15, 23, 42, 1),
-              0 0 0 2px #334155,
-              0 0 0 4px #64748b,
-              0 0 0 6px #0f172a,
-              0 6px 16px rgba(0, 0, 0, 0.85) !important;
-}
-
-/* 8. Baroque Gold: Antique Imperial Molded Gold & Ruby Accents */
+.frame-cyber-alloy::before { clip-path: polygon(10% 0,90% 0,100% 10%,100% 90%,90% 100%,10% 100%,0 90%,0 10%); }
+/* Gilded molding with curled acanthus relief and ruby cabochons. */
 .frame-baroque-gold {
-  border: 3.5px solid #fbbf24 !important;
-  box-shadow: inset 0 2px 4px #fef08a,
-              inset 0 -3px 5px #78350f,
-              0 0 0 2px #92400e,
-              0 0 0 4px #d97706,
-              0 0 0 6px #451a03,
-              0 4px 14px rgba(0, 0, 0, 0.8) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  --frame-radius: 25%;
+  --frame-edge: #ddbc60;
+  --frame-material: repeating-radial-gradient(ellipse at 50% 50%, transparent 0 3px, #4f3119aa 4px, #f7dc8588 5px, transparent 6px 9px),
+    linear-gradient(135deg, #5b3519, #efd797 16%, #a57c31 25%, #f6d47b 40%, #6d481e 53%, #ba8d3d 75%, #f0d58d 87%, #57341c);
+  --frame-ornament: radial-gradient(ellipse, #f5a1a0 0 6%, #901d35 10% 23%, #380d16 25% 29%, #f4d890 31% 39%, #7c521c 41% 48%, transparent 51%),
+    repeating-conic-gradient(from 20deg, #ddbb67 0 22deg, #654421 23deg 40deg, transparent 41deg 60deg);
 }
-.frame-baroque-gold:hover {
-  box-shadow: inset 0 2.5px 5px #ffffff,
-              inset 0 -3px 6px #78350f,
-              0 0 0 2px #b45309,
-              0 0 0 4.5px #f59e0b,
-              0 0 0 7px #451a03,
-              0 6px 18px rgba(0, 0, 0, 0.9) !important;
-}
-
-/* 9. Frostbound: Glacial Ice Facets & Chiseled Permafrost */
+.frame-baroque-gold::after { border-radius: 24%; }
+/* Silver support and transparent splintered quartz, extending beyond the case. */
 .frame-frostbound {
-  border: 3px solid #f0f9ff !important;
-  box-shadow: inset 0 2.5px 5px #ffffff,
-              inset 0 -3px 6px #0284c7,
-              0 0 0 2px #0284c7,
-              0 0 0 4px #bae6fd,
-              0 0 0 5.5px #0369a1,
-              0 4px 14px rgba(2, 132, 199, 0.45) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  --frame-radius: 18%;
+  --frame-edge: #bfdae0;
+  --frame-material: repeating-linear-gradient(126deg, transparent 0 9px, #f4ffffc9 10px, transparent 11px 19px),
+    repeating-conic-gradient(from 35deg, #e8faffdd 0 30deg, #8db6c8bb 31deg 68deg, #f6ffffee 69deg 88deg, #678da488 89deg 110deg);
+  --frame-ornament: conic-gradient(from 20deg, #e9ffffdd, #6792ac99, #fff, #add8e3aa, #f7ffffee, #8fadbacc);
 }
-.frame-frostbound:hover {
-  box-shadow: inset 0 3px 6px #ffffff,
-              inset 0 -3px 7px #0369a1,
-              0 0 0 2px #38bdf8,
-              0 0 0 4.5px #e0f2fe,
-              0 0 0 6.5px #0284c7,
-              0 6px 18px rgba(2, 132, 199, 0.6) !important;
+.frame-frostbound::after {
+  inset: -9px;
+  clip-path: polygon(0 0,19% 5%,12% 18%,5% 24%,0 12%,0 0,100% 0,97% 20%,85% 13%,91% 4%,100% 0,100% 100%,80% 96%,91% 82%,99% 91%,100% 100%,0 100%,4% 81%,17% 91%,8% 99%);
 }
-
-/* 10. Street Drift: Polished Chrome Rim & Heavy Tread Rubber */
+/* Chrome bumper rails, tire tread sides, a stamped badge and red tow ring. */
 .frame-street-drift {
-  border: 3px solid #f8fafc !important;
-  box-shadow: inset 0 2px 4px #ffffff,
-              inset 0 -2.5px 4px #1e293b,
-              0 0 0 2px #334155,
-              0 0 0 4.5px #0f172a,
-              0 0 0 6px #f97316,
-              0 5px 14px rgba(0, 0, 0, 0.85) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  --frame-radius: 10%;
+  --frame-edge: #b7c1c4;
+  --frame-material: linear-gradient(180deg, #e9f0f0, #78838b 18%, #202d35 38%, #fff 49%, #a5b0b5 58%, #39414a 83%, #e4e9e8) top / 100% 7px no-repeat,
+    linear-gradient(180deg, #edf4f5, #7b858b 20%, #151f26 44%, #eef4f7 52%, #8d979c 76%, #222d31) bottom / 100% 7px no-repeat,
+    repeating-linear-gradient(135deg, #111618 0 3px, #4a4c4c 3px 4px, #252a2c 4px 7px);
 }
-.frame-street-drift:hover {
-  box-shadow: inset 0 2.5px 5px #ffffff,
-              inset 0 -3px 5px #0f172a,
-              0 0 0 2px #475569,
-              0 0 0 5px #0f172a,
-              0 0 0 7px #fb923c,
-              0 7px 18px rgba(0, 0, 0, 0.9) !important;
+.frame-street-drift::after {
+  content: 'ドリフト';
+  inset: auto 8% -7px auto;
+  padding: 1px 2px;
+  background: linear-gradient(#e4e5e2, #949da1);
+  border: 1px solid #4c555c;
+  border-radius: 1px;
+  color: #1c2429;
+  font: 700 5px/1.2 sans-serif;
+  letter-spacing: .3px;
+  box-shadow: -10px 0 0 -1px #971d2b, -10px 0 0 1px #bd5560;
 }
-
-/* 11. Gothic Thorn: Wrought-Iron Spikes & Blood Onyx Cabochons */
+/* Forged briars surround black onyx; narrow crimson mineral veins. */
 .frame-gothic-thorn {
-  border: 3px solid #292524 !important;
-  box-shadow: inset 0 2px 4px rgba(239, 68, 68, 0.5),
-              inset 0 -3px 5px #000000,
-              0 0 0 2px #450a0a,
-              0 0 0 4px #1c1917,
-              0 0 0 5.5px #7f1d1d,
-              0 5px 16px rgba(0, 0, 0, 0.95) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  --frame-radius: 38% 38% 14% 14%;
+  --frame-edge: #59555d;
+  --frame-material: repeating-linear-gradient(127deg, transparent 0 13px, #651e30 14px, #210d18 15px, transparent 16px 24px),
+    linear-gradient(120deg, #100f13, #727079 18%, #25232b 24%, #0b0b10 50%, #48404a 71%, #0d0d12 83%, #69626c);
+  --frame-ornament: radial-gradient(ellipse at 50% 72%, #9e6673 0 5%, #290f1c 12% 23%, #050509 27% 34%, #747079 37% 42%, #222028 44% 51%, transparent 53%);
 }
-.frame-gothic-thorn:hover {
-  box-shadow: inset 0 2px 5px rgba(248, 113, 113, 0.7),
-              inset 0 -3px 6px #000000,
-              0 0 0 2px #5f0c0c,
-              0 0 0 4.5px #0c0a09,
-              0 0 0 6.5px #991b1b,
-              0 7px 20px rgba(0, 0, 0, 1) !important;
+.frame-gothic-thorn::after {
+  inset: -10px;
+  background-size: 15px 19px;
+  clip-path: polygon(0 0,17% 8%,10% 28%,4% 20%,0 0,100% 0,96% 20%,90% 28%,83% 8%,100% 0,100% 100%,80% 97%,92% 80%,100% 100%,0 100%,8% 80%,20% 97%,0 100%);
 }
-
-/* 12. Steampunk Chrono: Hand-Machined Brass & Watchmaker Gears */
+/* Watch-case brass and copper, engraved ticks and stationary toothed gears. */
 .frame-steampunk-chrono {
-  border: 3.5px solid #d97706 !important;
-  box-shadow: inset 0 2px 4px #fef9c3,
-              inset 0 -3px 5px #451a03,
-              0 0 0 2px #78350f,
-              0 0 0 4px #b45309,
-              0 0 0 6px #451a03,
-              0 4px 14px rgba(0, 0, 0, 0.8) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  --frame-radius: 30%;
+  --frame-edge: #c49a5d;
+  --frame-material: repeating-conic-gradient(#392918 0 2deg, transparent 3deg 14deg),
+    linear-gradient(145deg, #51341e, #e9cd89 20%, #8c6335 38%, #c98959 58%, #64422a 70%, #ecd99a 85%, #98643c);
+  --frame-ornament: radial-gradient(circle, #1d2322 0 12%, #e4bd76 14% 21%, #8c5d32 23% 35%, transparent 37%),
+    repeating-conic-gradient(#ba8950 0 19deg, #382a1e 20deg 27deg, #d9b57a 28deg 40deg, transparent 41deg 45deg);
 }
-.frame-steampunk-chrono:hover {
-  box-shadow: inset 0 2.5px 5px #ffffff,
-              inset 0 -3px 6px #451a03,
-              0 0 0 2px #92400e,
-              0 0 0 4.5px #d97706,
-              0 0 0 7px #291102,
-              0 6px 18px rgba(0, 0, 0, 0.9) !important;
-}
-
-/* 13. Sakura Urushi: Glossy Japanese Black Lacquer & Gold Kintsugi */
+.frame-steampunk-chrono::after { border-radius: 18%; background-size: 13px 13px; }
+/* Black-cherry lacquer with fine gold repairs and nacre flower inlays. */
 .frame-sakura-urushi {
-  border: 3px solid #18181b !important;
-  box-shadow: inset 0 2px 3px #fef08a,
-              inset 0 -2.5px 4px #09090b,
-              0 0 0 2px #fda4af,
-              0 0 0 4px #e11d48,
-              0 0 0 5.5px #881337,
-              0 4px 14px rgba(225, 29, 72, 0.35) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
-}
-.frame-sakura-urushi:hover {
-  box-shadow: inset 0 2.5px 4px #ffffff,
-              inset 0 -3px 5px #09090b,
-              0 0 0 2px #fecdd3,
-              0 0 0 4.5px #f43f5e,
-              0 0 0 6.5px #9f1239,
-              0 6px 18px rgba(225, 29, 72, 0.5) !important;
+  --frame-radius: 22%;
+  --frame-edge: #8b635d;
+  --frame-material: linear-gradient(117deg, transparent 21%, #bfa058 22% 23%, transparent 24% 72%, #ead49b 73% 74%, transparent 75%),
+    linear-gradient(36deg, transparent 35%, #c2a360 36% 37%, transparent 38%),
+    linear-gradient(160deg, #100a11, #662a3d 16%, #e4b7aa 19%, #3d1526 23%, #130910 52%, #3b1725 76%, #0c0910);
+  --frame-ornament: radial-gradient(ellipse at 50% 27%, #fff3ec 0 16%, transparent 18%),
+    radial-gradient(ellipse at 28% 47%, #d2bdce 0 16%, transparent 18%),
+    radial-gradient(ellipse at 72% 47%, #ffe9e2 0 16%, transparent 18%),
+    radial-gradient(ellipse at 36% 72%, #f7e0ee 0 16%, transparent 18%),
+    radial-gradient(ellipse at 65% 72%, #c6cbdc 0 16%, transparent 18%),
+    radial-gradient(circle, #ba9955 0 20%, transparent 22%);
 }
 
 /* Profile Identity Enhancements */
@@ -11040,76 +11034,6 @@ body[data-theme="light"] .frame-cyber-glitch {
 body[data-theme="light"] .frame-prismatic {
   border: 2.5px solid #0284c7 !important;
   box-shadow: 0 0 12px rgba(2, 132, 199, 0.5), 0 0 24px rgba(219, 39, 119, 0.4) !important;
-}
-
-body[data-theme="light"] .frame-cyber-alloy {
-  border: 3px solid #64748b !important;
-  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.8),
-              inset 0 -2.5px 4px rgba(0, 0, 0, 0.4),
-              0 0 0 2px #94a3b8,
-              0 0 0 4px #475569,
-              0 0 0 5.5px #1e293b,
-              0 4px 10px rgba(0, 0, 0, 0.25) !important;
-}
-
-body[data-theme="light"] .frame-baroque-gold {
-  border: 3.5px solid #d97706 !important;
-  box-shadow: inset 0 2px 3px #ffffff,
-              inset 0 -3px 4px #92400e,
-              0 0 0 2px #b45309,
-              0 0 0 4px #f59e0b,
-              0 0 0 6px #78350f,
-              0 4px 12px rgba(180, 83, 9, 0.3) !important;
-}
-
-body[data-theme="light"] .frame-frostbound {
-  border: 3px solid #38bdf8 !important;
-  box-shadow: inset 0 2px 4px #ffffff,
-              inset 0 -3px 5px #0284c7,
-              0 0 0 2px #0284c7,
-              0 0 0 4px #7dd3fc,
-              0 0 0 5.5px #0369a1,
-              0 4px 12px rgba(2, 132, 199, 0.35) !important;
-}
-
-body[data-theme="light"] .frame-street-drift {
-  border: 3px solid #475569 !important;
-  box-shadow: inset 0 2px 3px #ffffff,
-              inset 0 -2.5px 4px #0f172a,
-              0 0 0 2px #94a3b8,
-              0 0 0 4.5px #1e293b,
-              0 0 0 6px #ea580c,
-              0 4px 12px rgba(0, 0, 0, 0.3) !important;
-}
-
-body[data-theme="light"] .frame-gothic-thorn {
-  border: 3px solid #1c1917 !important;
-  box-shadow: inset 0 2px 3px rgba(239, 68, 68, 0.6),
-              inset 0 -3px 4px #000000,
-              0 0 0 2px #7f1d1d,
-              0 0 0 4px #292524,
-              0 0 0 5.5px #991b1b,
-              0 4px 12px rgba(0, 0, 0, 0.4) !important;
-}
-
-body[data-theme="light"] .frame-steampunk-chrono {
-  border: 3.5px solid #b45309 !important;
-  box-shadow: inset 0 2px 3px #ffffff,
-              inset 0 -3px 4px #78350f,
-              0 0 0 2px #92400e,
-              0 0 0 4px #d97706,
-              0 0 0 6px #451a03,
-              0 4px 12px rgba(180, 83, 9, 0.35) !important;
-}
-
-body[data-theme="light"] .frame-sakura-urushi {
-  border: 3px solid #09090b !important;
-  box-shadow: inset 0 2px 3px #fef08a,
-              inset 0 -2.5px 4px #27272a,
-              0 0 0 2px #fb7185,
-              0 0 0 4px #e11d48,
-              0 0 0 5.5px #9f1239,
-              0 4px 12px rgba(225, 29, 72, 0.25) !important;
 }
 
 /* ==========================================
@@ -12235,3 +12159,61 @@ body.simulated-fullscreen canvas#pixiCanvas {
   height: 100% !important;
 }
 
+
+.frame-cyber-alloy::after { background: radial-gradient(circle, #e5e8e8 0 16%, #a6b1b6 19% 27%, #273236 29% 38%, transparent 40%) left top / 12px 12px no-repeat,
+    radial-gradient(circle, #e5e8e8 0 16%, #a6b1b6 19% 27%, #273236 29% 38%, transparent 40%) right top / 12px 12px no-repeat,
+    radial-gradient(circle, #e5e8e8 0 16%, #a6b1b6 19% 27%, #273236 29% 38%, transparent 40%) left bottom / 12px 12px no-repeat,
+    radial-gradient(circle, #e5e8e8 0 16%, #a6b1b6 19% 27%, #273236 29% 38%, transparent 40%) right bottom / 12px 12px no-repeat; }
+
+.frame-baroque-gold::after { background: radial-gradient(ellipse, #f5a1a0 0 6%, #901d35 10% 23%, #380d16 25% 29%, #f4d890 31% 39%, #7c521c 41% 48%, transparent 51%) left top / 12px 12px no-repeat,
+    repeating-conic-gradient(from 20deg, #ddbb67 0 22deg, #654421 23deg 40deg, transparent 41deg 60deg) left top / 12px 12px no-repeat,
+    radial-gradient(ellipse, #f5a1a0 0 6%, #901d35 10% 23%, #380d16 25% 29%, #f4d890 31% 39%, #7c521c 41% 48%, transparent 51%) right top / 12px 12px no-repeat,
+    repeating-conic-gradient(from 20deg, #ddbb67 0 22deg, #654421 23deg 40deg, transparent 41deg 60deg) right top / 12px 12px no-repeat,
+    radial-gradient(ellipse, #f5a1a0 0 6%, #901d35 10% 23%, #380d16 25% 29%, #f4d890 31% 39%, #7c521c 41% 48%, transparent 51%) left bottom / 12px 12px no-repeat,
+    repeating-conic-gradient(from 20deg, #ddbb67 0 22deg, #654421 23deg 40deg, transparent 41deg 60deg) left bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse, #f5a1a0 0 6%, #901d35 10% 23%, #380d16 25% 29%, #f4d890 31% 39%, #7c521c 41% 48%, transparent 51%) right bottom / 12px 12px no-repeat,
+    repeating-conic-gradient(from 20deg, #ddbb67 0 22deg, #654421 23deg 40deg, transparent 41deg 60deg) right bottom / 12px 12px no-repeat; }
+
+.frame-frostbound::after { background: conic-gradient(from 20deg, #e9ffffdd, #6792ac99, #fff, #add8e3aa, #f7ffffee, #8fadbacc) left top / 12px 12px no-repeat,
+    conic-gradient(from 20deg, #e9ffffdd, #6792ac99, #fff, #add8e3aa, #f7ffffee, #8fadbacc) right top / 12px 12px no-repeat,
+    conic-gradient(from 20deg, #e9ffffdd, #6792ac99, #fff, #add8e3aa, #f7ffffee, #8fadbacc) left bottom / 12px 12px no-repeat,
+    conic-gradient(from 20deg, #e9ffffdd, #6792ac99, #fff, #add8e3aa, #f7ffffee, #8fadbacc) right bottom / 12px 12px no-repeat; }
+
+.frame-street-drift::after { background: radial-gradient(ellipse at 50% 72%, #9e6673 0 5%, #290f1c 12% 23%, #050509 27% 34%, #747079 37% 42%, #222028 44% 51%, transparent 53%) left top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 50% 72%, #9e6673 0 5%, #290f1c 12% 23%, #050509 27% 34%, #747079 37% 42%, #222028 44% 51%, transparent 53%) right top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 50% 72%, #9e6673 0 5%, #290f1c 12% 23%, #050509 27% 34%, #747079 37% 42%, #222028 44% 51%, transparent 53%) left bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 50% 72%, #9e6673 0 5%, #290f1c 12% 23%, #050509 27% 34%, #747079 37% 42%, #222028 44% 51%, transparent 53%) right bottom / 12px 12px no-repeat; }
+
+.frame-steampunk-chrono::after { background: radial-gradient(circle, #1d2322 0 12%, #e4bd76 14% 21%, #8c5d32 23% 35%, transparent 37%) left top / 12px 12px no-repeat,
+    repeating-conic-gradient(#ba8950 0 19deg, #382a1e 20deg 27deg, #d9b57a 28deg 40deg, transparent 41deg 45deg) left top / 12px 12px no-repeat,
+    radial-gradient(circle, #1d2322 0 12%, #e4bd76 14% 21%, #8c5d32 23% 35%, transparent 37%) right top / 12px 12px no-repeat,
+    repeating-conic-gradient(#ba8950 0 19deg, #382a1e 20deg 27deg, #d9b57a 28deg 40deg, transparent 41deg 45deg) right top / 12px 12px no-repeat,
+    radial-gradient(circle, #1d2322 0 12%, #e4bd76 14% 21%, #8c5d32 23% 35%, transparent 37%) left bottom / 12px 12px no-repeat,
+    repeating-conic-gradient(#ba8950 0 19deg, #382a1e 20deg 27deg, #d9b57a 28deg 40deg, transparent 41deg 45deg) left bottom / 12px 12px no-repeat,
+    radial-gradient(circle, #1d2322 0 12%, #e4bd76 14% 21%, #8c5d32 23% 35%, transparent 37%) right bottom / 12px 12px no-repeat,
+    repeating-conic-gradient(#ba8950 0 19deg, #382a1e 20deg 27deg, #d9b57a 28deg 40deg, transparent 41deg 45deg) right bottom / 12px 12px no-repeat; }
+
+.frame-sakura-urushi::after { background: radial-gradient(ellipse at 50% 27%, #fff3ec 0 16%, transparent 18%) left top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 28% 47%, #d2bdce 0 16%, transparent 18%) left top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 72% 47%, #ffe9e2 0 16%, transparent 18%) left top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 36% 72%, #f7e0ee 0 16%, transparent 18%) left top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 65% 72%, #c6cbdc 0 16%, transparent 18%) left top / 12px 12px no-repeat,
+    radial-gradient(circle, #ba9955 0 20%, transparent 22%) left top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 50% 27%, #fff3ec 0 16%, transparent 18%) right top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 28% 47%, #d2bdce 0 16%, transparent 18%) right top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 72% 47%, #ffe9e2 0 16%, transparent 18%) right top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 36% 72%, #f7e0ee 0 16%, transparent 18%) right top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 65% 72%, #c6cbdc 0 16%, transparent 18%) right top / 12px 12px no-repeat,
+    radial-gradient(circle, #ba9955 0 20%, transparent 22%) right top / 12px 12px no-repeat,
+    radial-gradient(ellipse at 50% 27%, #fff3ec 0 16%, transparent 18%) left bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 28% 47%, #d2bdce 0 16%, transparent 18%) left bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 72% 47%, #ffe9e2 0 16%, transparent 18%) left bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 36% 72%, #f7e0ee 0 16%, transparent 18%) left bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 65% 72%, #c6cbdc 0 16%, transparent 18%) left bottom / 12px 12px no-repeat,
+    radial-gradient(circle, #ba9955 0 20%, transparent 22%) left bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 50% 27%, #fff3ec 0 16%, transparent 18%) right bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 28% 47%, #d2bdce 0 16%, transparent 18%) right bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 72% 47%, #ffe9e2 0 16%, transparent 18%) right bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 36% 72%, #f7e0ee 0 16%, transparent 18%) right bottom / 12px 12px no-repeat,
+    radial-gradient(ellipse at 65% 72%, #c6cbdc 0 16%, transparent 18%) right bottom / 12px 12px no-repeat,
+    radial-gradient(circle, #ba9955 0 20%, transparent 22%) right bottom / 12px 12px no-repeat; }

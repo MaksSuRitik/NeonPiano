@@ -16,6 +16,7 @@ import {
   where, 
   orderBy, 
   limit,
+  arrayUnion,
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { 
@@ -57,6 +58,7 @@ export {
   where,
   orderBy,
   limit,
+  arrayUnion,
   serverTimestamp,
   // Storage helpers
   ref,
