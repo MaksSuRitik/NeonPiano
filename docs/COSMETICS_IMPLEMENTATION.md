@@ -83,7 +83,7 @@ The filter normalizes whitespace and case, matches titles/artists, preserves sur
 
 ## Localization
 
-All **48 specified keys per language** are complete using the exact supplied text: 7 frame names + 7 descriptions, 16 title names + 16 descriptions, and the two admin search keys. Existing semantic keys are retained. The i18n language-change subscription refreshes dynamic cosmetics and level options immediately; the placeholder uses the existing DOM translation mechanism.
+All **48 specified keys per language** are complete: 7 frame names + 7 unlock instructions, 16 title names + 16 unlock instructions, and the two admin search keys. Following the user's correction, the text beneath each new cosmetic explains how to obtain it instead of describing its appearance or story. Existing semantic keys are retained. The i18n language-change subscription refreshes dynamic cosmetics and level options immediately; the placeholder uses the existing DOM translation mechanism.
 
 ## Changed files
 
