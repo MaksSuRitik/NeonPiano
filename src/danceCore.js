@@ -4363,6 +4363,7 @@ function updateRipples(dt) {
         State.sourceNode.playbackRate.value = 1.0;
         State.sourceNode.start(State.startTime);
         State.lastFrameTime = 0;
+        State.lastRafTime = performance.now();
         State.isPlaying = true; State.isPaused = false;
         if (State.animationFrameId) {
             cancelAnimationFrame(State.animationFrameId);
@@ -4688,6 +4689,222 @@ function updateRipples(dt) {
         renderMenu();
         const searchInput = document.getElementById('song-search-input');
         if (searchInput) { searchInput.value = ''; document.getElementById('no-songs-msg')?.classList.add('hidden'); }
+    }
+
+    function hasNativeFullscreen() {
+        const el = document.documentElement;
+        return Boolean(el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen);
+    }
+
+    function isFullScreen() {
+        return Boolean(
+            document.fullscreenElement || 
+            document.webkitFullscreenElement || 
+            document.mozFullScreenElement || 
+            document.msFullscreenElement ||
+            document.body?.classList.contains('simulated-fullscreen') ||
+            document.documentElement?.classList.contains('simulated-fullscreen')
+        );
+    }
+
+    function updateFullscreenIcons() {
+        const fsActive = isFullScreen();
+        const iconSvg = fsActive ? icons.minimize(18) : icons.maximize(18);
+        const iconSvgSmall = fsActive ? icons.minimize(16) : icons.maximize(16);
+        const fsText = fsActive ? (getText('exitFullscreen') || 'Віконний режим') : (getText('fullscreen') || 'Повний екран');
+
+        const headerFsIcon = document.getElementById('fullscreen-icon-container');
+        if (headerFsIcon) headerFsIcon.innerHTML = iconSvg;
+        const headerFsBtn = document.getElementById('btn-fullscreen');
+        if (headerFsBtn) {
+            headerFsBtn.setAttribute('title', fsText);
+            headerFsBtn.setAttribute('aria-label', fsText);
+        }
+
+        const settingsFsIcon = document.getElementById('settings-fullscreen-icon');
+        if (settingsFsIcon) settingsFsIcon.innerHTML = iconSvgSmall;
+        const settingsFsText = document.getElementById('settings-fullscreen-text');
+        if (settingsFsText) settingsFsText.textContent = fsText;
+
+        const pauseFsIcon = document.getElementById('pause-fullscreen-icon');
+        if (pauseFsIcon) pauseFsIcon.innerHTML = iconSvgSmall;
+        const pauseFsText = document.getElementById('pause-fullscreen-text');
+        if (pauseFsText) pauseFsText.textContent = fsText;
+    }
+
+    async function toggleFullScreen() {
+        playClick();
+        const currentlyFs = isFullScreen();
+        try {
+            if (!currentlyFs) {
+                if (hasNativeFullscreen()) {
+                    const el = document.documentElement;
+                    if (el.requestFullscreen) await el.requestFullscreen();
+                    else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+                    else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
+                    else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+                } else {
+                    document.body?.classList.add('simulated-fullscreen');
+                    document.documentElement?.classList.add('simulated-fullscreen');
+                    window.scrollTo(0, 0);
+                    if (typeof showGameNotification === 'function') {
+                        showGameNotification(getText('iosFullscreenHint') || 'Повноекранний режим активовано');
+                    }
+                }
+            } else {
+                if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+                    if (document.exitFullscreen) await document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+                    else if (document.mozCancelFullScreen) await document.mozCancelFullScreen();
+                    else if (document.msExitFullscreen) await document.msExitFullscreen();
+                }
+                document.body?.classList.remove('simulated-fullscreen');
+                document.documentElement?.classList.remove('simulated-fullscreen');
+            }
+        } catch (err) {
+            console.warn("[Fullscreen] Request failed, using simulated fallback:", err);
+            if (!currentlyFs) {
+                document.body?.classList.add('simulated-fullscreen');
+                document.documentElement?.classList.add('simulated-fullscreen');
+                window.scrollTo(0, 0);
+            } else {
+                document.body?.classList.remove('simulated-fullscreen');
+                document.documentElement?.classList.remove('simulated-fullscreen');
+            }
+        }
+        setTimeout(() => {
+            if (typeof resizeCanvas === 'function') resizeCanvas();
+            updateFullscreenIcons();
+        }, 60);
+    }
+
+    function forceReleaseAllInputs() {
+        State.keyState = [false, false, false, false];
+        laneElements.forEach(el => { if (el) el.classList.remove('active'); });
+        laneKeyElements.forEach(el => { if (el) el.classList.remove('active'); });
+        State.laneBeamAlpha = [0, 0, 0, 0];
+        State.holdingTiles.forEach((tile, lane) => {
+            if (tile) {
+                tile.holding = false;
+                tile.released = true; 
+                if (tile.fadeStartTime === 0) tile.fadeStartTime = Date.now();
+                toggleHoldEffect(lane, false);
+            }
+        });
+        State.holdingTiles = [null, null, null, null];
+    }
+
+    function togglePauseGame(forcePause) {
+        if (!State.isPlaying) return;
+        const targetPaused = (typeof forcePause === 'boolean') ? forcePause : !State.isPaused;
+        if (State.isPaused === targetPaused) return;
+        State.isPaused = targetPaused;
+
+        const m = document.getElementById('pause-modal');
+        if (State.isPaused) {
+            const currentSongTimeMs = State.audioCtx ? (State.audioCtx.currentTime - (State.startTime || 0)) * 1000 : 0;
+            State.pauseSongTime = currentSongTimeMs;
+
+            if (State.sourceNode) {
+                try {
+                    State.sourceNode.onended = null;
+                    State.sourceNode.stop(0);
+                    State.sourceNode.disconnect();
+                } catch (e) {}
+                State.sourceNode = null;
+            }
+
+            if (State.masterGain && State.audioCtx) {
+                try {
+                    State.masterGain.gain.setValueAtTime(0, State.audioCtx.currentTime);
+                } catch (e) {}
+            }
+            if (State.audioCtx && State.audioCtx.state === 'running') {
+                try { State.audioCtx.suspend(); } catch (e) {}
+            }
+
+            forceReleaseAllInputs();
+            State.keyState = [false, false, false, false];
+            State.holdingTiles.forEach((tile, lane) => {
+                if (tile) {
+                    tile.holding = false;
+                    tile.released = true;
+                    if (!tile.fadeStartTime) tile.fadeStartTime = Date.now();
+                    if (!tile.releaseSongTime) tile.releaseSongTime = State.pauseSongTime;
+                    toggleHoldEffect(lane, false);
+                }
+            });
+            State.holdingTiles = [null, null, null, null];
+            laneElements.forEach(el => { if (el) el.classList.remove('active'); });
+
+            if (State.animationFrameId) {
+                cancelAnimationFrame(State.animationFrameId);
+                State.animationFrameId = null;
+            }
+            State.lastFrameTime = 0;
+
+            const currentSong = songsDB[State.currentSongIndex];
+            const pauseSongTitle = document.getElementById('pause-song-title');
+            if (pauseSongTitle) pauseSongTitle.textContent = currentSong ? `${currentSong.artist} — ${currentSong.title}` : '';
+            const pauseScore = document.getElementById('pause-stat-score');
+            if (pauseScore) pauseScore.textContent = Math.round(State.score).toLocaleString();
+            const pauseCombo = document.getElementById('pause-stat-combo');
+            if (pauseCombo) pauseCombo.textContent = String(State.combo || 0);
+            updateFullscreenIcons();
+            m?.classList.remove('hidden');
+        } else {
+            if (State.audioCtx && State.audioCtx.state === 'suspended') {
+                try { State.audioCtx.resume(); } catch (e) {}
+            }
+            if (State.masterGain && State.audioCtx) {
+                try {
+                    State.masterGain.gain.setValueAtTime(State.isMuted ? 0 : 1, State.audioCtx.currentTime);
+                } catch (e) {}
+            }
+
+            if (State.audioCtx && State.audioBuffer) {
+                if (State.sourceNode) {
+                    try { State.sourceNode.stop(0); State.sourceNode.disconnect(); } catch (e) {}
+                    State.sourceNode = null;
+                }
+                State.sourceNode = State.audioCtx.createBufferSource();
+                State.sourceNode.buffer = State.audioBuffer;
+                if (!State.analyser) {
+                    State.analyser = State.audioCtx.createAnalyser();
+                    State.analyser.fftSize = 64;
+                    State.dataArray = new Uint8Array(State.analyser.frequencyBinCount);
+                }
+                State.sourceNode.connect(State.analyser);
+                State.analyser.connect(State.masterGain);
+                State.sourceNode.playbackRate.value = 1.0;
+
+                const pauseOffsetSec = (State.pauseSongTime || 0) / 1000;
+                const curAudioTime = State.audioCtx.currentTime;
+
+                if (pauseOffsetSec < 0) {
+                    const remainingDelay = -pauseOffsetSec;
+                    State.startTime = curAudioTime + remainingDelay;
+                    State.sourceNode.start(State.startTime, 0);
+                } else {
+                    const bufferDuration = State.audioBuffer.duration || 0;
+                    const safeOffset = Math.min(Math.max(0, pauseOffsetSec), bufferDuration);
+                    State.startTime = curAudioTime - safeOffset;
+                    State.sourceNode.start(curAudioTime, safeOffset);
+                }
+            }
+
+            forceReleaseAllInputs();
+            State.keyState = [false, false, false, false];
+
+            m?.classList.add('hidden');
+            State.lastFrameTime = 0;
+            State.lastRafTime = performance.now();
+            if (State.animationFrameId) {
+                cancelAnimationFrame(State.animationFrameId);
+                State.animationFrameId = null;
+            }
+            State.animationFrameId = requestAnimationFrame(gameLoop);
+        }
     }
 
     // ==========================================
@@ -6070,94 +6287,6 @@ function updateRipples(dt) {
             }
         });
 
-        function hasNativeFullscreen() {
-            const el = document.documentElement;
-            return Boolean(el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen);
-        }
-
-        function isFullScreen() {
-            return Boolean(
-                document.fullscreenElement || 
-                document.webkitFullscreenElement || 
-                document.mozFullScreenElement || 
-                document.msFullscreenElement ||
-                document.body?.classList.contains('simulated-fullscreen') ||
-                document.documentElement?.classList.contains('simulated-fullscreen')
-            );
-        }
-
-        function updateFullscreenIcons() {
-            const fsActive = isFullScreen();
-            const iconSvg = fsActive ? icons.minimize(18) : icons.maximize(18);
-            const iconSvgSmall = fsActive ? icons.minimize(16) : icons.maximize(16);
-            const fsText = fsActive ? (getText('exitFullscreen') || 'Віконний режим') : (getText('fullscreen') || 'Повний екран');
-
-            const headerFsIcon = document.getElementById('fullscreen-icon-container');
-            if (headerFsIcon) headerFsIcon.innerHTML = iconSvg;
-            const headerFsBtn = document.getElementById('btn-fullscreen');
-            if (headerFsBtn) {
-                headerFsBtn.setAttribute('title', fsText);
-                headerFsBtn.setAttribute('aria-label', fsText);
-            }
-
-            const settingsFsIcon = document.getElementById('settings-fullscreen-icon');
-            if (settingsFsIcon) settingsFsIcon.innerHTML = iconSvgSmall;
-            const settingsFsText = document.getElementById('settings-fullscreen-text');
-            if (settingsFsText) settingsFsText.textContent = fsText;
-
-            const pauseFsIcon = document.getElementById('pause-fullscreen-icon');
-            if (pauseFsIcon) pauseFsIcon.innerHTML = iconSvgSmall;
-            const pauseFsText = document.getElementById('pause-fullscreen-text');
-            if (pauseFsText) pauseFsText.textContent = fsText;
-        }
-
-        async function toggleFullScreen() {
-            playClick();
-            const currentlyFs = isFullScreen();
-            try {
-                if (!currentlyFs) {
-                    if (hasNativeFullscreen()) {
-                        const el = document.documentElement;
-                        if (el.requestFullscreen) await el.requestFullscreen();
-                        else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-                        else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
-                        else if (el.msRequestFullscreen) await el.msRequestFullscreen();
-                    } else {
-                        // Fallback для iOS Safari / iPhone: CSS режим емуляції повного екрану
-                        document.body?.classList.add('simulated-fullscreen');
-                        document.documentElement?.classList.add('simulated-fullscreen');
-                        window.scrollTo(0, 0);
-                        if (typeof showGameNotification === 'function') {
-                            showGameNotification(getText('iosFullscreenHint') || 'Повноекранний режим активовано');
-                        }
-                    }
-                } else {
-                    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
-                        if (document.exitFullscreen) await document.exitFullscreen();
-                        else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
-                        else if (document.mozCancelFullScreen) await document.mozCancelFullScreen();
-                        else if (document.msExitFullscreen) await document.msExitFullscreen();
-                    }
-                    document.body?.classList.remove('simulated-fullscreen');
-                    document.documentElement?.classList.remove('simulated-fullscreen');
-                }
-            } catch (err) {
-                console.warn("[Fullscreen] Request failed, using simulated fallback:", err);
-                if (!currentlyFs) {
-                    document.body?.classList.add('simulated-fullscreen');
-                    document.documentElement?.classList.add('simulated-fullscreen');
-                    window.scrollTo(0, 0);
-                } else {
-                    document.body?.classList.remove('simulated-fullscreen');
-                    document.documentElement?.classList.remove('simulated-fullscreen');
-                }
-            }
-            setTimeout(() => {
-                if (typeof resizeCanvas === 'function') resizeCanvas();
-                updateFullscreenIcons();
-            }, 60);
-        }
-
         setupBtn('btn-fullscreen', toggleFullScreen);
         setupBtn('settings-fullscreen-toggle', toggleFullScreen);
         setupBtn('btn-pause-fullscreen', toggleFullScreen);
@@ -6166,128 +6295,6 @@ function updateRipples(dt) {
             document.addEventListener(ev, updateFullscreenIcons);
         });
         updateFullscreenIcons();
-
-        function togglePauseGame(forcePause) {
-            if (!State.isPlaying) return;
-            const targetPaused = (typeof forcePause === 'boolean') ? forcePause : !State.isPaused;
-            if (State.isPaused === targetPaused) return;
-            State.isPaused = targetPaused;
-
-            const m = document.getElementById('pause-modal');
-            if (State.isPaused) {
-                // 1. Точна фіксація часу пісні на момент паузи
-                const currentSongTimeMs = State.audioCtx ? (State.audioCtx.currentTime - (State.startTime || 0)) * 1000 : 0;
-                State.pauseSongTime = currentSongTimeMs;
-
-                // 2. Безкомпромісна зупинка та від'єднання аудіовузла: унеможливлює фонове програвання
-                if (State.sourceNode) {
-                    try {
-                        State.sourceNode.onended = null;
-                        State.sourceNode.stop(0);
-                        State.sourceNode.disconnect();
-                    } catch (e) {}
-                    State.sourceNode = null;
-                }
-
-                // 3. Глушіння вихідного гейну та призупинення AudioContext
-                if (State.masterGain && State.audioCtx) {
-                    try {
-                        State.masterGain.gain.setValueAtTime(0, State.audioCtx.currentTime);
-                    } catch (e) {}
-                }
-                if (State.audioCtx && State.audioCtx.state === 'running') {
-                    try { State.audioCtx.suspend(); } catch (e) {}
-                }
-
-                // 4. Скидання всіх активних натискань та довгих нот для запобігання авто-фармінгу очок
-                forceReleaseAllInputs();
-                State.keyState = [false, false, false, false];
-                State.holdingTiles.forEach((tile, lane) => {
-                    if (tile) {
-                        tile.holding = false;
-                        tile.released = true;
-                        if (!tile.fadeStartTime) tile.fadeStartTime = Date.now();
-                        if (!tile.releaseSongTime) tile.releaseSongTime = State.pauseSongTime;
-                        toggleHoldEffect(lane, false);
-                    }
-                });
-                State.holdingTiles = [null, null, null, null];
-                laneElements.forEach(el => { if (el) el.classList.remove('active'); });
-
-                // 5. Зупинка кадрового циклу на час паузи
-                if (State.animationFrameId) {
-                    cancelAnimationFrame(State.animationFrameId);
-                    State.animationFrameId = null;
-                }
-                State.lastFrameTime = 0;
-
-                const currentSong = songsDB[State.currentSongIndex];
-                const pauseSongTitle = document.getElementById('pause-song-title');
-                if (pauseSongTitle) pauseSongTitle.textContent = currentSong ? `${currentSong.artist} — ${currentSong.title}` : '';
-                const pauseScore = document.getElementById('pause-stat-score');
-                if (pauseScore) pauseScore.textContent = Math.round(State.score).toLocaleString();
-                const pauseCombo = document.getElementById('pause-stat-combo');
-                if (pauseCombo) pauseCombo.textContent = String(State.combo || 0);
-                updateFullscreenIcons();
-                m?.classList.remove('hidden');
-            } else {
-                // 1. Відновлення AudioContext та рівня гучності
-                if (State.audioCtx && State.audioCtx.state === 'suspended') {
-                    try { State.audioCtx.resume(); } catch (e) {}
-                }
-                if (State.masterGain && State.audioCtx) {
-                    try {
-                        State.masterGain.gain.setValueAtTime(State.isMuted ? 0 : 1, State.audioCtx.currentTime);
-                    } catch (e) {}
-                }
-
-                // 2. Створення нового SourceNode з точним збереженням позиції пісні (мілісекунда в мілісекунду)
-                if (State.audioCtx && State.audioBuffer) {
-                    if (State.sourceNode) {
-                        try { State.sourceNode.stop(0); State.sourceNode.disconnect(); } catch (e) {}
-                        State.sourceNode = null;
-                    }
-                    State.sourceNode = State.audioCtx.createBufferSource();
-                    State.sourceNode.buffer = State.audioBuffer;
-                    if (!State.analyser) {
-                        State.analyser = State.audioCtx.createAnalyser();
-                        State.analyser.fftSize = 64;
-                        State.dataArray = new Uint8Array(State.analyser.frequencyBinCount);
-                    }
-                    State.sourceNode.connect(State.analyser);
-                    State.analyser.connect(State.masterGain);
-                    State.sourceNode.playbackRate.value = 1.0;
-
-                    const pauseOffsetSec = (State.pauseSongTime || 0) / 1000;
-                    const curAudioTime = State.audioCtx.currentTime;
-
-                    if (pauseOffsetSec < 0) {
-                        // Пауза під час початкової 2-секундної затримки перед стартом треку
-                        const remainingDelay = -pauseOffsetSec;
-                        State.startTime = curAudioTime + remainingDelay;
-                        State.sourceNode.start(State.startTime, 0);
-                    } else {
-                        // Пауза під час гри: стартуємо з точного офсету та калібруємо startTime
-                        const bufferDuration = State.audioBuffer.duration || 0;
-                        const safeOffset = Math.min(Math.max(0, pauseOffsetSec), bufferDuration);
-                        State.startTime = curAudioTime - safeOffset;
-                        State.sourceNode.start(curAudioTime, safeOffset);
-                    }
-                }
-
-                forceReleaseAllInputs();
-                State.keyState = [false, false, false, false];
-
-                m?.classList.add('hidden');
-                State.lastFrameTime = 0;
-                State.lastRafTime = performance.now();
-                if (State.animationFrameId) {
-                    cancelAnimationFrame(State.animationFrameId);
-                    State.animationFrameId = null;
-                }
-                State.animationFrameId = requestAnimationFrame(gameLoop);
-            }
-        }
 
         const setupNav = (id, fn) => { const btn = document.getElementById(id); if (btn) btn.onclick = () => { playClick(); fn(); }; };
         setupNav('global-back-btn', () => State.isPlaying ? quitGame() : window.location.href = 'index.html');
@@ -10793,36 +10800,6 @@ function updateRipples(dt) {
         });
     }
 
-    // ==========================================
-    // Критичне оновлення безпеки. Система протидії експлойтам під час переривань роботи браузера.
-    // ==========================================
-    
-    // Моя функція для гарантованого примусового зняття всіх натискань. Вона перешкоджає можливості "заморозити" довгу ноту і фармити на ній нескінченні очки.
-    function forceReleaseAllInputs() {
-        // 1. Повне скидання булевих прапорців натискань у масиві State.keyState.
-        State.keyState = [false, false, false, false];
-
-        // 2. Зняття CSS-класів активності з елементів доріжок та обнулення прозорості візуальних променів Canvas.
-        laneElements.forEach(el => { if (el) el.classList.remove('active'); });
-        laneKeyElements.forEach(el => { if (el) el.classList.remove('active'); });
-        State.laneBeamAlpha = [0, 0, 0, 0];
-
-        // 3. Найважливіший крок: примусовий розрив процесу утримання всіх активних довгих нот.
-        // Я роблю це, щоб гравець не міг отримати перевагу від системного лагу або згорнутої вкладки.
-        State.holdingTiles.forEach((tile, lane) => {
-            if (tile) {
-                tile.holding = false;
-                // Я навмисно встановлюю прапорець released = true, щоб запустити анімацію зникнення ноти і показати гравцю, що вона "зірвалася".
-                tile.released = true; 
-                if (tile.fadeStartTime === 0) tile.fadeStartTime = Date.now();
-                // Я вимикаю ефект візуального світлового променя на цих доріжках.
-                toggleHoldEffect(lane, false);
-            }
-        });
-        // Повністю очищую масив об'єктів нот, які зараз нібито "утримуються".
-        State.holdingTiles = [null, null, null, null];
-    }
-
     function handleAutoPause(reason = 'blur') {
         forceReleaseAllInputs(); 
         if (State.isPlaying && !State.isPaused) {
@@ -10906,10 +10883,12 @@ function updateRipples(dt) {
             const settings = await getThemeSettings();
             if (settings && typeof settings === 'object') {
                 FieldThemes.applyThemeOverrides(settings);
-                if (typeof renderShop === 'function' && shopModal && !shopModal.classList.contains('hidden')) {
+                const sm = document.getElementById('shop-modal');
+                if (typeof renderShop === 'function' && sm && !sm.classList.contains('hidden')) {
                     renderShop();
                 }
-                if (typeof renderCustomizationThemes === 'function' && customizationModal && !customizationModal.classList.contains('hidden')) {
+                const cm = document.getElementById('customization-modal');
+                if (typeof renderCustomizationThemes === 'function' && cm && !cm.classList.contains('hidden')) {
                     renderCustomizationThemes();
                 }
             }
@@ -10926,6 +10905,7 @@ function updateRipples(dt) {
 
     window.__gameDebug = { 
         State, CONFIG, songsDB: () => songsDB, renderMenu, startGame, endGame, quitGame, 
+        togglePauseGame, toggleFullScreen, updateFullscreenIcons, forceReleaseAllInputs,
         NotePool, analyzeAudio, audioBufferCache, tileMapCache, SpriteCache, 
         handleInputDown, handleInputUp, draw, FieldThemes, updateProgressBar, 
         cleanLevelRemnants, i18n, updateGameText,
