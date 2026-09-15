@@ -51,12 +51,13 @@ test('FRAMES registry contains all 24 frames including physical and themed colle
     'frame_abyss_portal',
     'frame_cassette_808',
     'frame_leader_crown',
+    'frame_silver_crown',
     'frame_neon_archive',
     'frame_star_forge',
     'frame_eared_melon'
   ];
 
-  assert.equal(FRAMES.length, 25, 'Total frames must be 25');
+  assert.equal(FRAMES.length, 26, 'Total frames must be 26');
   for (const fId of expectedNewFrames) {
     const frame = FRAMES.find(f => f.id === fId);
     assert.ok(frame, `Frame ${fId} must be registered`);
@@ -151,8 +152,8 @@ test.beforeEach(() => localStorage.clear());
 const run = (ctx) => checkCosmeticsUnlocks({ playedAt: new Date(2026, 0, 1, 12).getTime(), ...ctx });
 const won = { victory: true, totalMisses: 0, track: { isPhonk: true }, isHardcore: true };
 
-test('unique stable IDs across all 25 frames and 55 titles', () => {
-  assert.equal(new Set(FRAMES.map(x => x.id)).size, 25);
+test('unique stable IDs across all 26 frames and 55 titles', () => {
+  assert.equal(new Set(FRAMES.map(x => x.id)).size, 26);
   assert.equal(new Set(TITLES.map(x => x.id)).size, 55);
   assert.ok(!TITLES.some(x => x.id.includes('grandmaster')));
 });
@@ -221,7 +222,8 @@ test('strict live conditions and their negative boundaries', () => {
     ['frame_blossom_charm', {...won, themeId: 'sanhua'}, {...won, themeId: 'sanhua', totalMisses: 1}],
     ['frame_abyss_portal', {themeId: 'cosmic', maxCombo: 1000}, {themeId: 'cosmic', maxCombo: 999}],
     ['frame_cassette_808', {phonkVictoryCount: 10}, {phonkVictoryCount: 9}],
-    ['frame_leader_crown', {globalRank: 3}, {globalRank: 4}],
+    ['frame_leader_crown', {globalRank: 1}, {globalRank: 2}],
+    ['frame_silver_crown', {globalRank: 2}, {globalRank: 3}],
     ['frame_star_forge', {totalDiamondStars: 10}, {totalDiamondStars: 9}],
     ['frame_eared_melon', {hardHardcoreTrackTitles: Array.from({length: 15}, (_, i) => 'T' + i)}, {hardHardcoreTrackTitles: Array.from({length: 14}, (_, i) => 'T' + i)}],
   ];
@@ -589,4 +591,41 @@ test('K: Eared Melon localization is complete in RU, UA, EN', () => {
   assert.ok(ua.frameEaredMelonDesc.includes('15') && ua.frameEaredMelonDesc.includes('Hard'));
   assert.equal(en.frameEaredMelon, 'Eared Melon');
   assert.ok(en.frameEaredMelonDesc.includes('15') && en.frameEaredMelonDesc.includes('Hard'));
+});
+
+test('L: Leader Crown (Rank 1) and Silver Crown (Rank 1-2) unlock behavior', () => {
+  localStorage.clear();
+  const res1 = run({ globalRank: 1 });
+  assert.ok(res1.includes('frame_leader_crown'), 'Rank 1 must unlock frame_leader_crown');
+  assert.ok(res1.includes('frame_silver_crown'), 'Rank 1 must unlock frame_silver_crown');
+  assert.ok(res1.includes('frame_baroque_gold'), 'Rank 1 must unlock frame_baroque_gold');
+
+  localStorage.clear();
+  const res2 = run({ globalRank: 2 });
+  assert.ok(!res2.includes('frame_leader_crown'), 'Rank 2 must NOT unlock frame_leader_crown');
+  assert.ok(res2.includes('frame_silver_crown'), 'Rank 2 must unlock frame_silver_crown');
+  assert.ok(res2.includes('frame_baroque_gold'), 'Rank 2 must unlock frame_baroque_gold');
+
+  localStorage.clear();
+  const res3 = run({ globalRank: 3 });
+  assert.ok(!res3.includes('frame_leader_crown'), 'Rank 3 must NOT unlock frame_leader_crown');
+  assert.ok(!res3.includes('frame_silver_crown'), 'Rank 3 must NOT unlock frame_silver_crown');
+  assert.ok(res3.includes('frame_baroque_gold'), 'Rank 3 must unlock frame_baroque_gold');
+});
+
+test('M: Leader Crown and Silver Crown localization is complete in RU, UA, EN', () => {
+  assert.equal(ru.frameLeaderCrown, 'Корона лидера');
+  assert.ok(ru.frameLeaderCrownDesc.includes('1'));
+  assert.equal(ru.frameSilverCrown, 'Серебряная корона');
+  assert.ok(ru.frameSilverCrownDesc.includes('2'));
+
+  assert.equal(ua.frameLeaderCrown, 'Корона лідера');
+  assert.ok(ua.frameLeaderCrownDesc.includes('1'));
+  assert.equal(ua.frameSilverCrown, 'Срібна корона');
+  assert.ok(ua.frameSilverCrownDesc.includes('2'));
+
+  assert.equal(en.frameLeaderCrown, "Leader's Crown");
+  assert.ok(en.frameLeaderCrownDesc.includes('1st'));
+  assert.equal(en.frameSilverCrown, 'Silver Crown');
+  assert.ok(en.frameSilverCrownDesc.includes('2nd'));
 });

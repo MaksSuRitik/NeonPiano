@@ -118,6 +118,7 @@ export const FRAMES = [
     ['abyss_portal', 'frameAbyssPortal', 'collectionCosmic'],
     ['cassette_808', 'frameCassette808', 'collectionPhonk'],
     ['leader_crown', 'frameLeaderCrown', 'collectionPrestige'],
+    ['silver_crown', 'frameSilverCrown', 'collectionPrestige'],
     ['neon_archive', 'frameNeonArchive', 'collectionPrestige'],
     ['star_forge', 'frameStarForge', 'collectionPrestige'],
     ['eared_melon', 'frameEaredMelon', 'collectionPrestige']
@@ -762,7 +763,8 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
   earn('frame_blossom_charm', cold && cleanWin);
   earn('frame_abyss_portal', ctx.themeId === 'cosmic' && ctx.maxCombo >= 1000);
   earn('frame_cassette_808', totals.phonkVictoryCount >= 10);
-  earn('frame_leader_crown', ctx.globalRank >= 1 && ctx.globalRank <= 3);
+  earn('frame_leader_crown', ctx.globalRank === 1);
+  earn('frame_silver_crown', ctx.globalRank >= 1 && ctx.globalRank <= 2);
   earn('frame_neon_archive', getLocalCosmetics().unlockedTitles.filter(id => TITLES.some(t => t.id === id && !t.unlockedByDefault)).length >= 20);
   earn('frame_star_forge', ctx.totalDiamondStars >= 10);
   earn('frame_eared_melon', (totals.hardHardcoreTrackTitles || []).length >= 15);

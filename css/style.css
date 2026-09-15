@@ -12547,3 +12547,33 @@ body[data-theme="light"] .track-diff-badge.hardcore-modifier { color:#9f1239; ba
   border:0; border-radius:50%; animation:none; filter:none;
 }
 .frame-eared-melon::after { content:none; }
+
+/* Leader's Crown (Rank 1): Imperial Gold Crown SVG */
+.frame-leader-crown {
+  position:relative; isolation:isolate; overflow:visible !important;
+  border:0 !important; border-radius:50% !important;
+  animation:none !important; filter:none !important;
+  box-shadow:inset 0 0 0 1px #d97706 !important;
+}
+.frame-leader-crown > :is(.avatar-photo,.avatar-letter) { border-radius:50%; }
+.frame-leader-crown::before {
+  content:''; position:absolute; inset:-22%; z-index:3; pointer-events:none;
+  background:url('../assets/frames/leader-crown.svg') center / 100% 100% no-repeat;
+  border:0; border-radius:50%; animation:none; filter:none;
+}
+.frame-leader-crown::after { content:none; }
+
+/* Silver Crown (Top 2): Radiant Silver Crown SVG */
+.frame-silver-crown {
+  position:relative; isolation:isolate; overflow:visible !important;
+  border:0 !important; border-radius:50% !important;
+  animation:none !important; filter:none !important;
+  box-shadow:inset 0 0 0 1px #94a3b8 !important;
+}
+.frame-silver-crown > :is(.avatar-photo,.avatar-letter) { border-radius:50%; }
+.frame-silver-crown::before {
+  content:''; position:absolute; inset:-22%; z-index:3; pointer-events:none;
+  background:url('../assets/frames/silver-crown.svg') center / 100% 100% no-repeat;
+  border:0; border-radius:50%; animation:none; filter:none;
+}
+.frame-silver-crown::after { content:none; }

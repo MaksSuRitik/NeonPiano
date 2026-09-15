@@ -1240,7 +1240,7 @@ function bootGame() {
                         unlockedThemeIds: FieldThemes.getUnlockedThemes()
                     }) : [];
                 if (ranking.status === 'fulfilled') {
-                    const rank = ranking.value.docs.findIndex(d => d.id === userId);
+                    const rank = ranking.value.docs.findIndex(d => d.id === userId || d.data()?.userId === userId);
                     if (rank >= 0) earned.push(...Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: rank + 1 }, getText, notify));
                 }
                 void persistCosmeticsDelta(earned);
@@ -1446,6 +1446,14 @@ function bootGame() {
                 activeFieldTheme: FieldThemes.getActiveThemeId(),
                 spentCoins: parseInt(localStorage.getItem('neon_spent_coins') || '0', 10)
             }, { merge: true });
+
+            try {
+                const topSnap = await getDocs(query(collection(db, "global_leaderboard"), orderBy("totalScore", "desc"), limit(3)));
+                const currentRankIdx = topSnap.docs.findIndex(d => d.id === userId || d.data()?.userId === userId);
+                if (currentRankIdx >= 0) {
+                    void persistCosmeticsDelta(Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: currentRankIdx + 1 }, getText, showNotification));
+                }
+            } catch (e) {}
         } catch (e) {
             console.error("Global Sync Error:", e);
         }
