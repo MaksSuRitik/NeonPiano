@@ -12391,27 +12391,9 @@ body.simulated-fullscreen canvas#pixiCanvas {
   }
 }
 
-/* 8. Leader's Crown: Sovereign Radiant Gold & Imperial Aura */
-.frame-leader-crown {
-  border: 2.5px solid #fbbf24 !important;
-  box-shadow: 0 0 16px #f59e0b, 0 0 34px rgba(251, 191, 36, 0.85), 0 0 50px rgba(254, 240, 138, 0.55), inset 0 0 11px rgba(253, 230, 138, 0.75) !important;
-  animation: frame-leader-crown-radiance 2.6s infinite ease-in-out !important;
-}
-
-@keyframes frame-leader-crown-radiance {
-  0%, 100% {
-    box-shadow: 0 0 12px #f59e0b, 0 0 26px rgba(251, 191, 36, 0.65), 0 0 40px rgba(254, 240, 138, 0.4), inset 0 0 8px rgba(253, 230, 138, 0.5);
-    border-color: #f59e0b;
-  }
-  50% {
-    box-shadow: 0 0 22px #fbbf24, 0 0 44px rgba(251, 191, 36, 0.98), 0 0 60px rgba(254, 240, 138, 0.8), inset 0 0 14px #fffbeb;
-    border-color: #fde68a;
-  }
-}
-
 /* 9. Neon Archive: Cyber Matrix Data Grid & Emerald Scan */
 .frame-neon-archive {
-  border: 2px solid #10b981 !important;
+  border: 2.5px solid #10b981 !important;
   box-shadow: 0 0 12px #10b981, 0 0 26px rgba(6, 182, 212, 0.65), inset 0 0 8px rgba(16, 185, 129, 0.45) !important;
   animation: frame-neon-archive-scan 2.2s infinite ease-in-out !important;
 }
@@ -12446,7 +12428,7 @@ body.simulated-fullscreen canvas#pixiCanvas {
 }
 
 /* Light Mode Overrides for Collection Frames */
-body[data-theme="light"] :is(.frame-moon-rime, .frame-crimson-dawn, .frame-ice-moon-throne, .frame-silence-blades, .frame-blossom-charm, .frame-abyss-portal, .frame-cassette-808, .frame-leader-crown, .frame-neon-archive, .frame-star-forge) {
+body[data-theme="light"] :is(.frame-moon-rime, .frame-crimson-dawn, .frame-ice-moon-throne, .frame-silence-blades, .frame-blossom-charm, .frame-abyss-portal, .frame-cassette-808, .frame-neon-archive, .frame-star-forge) {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
 }
 
@@ -12457,34 +12439,33 @@ body[data-theme="light"] .frame-silence-blades { border-color: #475569 !importan
 body[data-theme="light"] .frame-blossom-charm { border-color: #db2777 !important; }
 body[data-theme="light"] .frame-abyss-portal { border-color: #7c3aed !important; }
 body[data-theme="light"] .frame-cassette-808 { border-color: #db2777 !important; }
-body[data-theme="light"] .frame-leader-crown { border-color: #d97706 !important; }
 body[data-theme="light"] .frame-neon-archive { border-color: #059669 !important; }
 body[data-theme="light"] .frame-star-forge { border-color: #0284c7 !important; }
 
 /* Circular material rings. Shared construction, individually authored inlays. */
-:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge) {
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-neon-archive,.frame-star-forge) {
   position: relative; isolation: isolate; overflow: visible !important;
   border: 0 !important; border-radius: 50% !important;
   background-clip: padding-box; animation: none !important;
   filter: none !important; outline: none !important;
   box-shadow: inset 0 0 0 1px var(--ring-shadow), 0 2px 4px #0005 !important;
 }
-:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge) > :is(.avatar-photo, .avatar-letter) { border-radius: 50%; }
-:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::before,
-:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::after {
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-neon-archive,.frame-star-forge) > :is(.avatar-photo, .avatar-letter) { border-radius: 50%; }
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-neon-archive,.frame-star-forge)::before,
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-neon-archive,.frame-star-forge)::after {
   content: ''; position: absolute; pointer-events: none; box-sizing: border-box;
   border-radius: 50% !important; clip-path: none !important;
   animation: none !important; filter: none !important; transform: none !important;
   opacity: 1; width: auto; height: auto; margin: 0;
 }
-:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::before {
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-neon-archive,.frame-star-forge)::before {
   inset: -5px; padding: 5px; z-index: 2; border: 1px solid var(--ring-shadow);
   background: var(--ring-inlay), conic-gradient(from 145deg, var(--ring-shadow), var(--ring-metal) 12%, var(--ring-light) 26%, var(--ring-metal) 38%, var(--ring-shadow) 53%, var(--ring-metal) 70%, var(--ring-light) 78%, var(--ring-shadow));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
   box-shadow: inset 0 1px 1px var(--ring-light), inset 0 -1px 2px var(--ring-shadow);
 }
-:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::after {
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-neon-archive,.frame-star-forge)::after {
   inset: -6px; z-index: 3; border: 1px solid var(--ring-metal);
   background: none; padding: 0; -webkit-mask: none; mask: none;
   box-shadow: inset 0 1px 0 var(--ring-light), 0 1px 2px #0006;
@@ -12509,19 +12490,17 @@ body[data-theme="light"] .frame-star-forge { border-color: #0284c7 !important; }
 .frame-blossom-charm { --ring-metal:#e7b5c1; --ring-shadow:#805666; --ring-light:#fff2e8; --ring-inlay:repeating-conic-gradient(from 18deg, #f9e3de 0deg 7deg, #b88097 7deg 12deg, transparent 12deg 72deg); }
 .frame-abyss-portal { --ring-metal:#6e608b; --ring-shadow:#171622; --ring-light:#d1b4e0; --ring-inlay:repeating-conic-gradient(from 30deg, #0e1323 0deg 28deg, #b5a4c6 28deg 30deg, #40384f 30deg 60deg); }
 .frame-cassette-808 { --ring-metal:#a2a7af; --ring-shadow:#26222a; --ring-light:#eeeeef; --ring-inlay:repeating-conic-gradient(#18171c 0deg 6deg, #b4b9bf 6deg 8deg, #34303b 8deg 30deg); }
-.frame-leader-crown { --ring-metal:#e0b25d; --ring-shadow:#5f4523; --ring-light:#fff1b9; --ring-inlay:repeating-conic-gradient(from 30deg, #8b5e2d 0deg 4deg, #fae3a5 4deg 7deg, transparent 7deg 60deg); }
 .frame-neon-archive { --ring-metal:#75a797; --ring-shadow:#263c39; --ring-light:#daf3da; --ring-inlay:repeating-conic-gradient(from 5deg, #122d2d 0deg 3deg, transparent 3deg 10deg, #dbeab6 10deg 12deg, transparent 12deg 45deg); }
 .frame-star-forge { --ring-metal:#d7baa0; --ring-shadow:#504454; --ring-light:#fff3d9; --ring-inlay:repeating-conic-gradient(from 22deg, #fbeedc 0deg 2deg, #827188 2deg 20deg, transparent 20deg 45deg); }
 .frame-baroque-gold::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #a62542 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
 .frame-gothic-thorn::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #86273e 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
-.frame-leader-crown::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #48766c 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
 .frame-ice-moon-throne::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #babbea 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
 .frame-sakura-urushi::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #f5b9bc 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
 .frame-cassette-808::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #c84753 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
 .frame-neon-archive::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #b6d990 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
 @media (prefers-reduced-motion: reduce) { .frame-collection { animation: none !important; } }
 
-body[data-theme] :is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge) { box-shadow: inset 0 0 0 1px var(--ring-shadow), 0 2px 4px #0005 !important; }
+body[data-theme] :is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-neon-archive,.frame-star-forge) { box-shadow: inset 0 0 0 1px var(--ring-shadow), 0 2px 4px #0005 !important; }
 .icon-user-container { width:24px; height:24px; flex:0 0 24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
 
 /* A second, secondary badge; the original difficulty badge retains its styling. */
@@ -12533,47 +12512,83 @@ body[data-theme] :is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,
 }
 body[data-theme="light"] .track-diff-badge.hardcore-modifier { color:#9f1239; background:#ffe4e6; border-color:#e9a9b5; }
 
-/* Eared Melon: transparent hoop, feline ears, silver companions and brass charm. */
-.frame-eared-melon {
-  position:relative; isolation:isolate; overflow:visible !important;
-  border:0 !important; border-radius:50% !important;
-  animation:none !important; filter:none !important;
-  box-shadow:inset 0 0 0 1px #5b7279 !important;
+/* ==========================================
+   SVG AVATAR FRAMES (Leader Crown, Silver Crown, Eared Melon)
+   Rendered as unclipped overlays on top of the avatar with full wings
+   ========================================== */
+:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  animation: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  background-clip: padding-box !important;
 }
-.frame-eared-melon > :is(.avatar-photo,.avatar-letter) { border-radius:50%; }
-.frame-eared-melon::before {
-  content:''; position:absolute; inset:-22%; z-index:3; pointer-events:none;
-  background:url('../assets/frames/eared-melon.svg') center / 100% 100% no-repeat;
-  border:0; border-radius:50%; animation:none; filter:none;
-}
-.frame-eared-melon::after { content:none; }
 
-/* Leader's Crown (Rank 1): Imperial Gold Crown SVG */
-.frame-leader-crown {
-  position:relative; isolation:isolate; overflow:visible !important;
-  border:0 !important; border-radius:50% !important;
-  animation:none !important; filter:none !important;
-  box-shadow:inset 0 0 0 1px #d97706 !important;
+/* Base avatar containers override any local overflow:hidden when equipped with wings */
+:is(.icon-user-container, .profile-avatar-pill, .user-profile-avatar, .podium-avatar, .lb-avatar-mini, .cust-frame-preview):is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
+  overflow: visible !important;
 }
-.frame-leader-crown > :is(.avatar-photo,.avatar-letter) { border-radius:50%; }
+
+/* Avatar photo/letter sits cleanly behind the frame overlay and stays rounded */
+:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) > :is(.avatar-photo, .avatar-letter, img, svg) {
+  position: relative !important;
+  z-index: 1 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+
+/* Customization preview items: keep content behind frame overlay */
+.cust-frame-preview:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
+  position: relative !important;
+  z-index: 1 !important;
+  margin: 4px 10px;
+  overflow: visible !important;
+}
+
+/* Frame overlay sits ON TOP of the avatar (z-index: 10) with full unclipped wings */
+:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon)::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: -35% !important;
+  z-index: 10 !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  -webkit-mask: none !important;
+  mask: none !important;
+  animation: none !important;
+  filter: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  background-position: center !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+}
+
+:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon)::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 1. Leader's Crown: Imperial Gold Crown with radiant wings */
 .frame-leader-crown::before {
-  content:''; position:absolute; inset:-22%; z-index:3; pointer-events:none;
-  background:url('../assets/frames/leader-crown.svg') center / 100% 100% no-repeat;
-  border:0; border-radius:50%; animation:none; filter:none;
+  background-image: url('../assets/frames/leader-crown.svg') !important;
 }
-.frame-leader-crown::after { content:none; }
 
-/* Silver Crown (Top 2): Radiant Silver Crown SVG */
-.frame-silver-crown {
-  position:relative; isolation:isolate; overflow:visible !important;
-  border:0 !important; border-radius:50% !important;
-  animation:none !important; filter:none !important;
-  box-shadow:inset 0 0 0 1px #94a3b8 !important;
-}
-.frame-silver-crown > :is(.avatar-photo,.avatar-letter) { border-radius:50%; }
+/* 2. Silver Crown: Dual Wing Silver & Obsidian Wreath with Ruby Gem */
 .frame-silver-crown::before {
-  content:''; position:absolute; inset:-22%; z-index:3; pointer-events:none;
-  background:url('../assets/frames/silver-crown.svg') center / 100% 100% no-repeat;
-  border:0; border-radius:50%; animation:none; filter:none;
+  background-image: url('../assets/frames/silver-crown.svg') !important;
 }
-.frame-silver-crown::after { content:none; }
+
+/* 3. Eared Melon: Feline Ears & Silver Charms */
+.frame-eared-melon::before {
+  inset: -25% !important;
+  background-image: url('../assets/frames/eared-melon.svg') !important;
+}
