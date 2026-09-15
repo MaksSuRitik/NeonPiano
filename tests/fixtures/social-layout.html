@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>Profile and leaderboard layout</title>
+<link rel="stylesheet" href="../../css/style.css"><link rel="stylesheet" href="../../css/social-panels.css">
+<style>body{display:block!important;overflow:auto!important;padding:12px!important;height:auto!important;min-height:100vh} .user-profile-card{margin:auto}.leaderboard-modal{position:relative;top:auto;left:auto;transform:none;margin:auto;width:100%!important;max-height:none!important} #tools{display:flex;gap:12px;padding:12px}iframe{height:1300px;border:0;background:#0b1221}#samples{display:flex;gap:20px;align-items:start} .fixture-profile{max-height:none!important}</style>
+<style>iframe{flex-shrink:0}</style>
+<div id="tools"><button id="light">Light / Dark</button><a href="?profile">Profile</a><a href="?leaderboard">Leaderboard</a></div><main></main>
+<script type="module">
+const params=new URLSearchParams(location.search), root=document.querySelector('main');
+document.querySelector('#light').onclick=()=>document.body.dataset.theme=document.body.dataset.theme==='light'?'dark':'light';
+if(!params.size){root.id='samples';root.innerHTML='<iframe title="Mobile profile" width="390" src="?profile"></iframe><iframe title="Mobile leaderboard" width="390" src="?leaderboard"></iframe><iframe title="Desktop leaderboard" width="900" src="?leaderboard"></iframe>';}
+else if(params.has('profile')){
+ const doc=new DOMParser().parseFromString(await(await fetch('../../index.html')).text(),'text/html');
+ const card=doc.querySelector('.user-profile-card');card.classList.add('fixture-profile');root.append(card);
+ const set=(id,value)=>card.querySelector('#'+id).textContent=value;
+ set('up-name','regis');set('up-title-badge','Хозяин сцены');set('up-rank-badge','#1');set('up-stat-score','25 393 113');set('up-stat-levels','42');set('up-stat-stars','110');set('up-stat-diamonds','107');set('up-stat-playtime','8 ч 42 мин');set('up-favorite-track-title','Phrolova ost Theme — The Lost Beyond');
+ card.querySelector('#up-avatar').className='user-profile-avatar frame-champion-crown';set('up-avatar','R');
+ for(const id of ['up-avatar-edit-btn','up-avatar-reset-btn','up-bio-edit-box','up-favorite-track-controls'])card.querySelector('#'+id).classList.remove('hidden');
+ set('up-avatar-edit-btn','✎');set('up-avatar-reset-btn','×');set('up-bio-save-btn','✓');card.querySelector('#up-bio-input').value='Кря';
+}else{
+ const names=['Kai','regis','Des1gner'],frames=['silver-crown','champion-crown','leader-crown'],ranks=[2,1,3],scores=['10 641 314','25 393 113','5 826 772'];
+ root.innerHTML=`<section class="leaderboard-modal"><div class="lb-header-row"><div class="lb-title">♜ ТАБЛИЦА ЛИДЕРОВ</div><button>×</button></div><div>Top 25 · Top 50 · Top 100</div><div class="lb-podium-container">${names.map((name,i)=>`<div class="podium-card podium-rank-${ranks[i]}"><div class="podium-crown-icon">${ranks[i]===1?'♛':'♜'}</div><div class="podium-avatar-stage"><div class="podium-avatar frame-${frames[i]}">${name[0]}</div></div><div class="podium-name">${name}</div><div class="podium-title-wrap"><span class="podium-title-badge">${i===1?'Хозяин сцены':'Мастер комбо'}</span></div><div class="podium-score">${scores[i]}</div><div class="podium-levels">42 Уровня</div></div>`).join('')}</div><div class="lb-scroll-area"><table class="lb-table"><thead><tr><th>#</th><th>Имя</th><th>Уровни</th><th>Всего очков</th></tr></thead><tbody>${['Kolyann','LongPlayerName123456789','Shadow'].map((name,i)=>`<tr><td width="15%">#${i+4}</td><td width="45%"><div class="lb-player-cell"><div class="lb-avatar-stage"><div class="lb-avatar-mini frame-${i===0?'champion-crown':'eared-melon'}">${name[0]}</div></div><span class="lb-player-name">${name}<span class="user-title-badge">Демон скорости</span></span></div></td><td width="20%">15</td><td width="20%"><span class="lb-score-val">4 006 722</span></td></tr>`).join('')}</tbody></table></div></section>`;
+}
+</script>

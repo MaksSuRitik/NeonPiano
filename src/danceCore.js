@@ -5956,7 +5956,7 @@ function updateRipples(dt) {
                     podiumHtml += `
                         <div class="podium-card podium-rank-2" data-podium-idx="1" title="${getText('clickToViewProfile')}">
                             <div class="podium-crown-icon" style="color: #cbd5e1;">${icons.medal(20)}</div>
-                            <div class="podium-avatar ${p2FrameClass}">${p2AvatarHtml}</div>
+                            <div class="podium-avatar-stage"><div class="podium-avatar ${p2FrameClass}">${p2AvatarHtml}</div></div>
                             <div class="podium-name">${escapeHtml(p2.name || 'Unknown')}</div>
                             ${getPodiumTitleHtml(p2)}
                             <div class="podium-score">${(p2.totalScore || 0).toLocaleString()}</div>
@@ -5972,7 +5972,7 @@ function updateRipples(dt) {
                     podiumHtml += `
                         <div class="podium-card podium-rank-1" data-podium-idx="0" title="${getText('clickToViewProfile')}">
                             <div class="podium-crown-icon" style="color: #fbbf24;">${icons.crown(24)}</div>
-                            <div class="podium-avatar ${p1FrameClass}">${p1AvatarHtml}</div>
+                            <div class="podium-avatar-stage"><div class="podium-avatar ${p1FrameClass}">${p1AvatarHtml}</div></div>
                             <div class="podium-name">${escapeHtml(p1.name || 'Unknown')}</div>
                             ${getPodiumTitleHtml(p1)}
                             <div class="podium-score">${(p1.totalScore || 0).toLocaleString()}</div>
@@ -5988,7 +5988,7 @@ function updateRipples(dt) {
                     podiumHtml += `
                         <div class="podium-card podium-rank-3" data-podium-idx="2" title="${getText('clickToViewProfile')}">
                             <div class="podium-crown-icon" style="color: #d97706;">${icons.medal(20)}</div>
-                            <div class="podium-avatar ${p3FrameClass}">${p3AvatarHtml}</div>
+                            <div class="podium-avatar-stage"><div class="podium-avatar ${p3FrameClass}">${p3AvatarHtml}</div></div>
                             <div class="podium-name">${escapeHtml(p3.name || 'Unknown')}</div>
                             ${getPodiumTitleHtml(p3)}
                             <div class="podium-score">${(p3.totalScore || 0).toLocaleString()}</div>
@@ -6033,7 +6033,7 @@ function updateRipples(dt) {
                         <td width="15%"><b>${rankDisplay}</b></td>
                         <td width="45%">
                             <div class="lb-player-cell">
-                                <div class="lb-avatar-mini ${pFrameClass}">${pAvatarHtml}</div>
+                                <div class="lb-avatar-stage"><div class="lb-avatar-mini ${pFrameClass}">${pAvatarHtml}</div></div>
                                 <span class="lb-player-name">${escapeHtml(p.name || 'Unknown')}${titleHtml}</span>
                             </div>
                         </td>

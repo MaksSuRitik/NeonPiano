@@ -1,0 +1,181 @@
+/* The largest equipped ornament spans 2.84 times its avatar diameter.
+   Stages reserve that footprint independently of names and controls. */
+.profile-avatar-stage { height:220px; width:100%; display:flex; align-items:center; justify-content:center; }
+.profile-avatar-stage .profile-avatar-pill { width:72px; height:72px; margin:0; }
+.profile-header-section { text-align:center; }
+.user-profile-card {
+  width:min(540px,94vw) !important;
+  padding:26px !important;
+  max-height:92dvh !important;
+  overflow-y:auto;
+  background:radial-gradient(ellipse at 50% 0, #19334c66, transparent 340px), var(--surface-color);
+  border-radius:26px !important;
+}
+.user-profile-card .user-profile-header {
+  flex-direction:column;
+  gap:16px !important;
+  padding:0 0 24px !important;
+  margin-bottom:20px !important;
+  text-align:center;
+}
+.user-profile-header .user-profile-avatar-wrap {
+  width:250px;
+  height:250px;
+  box-sizing:border-box;
+  padding-bottom:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.user-profile-header .user-profile-avatar {
+  width:72px !important;
+  height:72px !important;
+  flex:0 0 72px;
+  font-size:1.8rem !important;
+}
+.user-profile-avatar-wrap .avatar-action-btn {
+  top:auto !important;
+  bottom:0 !important;
+  width:36px;
+  height:36px;
+  z-index:20;
+  border-radius:12px;
+  box-shadow:none;
+}
+.user-profile-avatar-wrap .edit-avatar-btn { right:46px !important; left:auto !important; }
+.user-profile-avatar-wrap .reset-avatar-btn { right:0 !important; left:auto !important; }
+.user-profile-avatar-wrap .user-profile-rank-badge {
+  top:auto; bottom:5px; left:0; right:auto;
+  padding:5px 12px; border-radius:8px;
+}
+.user-profile-identity { width:100%; min-width:0; }
+.user-profile-name-row { justify-content:center; flex-wrap:wrap; gap:8px 12px; }
+.user-profile-header .user-profile-name { margin:0; font-size:1.6rem !important; overflow-wrap:anywhere; }
+.user-profile-meta { justify-content:center; margin-top:12px; }
+.user-profile-status-wrap { margin-top:14px; }
+.user-profile-bio { line-height:1.6; overflow-wrap:anywhere; }
+.user-bio-edit-box { width:100%; min-width:0; gap:8px; }
+.user-bio-edit-box .up-bio-input { min-width:0; flex:1; }
+.user-bio-edit-box .bio-counter { flex-shrink:0; }
+.profile-favorite-track-box { padding:16px; border-radius:16px; background:var(--surface-hover); }
+.favorite-track-header { flex-wrap:wrap; gap:6px; line-height:1.5; }
+.favorite-track-header .fav-title { overflow-wrap:anywhere; white-space:normal; overflow:visible; }
+.user-profile-stats-grid { gap:10px; }
+.profile-stat-box {
+  padding:18px 12px;
+  background:linear-gradient(140deg,#38bdf809,transparent),var(--surface-hover);
+  border-radius:16px;
+}
+.profile-stat-box .stat-box-icon { margin-bottom:8px; color:var(--highlight); }
+.profile-stat-box .stat-box-val { font-size:1.35rem; letter-spacing:-.035em; font-variant-numeric:tabular-nums; }
+.profile-stat-box .stat-box-lbl { margin-top:5px; font-size:.76rem; }
+.profile-stat-box.stat-box-wide { padding:16px; flex-wrap:wrap; gap:8px 12px; }
+.profile-stat-box.stat-box-wide .stat-box-icon,
+.profile-stat-box.stat-box-wide .stat-box-lbl { margin:0; }
+
+.leaderboard-modal {
+  max-width:900px !important;
+  padding:28px !important;
+  max-height:92dvh !important;
+  overflow-y:auto;
+  scrollbar-width:thin;
+  background:radial-gradient(ellipse at 50% 0,#18395166,transparent 500px),var(--surface-color) !important;
+}
+.leaderboard-modal .lb-header-row { margin-bottom:18px; gap:20px; }
+.leaderboard-modal .lb-title { letter-spacing:.03em; font-size:1.1rem; }
+.leaderboard-modal .lb-podium-container {
+  align-items:stretch !important;
+  gap:14px !important;
+  margin:24px 0 !important;
+  padding:0 !important;
+  flex-shrink:0;
+}
+.leaderboard-modal .podium-card {
+  min-width:0;
+  max-width:none !important;
+  padding:20px 12px !important;
+  border-radius:20px !important;
+  transition:transform .18s ease, border-color .18s ease !important;
+}
+.leaderboard-modal .podium-card.podium-rank-1 {
+  background:linear-gradient(155deg,#94702a24,transparent 80%),var(--surface-hover) !important;
+  border-color:#c9a25288 !important;
+  box-shadow:0 8px 28px #0002 !important;
+  transform:translateY(-8px);
+}
+.leaderboard-modal .podium-card.podium-rank-2 {
+  background:linear-gradient(155deg,#9dbddc1c,transparent 80%),var(--surface-hover) !important;
+  border-color:#9bb3cf66 !important;
+  box-shadow:0 8px 28px #0002 !important;
+}
+.leaderboard-modal .podium-card.podium-rank-3 {
+  background:linear-gradient(155deg,#c5814b20,transparent 80%),var(--surface-hover) !important;
+  border-color:#c58e6266 !important;
+  box-shadow:0 8px 28px #0002 !important;
+}
+.leaderboard-modal .podium-crown-icon { height:24px; margin-bottom:4px; }
+.podium-avatar-stage {
+  width:100%; height:190px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.leaderboard-modal .podium-avatar {
+  width:62px !important; height:62px !important;
+  margin:0 !important; flex-shrink:0;
+}
+.leaderboard-modal .podium-name {
+  margin-top:8px; line-height:1.35;
+  white-space:normal; overflow-wrap:anywhere;
+  font-size:1rem !important;
+}
+.leaderboard-modal .podium-title-wrap { min-height:24px; margin:6px 0 10px; width:100%; }
+.leaderboard-modal .podium-title-badge { max-width:100%; box-sizing:border-box; }
+.leaderboard-modal .podium-score { font-size:1.15rem !important; letter-spacing:-.025em; font-variant-numeric:tabular-nums; }
+.leaderboard-modal .podium-levels { margin-top:6px; font-size:.76rem; }
+.leaderboard-modal .lb-content-wrapper { flex-shrink:0; }
+.leaderboard-modal .lb-scroll-area { max-height:none !important; overflow:visible !important; flex-shrink:0; }
+.leaderboard-modal .lb-table { border-spacing:0 8px; table-layout:fixed; }
+.leaderboard-modal .lb-table th { padding:12px; background:transparent; font-size:.67rem; }
+.leaderboard-modal .lb-table th:nth-child(1) { width:8%; }
+.leaderboard-modal .lb-table th:nth-child(2) { width:48%; }
+.leaderboard-modal .lb-table th:nth-child(3) { width:16%; }
+.leaderboard-modal .lb-table th:nth-child(4) { width:28%; }
+.leaderboard-modal .lb-table td { padding:10px 12px; background:var(--surface-hover); border:0; }
+.leaderboard-modal .lb-table td:first-child { border-radius:12px 0 0 12px; color:var(--text-secondary); }
+.leaderboard-modal .lb-table td:last-child { border-radius:0 12px 12px 0; }
+.leaderboard-modal .lb-player-cell { gap:12px; min-width:0; flex-direction:row; align-items:center; }
+.lb-avatar-stage { width:80px; height:80px; flex:0 0 80px; display:flex; align-items:center; justify-content:center; }
+.leaderboard-modal .lb-avatar-mini { margin:0; width:26px; height:26px; flex:0 0 26px; }
+.leaderboard-modal .lb-player-name { min-width:0; flex:1; white-space:normal; overflow-wrap:anywhere; line-height:1.4; }
+.leaderboard-modal .lb-player-name .user-title-badge { display:table; margin:5px 0 0 !important; max-width:100%; box-sizing:border-box; white-space:normal; }
+.leaderboard-modal .lb-player-name { max-width:none !important; overflow:visible !important; }
+.leaderboard-modal .lb-score-val { font-size:.95rem; font-variant-numeric:tabular-nums; white-space:normal; }
+body[data-theme="light"] .user-profile-card,
+body[data-theme="light"] .leaderboard-modal { background:radial-gradient(ellipse at 50% 0,#e4eff7,transparent 480px),#fafcfe !important; }
+body[data-theme="light"] .profile-stat-box,
+body[data-theme="light"] .profile-favorite-track-box,
+body[data-theme="light"] .leaderboard-modal .lb-table td { background:#edf2f7; }
+@media (max-width:600px) {
+  .user-profile-card { padding:20px 16px !important; }
+  .leaderboard-modal { padding:20px 12px !important; width:96vw !important; }
+  .leaderboard-modal .lb-podium-container { gap:6px !important; margin:20px 0 14px !important; }
+  .leaderboard-modal .podium-card { padding:14px 5px !important; border-radius:14px !important; }
+  .podium-avatar-stage { height:110px; }
+  .leaderboard-modal .podium-avatar { width:clamp(24px,7vw,38px) !important; height:clamp(24px,7vw,38px) !important; }
+  .leaderboard-modal .podium-name { font-size:.8rem !important; }
+  .leaderboard-modal .podium-score { font-size:clamp(.7rem,2.6vw,.95rem) !important; }
+  .leaderboard-modal .podium-levels { font-size:.65rem; }
+  .leaderboard-modal .podium-title-badge { font-size:.58rem; padding:2px 4px; }
+  .leaderboard-modal .lb-table th, .leaderboard-modal .lb-table td { padding:8px 5px; font-size:.72rem; }
+  .leaderboard-modal .lb-table th { letter-spacing:0; font-size:.58rem !important; overflow-wrap:anywhere; white-space:normal; line-height:1.5; }
+  .leaderboard-modal .lb-table th:first-child, .leaderboard-modal .lb-table td:first-child { width:9%; }
+  .leaderboard-modal .lb-table td:nth-child(2) { width:47%; }
+  .leaderboard-modal .lb-player-cell { gap:6px; }
+  .lb-avatar-stage { width:60px; height:64px; flex-basis:60px; }
+  .leaderboard-modal .lb-avatar-mini { width:20px; height:20px; flex-basis:20px; }
+  .leaderboard-modal .lb-score-val { font-size:.76rem; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .leaderboard-modal .podium-card { transition:none !important; }
+}
