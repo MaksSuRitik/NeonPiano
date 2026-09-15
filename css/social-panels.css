@@ -992,92 +992,125 @@ body[data-theme="light"] .leaderboard-modal .lb-player-row.lb-standard-row:nth-c
   }
   .podium-rank-3 .podium-base-num { font-size: 0.78rem; }
 
-  /* Mobile Table Rows: Adapted card row structure */
-  .leaderboard-modal .lb-table thead {
-    display: none !important;
+  /* Mobile Table: Exact Laptop/Desktop 4-column tabular design */
+  .leaderboard-modal .lb-table {
+    display: table !important;
+    width: 100% !important;
+    border-spacing: 0 5px !important;
+    border-collapse: separate !important;
+    table-layout: fixed !important;
   }
-  .leaderboard-modal .lb-table,
+  .leaderboard-modal .lb-table thead {
+    display: table-header-group !important;
+  }
+  .leaderboard-modal .lb-table thead th {
+    padding: 6px 3px !important;
+    font-size: 0.58rem !important;
+    letter-spacing: 0.04em !important;
+    color: var(--text-secondary);
+  }
+  .leaderboard-modal .lb-th-rank { width: 9% !important; text-align: center !important; }
+  .leaderboard-modal .lb-th-player { width: 49% !important; text-align: left !important; }
+  .leaderboard-modal .lb-th-levels { width: 16% !important; text-align: center !important; }
+  .leaderboard-modal .lb-th-score { width: 26% !important; text-align: right !important; }
+
   .leaderboard-modal .lb-table tbody {
-    display: block !important;
+    display: table-row-group !important;
     width: 100% !important;
   }
   .leaderboard-modal .lb-player-row {
-    display: grid !important;
-    grid-template-columns: 26px minmax(0, 1fr) auto !important;
-    grid-template-rows: auto auto !important;
-    align-items: center !important;
-    gap: 1px 6px !important;
-    padding: 6px 8px !important;
-    margin-bottom: 6px !important;
-    border-radius: 12px !important;
-    box-sizing: border-box !important;
+    display: table-row !important;
   }
   .leaderboard-modal .lb-table td {
-    padding: 0 !important;
-    background: transparent !important;
-    border: 0 !important;
+    display: table-cell !important;
+    padding: 5px 3px !important;
+    vertical-align: middle !important;
   }
+  .leaderboard-modal .lb-table td:first-child {
+    border-radius: 10px 0 0 10px !important;
+  }
+  .leaderboard-modal .lb-table td:last-child {
+    border-radius: 0 10px 10px 0 !important;
+  }
+
+  /* Rank cell */
   .leaderboard-modal .lb-col-rank {
-    grid-column: 1 !important;
-    grid-row: 1 / 3 !important;
     text-align: center !important;
   }
   .leaderboard-modal .lb-rank-num {
-    font-size: 0.88rem !important;
+    font-size: 0.80rem !important;
   }
+
+  /* Player cell */
   .leaderboard-modal .lb-col-player {
-    grid-column: 2 !important;
-    grid-row: 1 / 3 !important;
-    min-width: 0 !important;
+    text-align: left !important;
   }
   .leaderboard-modal .lb-player-cell {
-    gap: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
     min-width: 0 !important;
   }
   .lb-avatar-stage {
-    width: 66px !important;
-    height: 66px !important;
-    flex-basis: 66px !important;
+    width: 48px !important;
+    height: 48px !important;
+    flex: 0 0 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
   }
   .lb-avatar-stage:has(.frame-champion-crown) {
-    width: 84px !important;
-    height: 84px !important;
-    flex-basis: 84px !important;
+    width: 60px !important;
+    height: 60px !important;
+    flex-basis: 60px !important;
   }
   .leaderboard-modal .lb-avatar-mini {
-    width: 38px !important;
-    height: 38px !important;
-    flex-basis: 38px !important;
-    font-size: 0.95rem !important;
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px !important;
+    font-size: 0.82rem !important;
+  }
+  .lb-player-info {
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
   }
   .leaderboard-modal .lb-player-name {
-    font-size: 0.92rem !important;
+    font-size: 0.78rem !important;
+    line-height: 1.25 !important;
+    font-weight: 700 !important;
   }
   .leaderboard-modal .lb-player-title-box .user-title-badge {
-    font-size: 0.58rem !important;
-    padding: 1px 5px !important;
+    font-size: 0.48rem !important;
+    padding: 1px 4px !important;
+    max-width: 80px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
+
+  /* Levels cell */
+  .leaderboard-modal .lb-col-levels {
+    text-align: center !important;
+  }
+  .leaderboard-modal .lb-stat-levels {
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    color: var(--text-secondary) !important;
+  }
+  .leaderboard-modal .lb-stat-levels-sub {
+    display: none !important;
+  }
+
+  /* Score cell */
   .leaderboard-modal .lb-col-score {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
     text-align: right !important;
   }
   .leaderboard-modal .lb-score-val {
-    font-size: 0.92rem !important;
-  }
-  .leaderboard-modal .lb-col-levels {
-    grid-column: 3 !important;
-    grid-row: 2 !important;
-    text-align: right !important;
-  }
-  .leaderboard-modal .lb-stat-levels {
-    font-size: 0.72rem !important;
-  }
-  .leaderboard-modal .lb-stat-levels-sub {
-    display: inline !important;
-    font-size: 0.65rem !important;
-    color: var(--text-secondary);
-    margin-left: 2px;
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
   }
 
   .user-profile-stats-grid .profile-stat-box {
