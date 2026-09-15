@@ -174,6 +174,7 @@ body[data-theme="light"] .user-profile-name-row .user-profile-rank-badge { color
   flex-direction: column !important;
   align-items: center !important;
   min-width: 0 !important;
+  max-width: none !important;
   padding: 14px 12px 0 12px !important;
   box-sizing: border-box !important;
   cursor: pointer;
@@ -761,181 +762,235 @@ body[data-theme="light"] .leaderboard-modal .lb-player-row.lb-standard-row:nth-c
     font-size: 0.72rem;
   }
 
-  /* Mobile Podium: Top 1 centered on top, 2 & 3 side by side below */
+  /* Mobile Podium: Same 3-in-a-row stepped Olympic pedestal design as on Desktop/Laptop! (2 - 1 - 3) */
   .leaderboard-modal .lb-podium-container {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    grid-template-areas:
-      "card-1 card-1"
-      "card-2 card-3" !important;
-    gap: 10px !important;
-    margin: 10px 0 14px 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    margin: 8px auto 14px !important;
     padding: 0 !important;
-    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  /* Card 1: Grand Centered Hero */
-  .leaderboard-modal .podium-card.podium-rank-1 {
-    grid-area: card-1 !important;
-    order: unset !important;
+  .leaderboard-modal .podium-card {
+    position: relative !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    padding: 10px 12px 0 12px !important;
-    border-radius: 18px !important;
-    min-height: 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
     transform: none !important;
   }
-  .podium-rank-1 .podium-card-top {
+
+  /* 2nd Place (Silver) - Left */
+  .leaderboard-modal .podium-card.podium-rank-2 {
+    order: 1 !important;
+    flex: 1 1 0 !important;
+    padding: 7px 3px 0 3px !important;
+    border-radius: 14px 14px 10px 10px !important;
+  }
+
+  /* 1st Place (Champion) - Center & Elevated */
+  .leaderboard-modal .podium-card.podium-rank-1 {
+    order: 2 !important;
+    flex: 1.16 1 0 !important;
+    z-index: 5 !important;
+    margin-top: -12px !important;
+    padding: 8px 4px 0 4px !important;
+    border-radius: 16px 16px 12px 12px !important;
+  }
+
+  /* 3rd Place (Bronze) - Right */
+  .leaderboard-modal .podium-card.podium-rank-3 {
+    order: 3 !important;
+    flex: 1 1 0 !important;
+    padding: 7px 3px 0 3px !important;
+    border-radius: 14px 14px 10px 10px !important;
+  }
+
+  /* Card Header */
+  .podium-card-top {
     width: 100%;
-    padding: 0 2px;
-    margin-bottom: 4px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-  }
-  .podium-rank-1 .podium-rank-badge.rank-1 {
-    font-size: 0.8rem;
-    padding: 2px 8px;
-  }
-  .podium-rank-1 .podium-avatar-stage {
-    width: 100% !important;
-    height: 120px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  .podium-rank-1 .podium-avatar {
-    width: 68px !important;
-    height: 68px !important;
-    font-size: 1.45rem !important;
-  }
-  .podium-rank-1 .podium-player-details {
-    margin-top: 26px !important;
-    width: 100% !important;
-    text-align: center !important;
-    align-items: center !important;
-  }
-  .podium-rank-1 .podium-name {
-    font-size: 1.05rem !important;
-    text-align: center !important;
-    margin: 0 0 2px 0;
-  }
-  .podium-rank-1 .podium-title-wrap {
-    min-height: 0;
-    margin: 0 0 4px 0;
-    justify-content: center !important;
-  }
-  .podium-rank-1 .podium-title-badge {
-    font-size: 0.62rem;
-    padding: 1px 6px;
-  }
-  .podium-rank-1 .podium-score-wrap {
-    margin-bottom: 6px;
-    flex-direction: row;
-    align-items: baseline;
-    gap: 8px;
-    justify-content: center;
-  }
-  .podium-rank-1 .podium-score {
-    font-size: 1.15rem !important;
-  }
-  .podium-rank-1 .podium-levels {
-    margin-top: 0;
-    font-size: 0.72rem;
-  }
-  .podium-rank-1 .podium-pedestal-base {
-    display: flex !important;
-    height: 24px !important;
-    margin: 4px -12px 0 -12px;
-    width: calc(100% + 24px);
-    border-radius: 0 0 16px 16px;
-  }
-  .podium-rank-1 .podium-base-num { font-size: 1.05rem; }
-
-  /* Cards 2 & 3: Compact Side-by-Side */
-  .leaderboard-modal .podium-card.podium-rank-2 {
-    grid-area: card-2 !important;
-    order: unset !important;
-    padding: 8px 6px 0 6px !important;
-    border-radius: 14px !important;
-    transform: none !important;
-  }
-  .leaderboard-modal .podium-card.podium-rank-3 {
-    grid-area: card-3 !important;
-    order: unset !important;
-    padding: 8px 6px 0 6px !important;
-    border-radius: 14px !important;
-    transform: none !important;
-  }
-  .podium-rank-2 .podium-card-top,
-  .podium-rank-3 .podium-card-top {
-    padding: 0 2px;
+    padding: 0 1px;
     margin-bottom: 2px;
+  }
+  .podium-rank-1 .podium-rank-badge {
+    font-size: 0.68rem;
+    padding: 1.5px 5px;
   }
   .podium-rank-2 .podium-rank-badge,
   .podium-rank-3 .podium-rank-badge {
-    font-size: 0.72rem;
-    padding: 2px 6px;
+    font-size: 0.60rem;
+    padding: 1px 4px;
+  }
+  .podium-rank-1 .podium-tier-label {
+    font-size: 0.48rem;
+    letter-spacing: 0.04em;
   }
   .podium-rank-2 .podium-tier-label,
   .podium-rank-3 .podium-tier-label {
-    font-size: 0.58rem;
+    font-size: 0.44rem;
+    letter-spacing: 0.03em;
+  }
+
+  /* Avatar stages */
+  .podium-rank-1 .podium-avatar-stage {
+    width: 100% !important;
+    height: 94px !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   .podium-rank-2 .podium-avatar-stage,
   .podium-rank-3 .podium-avatar-stage {
     width: 100% !important;
-    height: 95px !important;
+    height: 78px !important;
     padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .podium-rank-1 .podium-avatar {
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 1.25rem !important;
   }
   .podium-rank-2 .podium-avatar,
   .podium-rank-3 .podium-avatar {
-    width: 60px !important;
-    height: 60px !important;
-    font-size: 1.3rem !important;
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.05rem !important;
+  }
+
+  /* Player details */
+  .podium-rank-1 .podium-player-details {
+    margin-top: 8px !important;
+    width: 100% !important;
+    text-align: center !important;
+    align-items: center !important;
+    z-index: 6;
   }
   .podium-rank-2 .podium-player-details,
   .podium-rank-3 .podium-player-details {
-    margin-top: 8px !important;
+    margin-top: 6px !important;
+    width: 100% !important;
+    text-align: center !important;
+    align-items: center !important;
+    z-index: 6;
+  }
+
+  .podium-rank-1 .podium-name {
+    font-size: 0.78rem !important;
+    font-weight: 700;
+    text-align: center !important;
+    margin: 0 0 1px 0;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
   }
   .podium-rank-2 .podium-name,
   .podium-rank-3 .podium-name {
-    font-size: 0.88rem !important;
-    margin-bottom: 2px;
+    font-size: 0.72rem !important;
+    font-weight: 600;
+    text-align: center !important;
+    margin: 0 0 1px 0;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
   }
-  .podium-rank-2 .podium-title-wrap,
-  .podium-rank-3 .podium-title-wrap {
+
+  .podium-title-wrap {
     min-height: 0;
-    margin: 0 0 3px 0;
+    margin: 0 0 2px 0;
+    display: flex;
+    justify-content: center !important;
+    width: 100%;
+  }
+  .podium-rank-1 .podium-title-badge {
+    font-size: 0.50rem;
+    padding: 1px 3px;
+    max-width: 95%;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   .podium-rank-2 .podium-title-badge,
   .podium-rank-3 .podium-title-badge {
-    font-size: 0.56rem;
-    padding: 1px 4px;
+    font-size: 0.46rem;
+    padding: 1px 3px;
+    max-width: 95%;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
-  .podium-rank-2 .podium-score-wrap,
-  .podium-rank-3 .podium-score-wrap {
-    margin-bottom: 6px;
+
+  .podium-score-wrap {
+    margin-bottom: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  .podium-rank-1 .podium-score {
+    font-size: 0.84rem !important;
+    font-weight: 800 !important;
+    line-height: 1.1;
   }
   .podium-rank-2 .podium-score,
   .podium-rank-3 .podium-score {
-    font-size: 0.98rem !important;
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    line-height: 1.1;
+  }
+  .podium-rank-1 .podium-levels {
+    font-size: 0.58rem;
+    margin-top: 1px;
+    line-height: 1.1;
   }
   .podium-rank-2 .podium-levels,
   .podium-rank-3 .podium-levels {
-    font-size: 0.65rem;
+    font-size: 0.54rem;
+    margin-top: 1px;
+    line-height: 1.1;
   }
+
+  /* Stepped Pedestal Bases on Mobile */
+  .podium-rank-1 .podium-pedestal-base {
+    display: flex !important;
+    height: 28px !important;
+    margin: 3px -4px 0 -4px;
+    width: calc(100% + 8px);
+    border-radius: 0 0 12px 12px;
+  }
+  .podium-rank-1 .podium-base-num { font-size: 0.98rem; }
+
   .podium-rank-2 .podium-pedestal-base {
+    display: flex !important;
     height: 22px !important;
-    margin: 0 -6px;
-    width: calc(100% + 12px);
+    margin: 2px -3px 0 -3px;
+    width: calc(100% + 6px);
+    border-radius: 0 0 10px 10px;
   }
-  .podium-rank-2 .podium-base-num { font-size: 0.95rem; }
+  .podium-rank-2 .podium-base-num { font-size: 0.88rem; }
+
   .podium-rank-3 .podium-pedestal-base {
-    height: 18px !important;
-    margin: 0 -6px;
-    width: calc(100% + 12px);
+    display: flex !important;
+    height: 16px !important;
+    margin: 2px -3px 0 -3px;
+    width: calc(100% + 6px);
+    border-radius: 0 0 10px 10px;
   }
-  .podium-rank-3 .podium-base-num { font-size: 0.88rem; }
+  .podium-rank-3 .podium-base-num { font-size: 0.78rem; }
 
   /* Mobile Table Rows: Adapted card row structure */
   .leaderboard-modal .lb-table thead {
@@ -948,11 +1003,11 @@ body[data-theme="light"] .leaderboard-modal .lb-player-row.lb-standard-row:nth-c
   }
   .leaderboard-modal .lb-player-row {
     display: grid !important;
-    grid-template-columns: 32px 70px 1fr auto !important;
+    grid-template-columns: 26px minmax(0, 1fr) auto !important;
     grid-template-rows: auto auto !important;
     align-items: center !important;
     gap: 1px 6px !important;
-    padding: 6px 10px !important;
+    padding: 6px 8px !important;
     margin-bottom: 6px !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
@@ -968,14 +1023,16 @@ body[data-theme="light"] .leaderboard-modal .lb-player-row.lb-standard-row:nth-c
     text-align: center !important;
   }
   .leaderboard-modal .lb-rank-num {
-    font-size: 0.92rem !important;
+    font-size: 0.88rem !important;
   }
   .leaderboard-modal .lb-col-player {
-    grid-column: 2 / 4 !important;
+    grid-column: 2 !important;
     grid-row: 1 / 3 !important;
+    min-width: 0 !important;
   }
   .leaderboard-modal .lb-player-cell {
     gap: 8px !important;
+    min-width: 0 !important;
   }
   .lb-avatar-stage {
     width: 66px !important;
@@ -1001,7 +1058,7 @@ body[data-theme="light"] .leaderboard-modal .lb-player-row.lb-standard-row:nth-c
     padding: 1px 5px !important;
   }
   .leaderboard-modal .lb-col-score {
-    grid-column: 4 !important;
+    grid-column: 3 !important;
     grid-row: 1 !important;
     text-align: right !important;
   }
@@ -1009,7 +1066,7 @@ body[data-theme="light"] .leaderboard-modal .lb-player-row.lb-standard-row:nth-c
     font-size: 0.92rem !important;
   }
   .leaderboard-modal .lb-col-levels {
-    grid-column: 4 !important;
+    grid-column: 3 !important;
     grid-row: 2 !important;
     text-align: right !important;
   }
