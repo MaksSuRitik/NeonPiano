@@ -330,6 +330,7 @@ export default {
   // Fullscreen, Pause & Results Modernism
   fullscreen: "Полный экран",
   exitFullscreen: "Оконный режим",
+  iosFullscreenHint: "Полноэкранный режим активирован",
   pauseTitle: "Пауза",
   pauseRestart: "Начать сначала",
   pauseScore: "Текущий счёт",

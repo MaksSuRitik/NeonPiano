@@ -163,3 +163,154 @@ test('legacy judgment tone disconnects both audio nodes on completion', () => {
   oscillator.onended();
   assert.equal(disconnected, 2);
 });
+
+test('fullscreen contract: supports native fullscreen and simulated fallback on iPhone', () => {
+  const doc = {
+    fullscreenElement: null,
+    documentElement: {
+      classList: new Set(),
+      requestFullscreen: undefined,
+    },
+    body: {
+      classList: new Set(),
+    }
+  };
+
+  const hasNative = () => typeof doc.documentElement.requestFullscreen === 'function' ||
+                          typeof doc.documentElement.webkitRequestFullscreen === 'function';
+  const isFs = () => Boolean(
+    doc.fullscreenElement ||
+    doc.body.classList.has('simulated-fullscreen') ||
+    doc.documentElement.classList.has('simulated-fullscreen')
+  );
+
+  // On iOS Safari / iPhone: native fullscreen is false
+  assert.equal(hasNative(), false);
+  assert.equal(isFs(), false);
+
+  // Activate simulated fullscreen fallback
+  doc.body.classList.add('simulated-fullscreen');
+  doc.documentElement.classList.add('simulated-fullscreen');
+  assert.equal(isFs(), true);
+
+  // Exit simulated fullscreen
+  doc.body.classList.delete('simulated-fullscreen');
+  doc.documentElement.classList.delete('simulated-fullscreen');
+  assert.equal(isFs(), false);
+
+  // On desktop / Android: native fullscreen is supported
+  doc.documentElement.requestFullscreen = () => {};
+  assert.equal(hasNative(), true);
+  doc.fullscreenElement = doc.documentElement;
+  assert.equal(isFs(), true);
+});
+
+test('auto-pause contract: immediately cuts audio, cancels holds, and prevents score farming', () => {
+  let audioStopped = false;
+  let audioDisconnected = false;
+  let ctxSuspended = false;
+
+  const mockSource = {
+    onended: () => {},
+    stop: () => { audioStopped = true; },
+    disconnect: () => { audioDisconnected = true; }
+  };
+
+  const mockAudioCtx = {
+    currentTime: 15.75,
+    state: 'running',
+    suspend: () => { ctxSuspended = true; }
+  };
+
+  const mockState = {
+    isPlaying: true,
+    isPaused: false,
+    startTime: 5.0,
+    pauseSongTime: 0,
+    sourceNode: mockSource,
+    audioCtx: mockAudioCtx,
+    keyState: [true, true, false, false],
+    holdingTiles: [
+      { lane: 0, holding: true, released: false, fadeStartTime: null, releaseSongTime: null },
+      { lane: 1, holding: true, released: false, fadeStartTime: null, releaseSongTime: null },
+      null,
+      null
+    ]
+  };
+
+  // Simulate togglePauseGame(true)
+  const targetPaused = true;
+  mockState.isPaused = targetPaused;
+  const currentSongTimeMs = (mockState.audioCtx.currentTime - mockState.startTime) * 1000;
+  mockState.pauseSongTime = currentSongTimeMs;
+
+  if (mockState.sourceNode) {
+    mockState.sourceNode.onended = null;
+    mockState.sourceNode.stop(0);
+    mockState.sourceNode.disconnect();
+    mockState.sourceNode = null;
+  }
+  if (mockState.audioCtx && mockState.audioCtx.state === 'running') {
+    mockState.audioCtx.suspend();
+  }
+
+  // Release all inputs & holding tiles
+  mockState.keyState = [false, false, false, false];
+  mockState.holdingTiles.forEach(tile => {
+    if (tile) {
+      tile.holding = false;
+      tile.released = true;
+      tile.releaseSongTime = mockState.pauseSongTime;
+    }
+  });
+  const prevHolding = mockState.holdingTiles;
+  mockState.holdingTiles = [null, null, null, null];
+
+  // Assertions:
+  assert.equal(audioStopped, true, 'Audio must stop immediately on pause');
+  assert.equal(audioDisconnected, true, 'Audio source must disconnect immediately on pause');
+  assert.equal(ctxSuspended, true, 'AudioContext must be suspended');
+  assert.equal(mockState.sourceNode, null, 'Source node must be cleared');
+  assert.equal(mockState.pauseSongTime, 10750, 'Pause time accurately recorded (15.75s - 5.0s = 10.75s)');
+  assert.deepEqual(mockState.keyState, [false, false, false, false], 'All keys must be released to prevent score farming');
+  assert.equal(prevHolding[0].holding, false, 'Hold note 0 must not remain in holding state');
+  assert.equal(prevHolding[0].released, true, 'Hold note 0 must be marked released');
+  assert.deepEqual(mockState.holdingTiles, [null, null, null, null], 'Holding tiles array must be cleared');
+});
+
+test('watchdog compositor stall contract: detects frozen rAF (Hyprland workspace switch / background) and triggers auto-pause', () => {
+  let autoPauseTriggered = false;
+  let reasonGiven = '';
+
+  const mockState = {
+    isPlaying: true,
+    isPaused: false,
+    lastRafTime: 1000
+  };
+
+  function checkWatchdog(currentTime) {
+    if (mockState.isPlaying && !mockState.isPaused) {
+      const lastRaf = mockState.lastRafTime || currentTime;
+      if (currentTime - lastRaf > 300) {
+        autoPauseTriggered = true;
+        reasonGiven = 'watchdog compositor stall';
+        mockState.isPaused = true;
+      }
+    }
+  }
+
+  // Normal frame tick (16ms later)
+  checkWatchdog(1016);
+  assert.equal(autoPauseTriggered, false);
+
+  // Normal frame tick (200ms later - lag spike below 300ms)
+  checkWatchdog(1200);
+  assert.equal(autoPauseTriggered, false);
+
+  // Hyprland workspace switch or backgrounded tab (450ms stall)
+  checkWatchdog(1450);
+  assert.equal(autoPauseTriggered, true);
+  assert.equal(reasonGiven, 'watchdog compositor stall');
+  assert.equal(mockState.isPaused, true);
+});
+

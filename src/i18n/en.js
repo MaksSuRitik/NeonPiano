@@ -330,6 +330,7 @@ export default {
   // Fullscreen, Pause & Results Modernism
   fullscreen: "Fullscreen",
   exitFullscreen: "Windowed Mode",
+  iosFullscreenHint: "Fullscreen mode activated",
   pauseTitle: "Paused",
   pauseRestart: "Restart Track",
   pauseScore: "Current Score",
