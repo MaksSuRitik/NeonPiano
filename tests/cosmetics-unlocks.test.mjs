@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { filterAdminLevels } from '../src/ui/adminLevelSearch.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FRAMES, TITLES, checkCosmeticsUnlocks, checkRetroactiveCosmeticsUnlocks, getLocalCosmetics, resetLocalCosmetics, recordCosmeticsMatch, getCosmeticsProgress, mergeCosmeticsProgress, seedCosmeticsProgress, groupCosmetics, createCosmeticsRun, recordCosmeticsJudgment, recordCosmeticsMiss, observeCosmeticsCombo, CURRENT_COSMETICS_REVISION } from '../src/game/cosmetics.js';
+import { FRAMES, TITLES, RANK_FRAMES, syncRankCosmetics, checkCosmeticsUnlocks, checkRetroactiveCosmeticsUnlocks, getLocalCosmetics, resetLocalCosmetics, recordCosmeticsMatch, getCosmeticsProgress, mergeCosmeticsProgress, seedCosmeticsProgress, groupCosmetics, createCosmeticsRun, recordCosmeticsJudgment, recordCosmeticsMiss, observeCosmeticsCombo, CURRENT_COSMETICS_REVISION } from '../src/game/cosmetics.js';
 import ru from '../src/i18n/ru.js';
 import ua from '../src/i18n/ua.js';
 import en from '../src/i18n/en.js';
@@ -50,6 +50,7 @@ test('FRAMES registry contains all 24 frames including physical and themed colle
     'frame_blossom_charm',
     'frame_abyss_portal',
     'frame_cassette_808',
+    'frame_champion_crown',
     'frame_leader_crown',
     'frame_silver_crown',
     'frame_neon_archive',
@@ -57,7 +58,7 @@ test('FRAMES registry contains all 24 frames including physical and themed colle
     'frame_eared_melon'
   ];
 
-  assert.equal(FRAMES.length, 26, 'Total frames must be 26');
+  assert.equal(FRAMES.length, 27, 'Total frames must be 27');
   for (const fId of expectedNewFrames) {
     const frame = FRAMES.find(f => f.id === fId);
     assert.ok(frame, `Frame ${fId} must be registered`);
@@ -152,8 +153,8 @@ test.beforeEach(() => localStorage.clear());
 const run = (ctx) => checkCosmeticsUnlocks({ playedAt: new Date(2026, 0, 1, 12).getTime(), ...ctx });
 const won = { victory: true, totalMisses: 0, track: { isPhonk: true }, isHardcore: true };
 
-test('unique stable IDs across all 26 frames and 55 titles', () => {
-  assert.equal(new Set(FRAMES.map(x => x.id)).size, 26);
+test('unique stable IDs across all 27 frames and 55 titles', () => {
+  assert.equal(new Set(FRAMES.map(x => x.id)).size, 27);
   assert.equal(new Set(TITLES.map(x => x.id)).size, 55);
   assert.ok(!TITLES.some(x => x.id.includes('grandmaster')));
 });
@@ -222,8 +223,9 @@ test('strict live conditions and their negative boundaries', () => {
     ['frame_blossom_charm', {...won, themeId: 'sanhua'}, {...won, themeId: 'sanhua', totalMisses: 1}],
     ['frame_abyss_portal', {themeId: 'cosmic', maxCombo: 1000}, {themeId: 'cosmic', maxCombo: 999}],
     ['frame_cassette_808', {phonkVictoryCount: 10}, {phonkVictoryCount: 9}],
-    ['frame_leader_crown', {globalRank: 1}, {globalRank: 2}],
+    ['frame_champion_crown', {globalRank: 1}, {globalRank: 2}],
     ['frame_silver_crown', {globalRank: 2}, {globalRank: 3}],
+    ['frame_leader_crown', {globalRank: 3}, {globalRank: 4}],
     ['frame_star_forge', {totalDiamondStars: 10}, {totalDiamondStars: 9}],
     ['frame_eared_melon', {hardHardcoreTrackTitles: ['T0']}, {hardHardcoreTrackTitles: []}],
   ];
@@ -593,39 +595,99 @@ test('K: Eared Melon localization is complete in RU, UA, EN', () => {
   assert.ok(en.frameEaredMelonDesc.includes('1') && en.frameEaredMelonDesc.includes('Hard'));
 });
 
-test('L: Leader Crown (Rank 1) and Silver Crown (Rank 1-2) unlock behavior', () => {
+test('L: Champion Crown (Rank 1), Silver Crown (Rank 1-2), Leader Crown (Rank 1-3) unlock behavior', () => {
   localStorage.clear();
   const res1 = run({ globalRank: 1 });
-  assert.ok(res1.includes('frame_leader_crown'), 'Rank 1 must unlock frame_leader_crown');
+  assert.ok(res1.includes('frame_champion_crown'), 'Rank 1 must unlock frame_champion_crown');
   assert.ok(res1.includes('frame_silver_crown'), 'Rank 1 must unlock frame_silver_crown');
+  assert.ok(res1.includes('frame_leader_crown'), 'Rank 1 must unlock frame_leader_crown');
   assert.ok(res1.includes('frame_baroque_gold'), 'Rank 1 must unlock frame_baroque_gold');
 
   localStorage.clear();
   const res2 = run({ globalRank: 2 });
-  assert.ok(!res2.includes('frame_leader_crown'), 'Rank 2 must NOT unlock frame_leader_crown');
+  assert.ok(!res2.includes('frame_champion_crown'), 'Rank 2 must NOT unlock frame_champion_crown');
   assert.ok(res2.includes('frame_silver_crown'), 'Rank 2 must unlock frame_silver_crown');
+  assert.ok(res2.includes('frame_leader_crown'), 'Rank 2 must unlock frame_leader_crown');
   assert.ok(res2.includes('frame_baroque_gold'), 'Rank 2 must unlock frame_baroque_gold');
 
   localStorage.clear();
   const res3 = run({ globalRank: 3 });
-  assert.ok(!res3.includes('frame_leader_crown'), 'Rank 3 must NOT unlock frame_leader_crown');
+  assert.ok(!res3.includes('frame_champion_crown'), 'Rank 3 must NOT unlock frame_champion_crown');
   assert.ok(!res3.includes('frame_silver_crown'), 'Rank 3 must NOT unlock frame_silver_crown');
+  assert.ok(res3.includes('frame_leader_crown'), 'Rank 3 must unlock frame_leader_crown');
   assert.ok(res3.includes('frame_baroque_gold'), 'Rank 3 must unlock frame_baroque_gold');
+
+  localStorage.clear();
+  const res4 = run({ globalRank: 4 });
+  assert.ok(!res4.includes('frame_champion_crown'), 'Rank 4 must NOT unlock frame_champion_crown');
+  assert.ok(!res4.includes('frame_silver_crown'), 'Rank 4 must NOT unlock frame_silver_crown');
+  assert.ok(!res4.includes('frame_leader_crown'), 'Rank 4 must NOT unlock frame_leader_crown');
 });
 
-test('M: Leader Crown and Silver Crown localization is complete in RU, UA, EN', () => {
-  assert.equal(ru.frameLeaderCrown, 'Корона лидера');
-  assert.ok(ru.frameLeaderCrownDesc.includes('1'));
+test('M: Champion Crown, Silver Crown, and Leader Crown localization is complete in RU, UA, EN', () => {
+  assert.equal(ru.frameChampionCrown, 'Корона чемпиона');
+  assert.ok(ru.frameChampionCrownDesc.includes('1'));
   assert.equal(ru.frameSilverCrown, 'Серебряная корона');
   assert.ok(ru.frameSilverCrownDesc.includes('2'));
+  assert.equal(ru.frameLeaderCrown, 'Корона лидера');
+  assert.ok(ru.frameLeaderCrownDesc.includes('3'));
 
-  assert.equal(ua.frameLeaderCrown, 'Корона лідера');
-  assert.ok(ua.frameLeaderCrownDesc.includes('1'));
+  assert.equal(ua.frameChampionCrown, 'Корона чемпіона');
+  assert.ok(ua.frameChampionCrownDesc.includes('1'));
   assert.equal(ua.frameSilverCrown, 'Срібна корона');
   assert.ok(ua.frameSilverCrownDesc.includes('2'));
+  assert.equal(ua.frameLeaderCrown, 'Корона лідера');
+  assert.ok(ua.frameLeaderCrownDesc.includes('3'));
 
-  assert.equal(en.frameLeaderCrown, "Leader's Crown");
-  assert.ok(en.frameLeaderCrownDesc.includes('1st'));
+  assert.equal(en.frameChampionCrown, "Champion's Crown");
+  assert.ok(en.frameChampionCrownDesc.includes('1st'));
   assert.equal(en.frameSilverCrown, 'Silver Crown');
   assert.ok(en.frameSilverCrownDesc.includes('2nd'));
+  assert.equal(en.frameLeaderCrown, "Leader's Crown");
+  assert.ok(en.frameLeaderCrownDesc.includes('3rd'));
+});
+
+test('N: Dynamic rank revocation, un-equipping on rank drop, and re-earning upon climbing back', () => {
+  localStorage.clear();
+  // Player reaches Rank 1
+  const earned1 = run({ globalRank: 1 });
+  assert.ok(earned1.includes('frame_champion_crown'));
+  let cosm = getLocalCosmetics();
+  assert.ok(cosm.unlockedFrames.includes('frame_champion_crown'));
+  assert.ok(cosm.unlockedFrames.includes('frame_silver_crown'));
+  assert.ok(cosm.unlockedFrames.includes('frame_leader_crown'));
+
+  // Player equips Champion Crown
+  localStorage.setItem('neon_selected_frame', 'frame_champion_crown');
+  assert.equal(getLocalCosmetics().selectedFrame, 'frame_champion_crown');
+
+  // Player drops to Rank 2: Champion Crown must be revoked and unequipped
+  const sync2 = syncRankCosmetics(2);
+  assert.deepEqual(sync2.revoked, ['frame_champion_crown']);
+  cosm = getLocalCosmetics();
+  assert.ok(!cosm.unlockedFrames.includes('frame_champion_crown'), 'Champion Crown must be revoked');
+  assert.ok(cosm.unlockedFrames.includes('frame_silver_crown'), 'Silver Crown remains unlocked');
+  assert.ok(cosm.unlockedFrames.includes('frame_leader_crown'), 'Leader Crown remains unlocked');
+  assert.equal(cosm.selectedFrame, 'frame_none', 'Revoked frame must be automatically unequipped');
+
+  // Player equips Silver Crown
+  localStorage.setItem('neon_selected_frame', 'frame_silver_crown');
+  assert.equal(getLocalCosmetics().selectedFrame, 'frame_silver_crown');
+
+  // Player drops to Rank 4 (outside top 3): all rank crowns revoked and unequipped
+  const sync4 = syncRankCosmetics(4);
+  assert.ok(sync4.revoked.includes('frame_silver_crown'));
+  assert.ok(sync4.revoked.includes('frame_leader_crown'));
+  cosm = getLocalCosmetics();
+  assert.ok(!cosm.unlockedFrames.includes('frame_silver_crown'), 'Silver Crown revoked');
+  assert.ok(!cosm.unlockedFrames.includes('frame_leader_crown'), 'Leader Crown revoked');
+  assert.equal(cosm.selectedFrame, 'frame_none', 'Equipped frame reset to frame_none');
+
+  // Player climbs back to Rank 1: frames unlocked again!
+  const syncBack = syncRankCosmetics(1);
+  assert.ok(syncBack.unlocked.includes('frame_champion_crown'));
+  assert.ok(syncBack.unlocked.includes('frame_silver_crown'));
+  assert.ok(syncBack.unlocked.includes('frame_leader_crown'));
+  cosm = getLocalCosmetics();
+  assert.ok(cosm.unlockedFrames.includes('frame_champion_crown'));
 });

@@ -117,8 +117,9 @@ export const FRAMES = [
     ['blossom_charm', 'frameBlossomCharm', 'collectionSanhua'],
     ['abyss_portal', 'frameAbyssPortal', 'collectionCosmic'],
     ['cassette_808', 'frameCassette808', 'collectionPhonk'],
-    ['leader_crown', 'frameLeaderCrown', 'collectionPrestige'],
+    ['champion_crown', 'frameChampionCrown', 'collectionPrestige'],
     ['silver_crown', 'frameSilverCrown', 'collectionPrestige'],
+    ['leader_crown', 'frameLeaderCrown', 'collectionPrestige'],
     ['neon_archive', 'frameNeonArchive', 'collectionPrestige'],
     ['star_forge', 'frameStarForge', 'collectionPrestige'],
     ['eared_melon', 'frameEaredMelon', 'collectionPrestige']
@@ -587,11 +588,65 @@ export function unlockTitle(titleId, getText = null, showNotification = null) {
   return true;
 }
 
+export const RANK_FRAMES = [
+  'frame_champion_crown',
+  'frame_silver_crown',
+  'frame_leader_crown'
+];
+
+/**
+ * Synchronize dynamic leaderboard rank cosmetics.
+ * Frame privileges:
+ * - Rank 1: Champion Crown, Silver Crown, Leader's Crown
+ * - Rank 2: Silver Crown, Leader's Crown (Champion Crown revoked)
+ * - Rank 3: Leader's Crown (Champion & Silver Crowns revoked)
+ * - Rank 4+ or unranked: All 3 rank crowns revoked
+ * If an equipped frame is revoked, it is reset to 'frame_none'.
+ */
+export function syncRankCosmetics(globalRank, getText = null, showNotification = null) {
+  const allowed = [];
+  const r = Number.isInteger(globalRank) && globalRank > 0 ? globalRank : null;
+  if (r === 1) {
+    allowed.push('frame_champion_crown', 'frame_silver_crown', 'frame_leader_crown');
+  } else if (r === 2) {
+    allowed.push('frame_silver_crown', 'frame_leader_crown');
+  } else if (r === 3) {
+    allowed.push('frame_leader_crown');
+  }
+
+  const cosm = getLocalCosmetics();
+  const currentFrames = cosm.unlockedFrames;
+  const revoked = RANK_FRAMES.filter(f => currentFrames.includes(f) && !allowed.includes(f));
+  const unlocked = [];
+
+  if (revoked.length > 0) {
+    const updatedFrames = currentFrames.filter(f => !revoked.includes(f));
+    const shouldResetEquipped = revoked.includes(cosm.selectedFrame);
+    saveLocalCosmetics({
+      unlockedFrames: updatedFrames,
+      ...(shouldResetEquipped ? { selectedFrame: 'frame_none' } : {})
+    });
+  }
+
+  for (const frameId of allowed) {
+    if (unlockFrame(frameId, getText, showNotification)) {
+      unlocked.push(frameId);
+    }
+  }
+
+  return { unlocked, revoked };
+}
+
 /**
  * Evaluate game results and award unlocked frames/titles
  */
 export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification = null) {
   const unlocked = [];
+
+  if ('globalRank' in ctx) {
+    const rankSync = syncRankCosmetics(ctx.globalRank, getText, showNotification);
+    unlocked.push(...rankSync.unlocked);
+  }
 
   // 1. Frame: Neon Start (Any 1 track played)
   if (ctx.playedSong || ctx.victory || (ctx.score && ctx.score > 0)) {
@@ -763,8 +818,6 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
   earn('frame_blossom_charm', cold && cleanWin);
   earn('frame_abyss_portal', ctx.themeId === 'cosmic' && ctx.maxCombo >= 1000);
   earn('frame_cassette_808', totals.phonkVictoryCount >= 10);
-  earn('frame_leader_crown', ctx.globalRank === 1);
-  earn('frame_silver_crown', ctx.globalRank >= 1 && ctx.globalRank <= 2);
   earn('frame_neon_archive', getLocalCosmetics().unlockedTitles.filter(id => TITLES.some(t => t.id === id && !t.unlockedByDefault)).length >= 20);
   earn('frame_star_forge', ctx.totalDiamondStars >= 10);
   earn('frame_eared_melon', (totals.hardHardcoreTrackTitles || []).length >= 1);

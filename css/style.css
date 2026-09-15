@@ -12513,10 +12513,10 @@ body[data-theme] :is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,
 body[data-theme="light"] .track-diff-badge.hardcore-modifier { color:#9f1239; background:#ffe4e6; border-color:#e9a9b5; }
 
 /* ==========================================
-   SVG AVATAR FRAMES (Leader Crown, Silver Crown, Eared Melon)
+   SVG AVATAR FRAMES (Champion Crown, Leader Crown, Silver Crown, Eared Melon)
    Rendered as unclipped overlays on top of the avatar with full wings
    ========================================== */
-:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
+:is(.frame-champion-crown, .frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
   position: relative !important;
   isolation: isolate !important;
   overflow: visible !important;
@@ -12529,12 +12529,12 @@ body[data-theme="light"] .track-diff-badge.hardcore-modifier { color:#9f1239; ba
 }
 
 /* Base avatar containers override any local overflow:hidden when equipped with wings */
-:is(.icon-user-container, .profile-avatar-pill, .user-profile-avatar, .podium-avatar, .lb-avatar-mini, .cust-frame-preview):is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
+:is(.icon-user-container, .profile-avatar-pill, .user-profile-avatar, .podium-avatar, .lb-avatar-mini, .cust-frame-preview):is(.frame-champion-crown, .frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
   overflow: visible !important;
 }
 
 /* Avatar photo/letter sits cleanly behind the frame overlay and stays rounded */
-:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) > :is(.avatar-photo, .avatar-letter, img, svg) {
+:is(.frame-champion-crown, .frame-leader-crown, .frame-silver-crown, .frame-eared-melon) > :is(.avatar-photo, .avatar-letter, img, svg) {
   position: relative !important;
   z-index: 1 !important;
   border-radius: 50% !important;
@@ -12543,15 +12543,19 @@ body[data-theme="light"] .track-diff-badge.hardcore-modifier { color:#9f1239; ba
 }
 
 /* Customization preview items: keep content behind frame overlay */
-.cust-frame-preview:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
+.cust-frame-preview:is(.frame-champion-crown, .frame-leader-crown, .frame-silver-crown, .frame-eared-melon) {
   position: relative !important;
   z-index: 1 !important;
   margin: 4px 10px;
   overflow: visible !important;
 }
 
+.cust-frame-preview.frame-champion-crown {
+  margin: 6px 14px !important;
+}
+
 /* Frame overlay sits ON TOP of the avatar (z-index: 10) with full unclipped wings */
-:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon)::before {
+:is(.frame-champion-crown, .frame-leader-crown, .frame-silver-crown, .frame-eared-melon)::before {
   content: '' !important;
   position: absolute !important;
   inset: -35% !important;
@@ -12572,22 +12576,28 @@ body[data-theme="light"] .track-diff-badge.hardcore-modifier { color:#9f1239; ba
   background-repeat: no-repeat !important;
 }
 
-:is(.frame-leader-crown, .frame-silver-crown, .frame-eared-melon)::after {
+:is(.frame-champion-crown, .frame-leader-crown, .frame-silver-crown, .frame-eared-melon)::after {
   content: none !important;
   display: none !important;
 }
 
-/* 1. Leader's Crown: Imperial Gold Crown with radiant wings */
-.frame-leader-crown::before {
-  background-image: url('../assets/frames/leader-crown.svg') !important;
+/* 1. Champion's Crown (Rank 1): Grand Diamond Wings & Radiant Crystal Diadem */
+.frame-champion-crown::before {
+  inset: -92% !important;
+  background-image: url('../assets/frames/champion-crown.svg') !important;
 }
 
-/* 2. Silver Crown: Dual Wing Silver & Obsidian Wreath with Ruby Gem */
+/* 2. Silver Crown (Rank 1-2): Dual Wing Silver & Obsidian Wreath with Ruby Gem */
 .frame-silver-crown::before {
   background-image: url('../assets/frames/silver-crown.svg') !important;
 }
 
-/* 3. Eared Melon: Feline Ears & Silver Charms */
+/* 3. Leader's Crown (Rank 1-3): Imperial Gold Crown with radiant wings */
+.frame-leader-crown::before {
+  background-image: url('../assets/frames/leader-crown.svg') !important;
+}
+
+/* 4. Eared Melon: Feline Ears & Silver Charms */
 .frame-eared-melon::before {
   inset: -25% !important;
   background-image: url('../assets/frames/eared-melon.svg') !important;

@@ -123,7 +123,7 @@ import { i18n } from "./i18n/index.js?v=39.0";
 import { icons } from "./ui/icons.js?v=39.0";
 import { getUserStats } from "./services/stats.js";
 import { filterAdminLevels } from "./ui/adminLevelSearch.js";
-import * as Cosmetics from "./game/cosmetics.js?v=59.0";
+import * as Cosmetics from "./game/cosmetics.js?v=60.0";
 import { loadUserFriends, getCachedFriends, getCachedIncomingRequests, getCachedOutgoingRequests, isFriend, hasOutgoingRequest, hasIncomingRequest, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, removeFriend, searchPlayerGlobal } from "./services/friends.js?v=39.0";
 
 // ==========================================
@@ -1215,6 +1215,25 @@ function bootGame() {
         if (!ids.some(id => pending.has(id)) && pending.size && getCurrentUser()?.id === userId) void persistCosmeticsDelta();
     }
 
+    async function syncRevokedCosmetics(revokedFrames = []) {
+        const userId = getCurrentUser()?.id;
+        if (!userId || !revokedFrames.length) return;
+        const pending = pendingCosmeticUnlocks.get(userId);
+        if (pending) {
+            revokedFrames.forEach(id => pending.delete(id));
+        }
+        const cosm = Cosmetics.getLocalCosmetics();
+        try {
+            await setDoc(doc(db, 'user_progress', userId), {
+                unlockedFrames: cosm.unlockedFrames,
+                selectedFrame: cosm.selectedFrame
+            }, { merge: true });
+            await setDoc(doc(db, 'global_leaderboard', userId), {
+                selectedFrame: cosm.selectedFrame
+            }, { merge: true });
+        } catch (e) { console.warn('[Cosmetics] Revocation sync error', e); }
+    }
+
     function checkRetroactiveCosmetics(notify = null) {
         const themeContext = {
             availableThemeIds: FieldThemes.FIELD_THEMES.map(theme => theme.id),
@@ -1241,7 +1260,10 @@ function bootGame() {
                     }) : [];
                 if (ranking.status === 'fulfilled') {
                     const rank = ranking.value.docs.findIndex(d => d.id === userId || d.data()?.userId === userId);
-                    if (rank >= 0) earned.push(...Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: rank + 1 }, getText, notify));
+                    const currentRank = rank >= 0 ? rank + 1 : null;
+                    const rankSync = Cosmetics.syncRankCosmetics(currentRank, getText, notify);
+                    earned.push(...rankSync.unlocked);
+                    if (rankSync.revoked.length > 0) void syncRevokedCosmetics(rankSync.revoked);
                 }
                 void persistCosmeticsDelta(earned);
                 if (typeof renderCustomizationModal === 'function') renderCustomizationModal();
@@ -1440,7 +1462,7 @@ function bootGame() {
                 userStatus: cosm.userStatus || '',
                 favoriteTrack: cosm.favoriteTrack || '',
                 cosmeticsProgress: Cosmetics.getCosmeticsProgress(),
-                unlockedFrames: arrayUnion(...cosm.unlockedFrames),
+                unlockedFrames: cosm.unlockedFrames,
                 unlockedTitles: arrayUnion(...cosm.unlockedTitles),
                 unlockedFieldThemes: FieldThemes.getUnlockedThemes(),
                 activeFieldTheme: FieldThemes.getActiveThemeId(),
@@ -1450,9 +1472,10 @@ function bootGame() {
             try {
                 const topSnap = await getDocs(query(collection(db, "global_leaderboard"), orderBy("totalScore", "desc"), limit(3)));
                 const currentRankIdx = topSnap.docs.findIndex(d => d.id === userId || d.data()?.userId === userId);
-                if (currentRankIdx >= 0) {
-                    void persistCosmeticsDelta(Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: currentRankIdx + 1 }, getText, showNotification));
-                }
+                const currentRank = currentRankIdx >= 0 ? currentRankIdx + 1 : null;
+                const rankSync = Cosmetics.syncRankCosmetics(currentRank, getText, showNotification);
+                if (rankSync.unlocked.length > 0) void persistCosmeticsDelta(rankSync.unlocked);
+                if (rankSync.revoked.length > 0) void syncRevokedCosmetics(rankSync.revoked);
             } catch (e) {}
         } catch (e) {
             console.error("Global Sync Error:", e);
@@ -5901,7 +5924,10 @@ function updateRipples(dt) {
             });
 
             const ownRank = allPlayers.findIndex(p => p.id === getCurrentUser()?.id);
-            if (ownRank >= 0 && ownRank < 3) void persistCosmeticsDelta(Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: ownRank + 1 }, getText, showNotification));
+            const currentRank = ownRank >= 0 ? ownRank + 1 : null;
+            const rankSync = Cosmetics.syncRankCosmetics(currentRank, getText, showNotification);
+            if (rankSync.unlocked.length > 0) void persistCosmeticsDelta(rankSync.unlocked);
+            if (rankSync.revoked.length > 0) void syncRevokedCosmetics(rankSync.revoked);
             if (allPlayers.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; opacity:0.6;">${getText('lbNoRecords')}</td></tr>`;
                 return;
@@ -9007,14 +9033,22 @@ function updateRipples(dt) {
                 const q = query(collection(db, "global_leaderboard"), orderBy("totalScore", "desc"), limit(100));
                 const snap = await getDocs(q);
                 let currentRank = 1;
+                let foundRank = null;
                 snap.forEach(d => {
                     const data = d.data();
                     if (d.id === userId || data.userId === userId || (data.name && data.name.toLowerCase() === playerName.toLowerCase())) {
                         rankText = `#${currentRank}`;
-                        if (d.id === getCurrentUser()?.id && currentRank <= 3) void persistCosmeticsDelta(Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: currentRank }, getText, showNotification));
+                        if (d.id === getCurrentUser()?.id) {
+                            foundRank = currentRank;
+                        }
                     }
                     currentRank++;
                 });
+                if (userId === getCurrentUser()?.id) {
+                    const rankSync = Cosmetics.syncRankCosmetics(foundRank, getText, showNotification);
+                    if (rankSync.unlocked.length > 0) void persistCosmeticsDelta(rankSync.unlocked);
+                    if (rankSync.revoked.length > 0) void syncRevokedCosmetics(rankSync.revoked);
+                }
             } catch (e) {
                 console.warn("Could not fetch player rank:", e);
             }
