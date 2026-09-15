@@ -52,6 +52,55 @@ export const FRAMES = [
     descKey: 'framePrismaticDesc',
     cssClass: 'frame-prismatic',
     unlockedByDefault: false
+  },
+  {
+    id: 'frame_cyber_alloy',
+    nameKey: 'frameCyberAlloy',
+    descKey: 'frameCyberAlloyDesc',
+    cssClass: 'frame-cyber-alloy',
+    unlockedByDefault: false
+  },
+  {
+    id: 'frame_baroque_gold',
+    nameKey: 'frameBaroqueGold',
+    descKey: 'frameBaroqueGoldDesc',
+    cssClass: 'frame-baroque-gold',
+    unlockedByDefault: false
+  },
+  {
+    id: 'frame_frostbound',
+    nameKey: 'frameFrostbound',
+    descKey: 'frameFrostboundDesc',
+    cssClass: 'frame-frostbound',
+    unlockedByDefault: false
+  },
+  {
+    id: 'frame_street_drift',
+    nameKey: 'frameStreetDrift',
+    descKey: 'frameStreetDriftDesc',
+    cssClass: 'frame-street-drift',
+    unlockedByDefault: false
+  },
+  {
+    id: 'frame_gothic_thorn',
+    nameKey: 'frameGothicThorn',
+    descKey: 'frameGothicThornDesc',
+    cssClass: 'frame-gothic-thorn',
+    unlockedByDefault: false
+  },
+  {
+    id: 'frame_steampunk_chrono',
+    nameKey: 'frameSteampunkChrono',
+    descKey: 'frameSteampunkChronoDesc',
+    cssClass: 'frame-steampunk-chrono',
+    unlockedByDefault: false
+  },
+  {
+    id: 'frame_sakura_urushi',
+    nameKey: 'frameSakuraUrushi',
+    descKey: 'frameSakuraUrushiDesc',
+    cssClass: 'frame-sakura-urushi',
+    unlockedByDefault: false
   }
 ];
 
@@ -108,6 +157,102 @@ export const TITLES = [
     id: 'title_neon_legend',
     nameKey: 'titleNeonLegend',
     descKey: 'titleNeonLegendDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_one_with_phonk',
+    nameKey: 'titleOneWithPhonk',
+    descKey: 'titleOneWithPhonkDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_night_drift_king',
+    nameKey: 'titleNightDriftKing',
+    descKey: 'titleNightDriftKingDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_808_impulse',
+    nameKey: 'title808Impulse',
+    descKey: 'title808ImpulseDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_highway_ghost',
+    nameKey: 'titleHighwayGhost',
+    descKey: 'titleHighwayGhostDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_surgical_precision',
+    nameKey: 'titleSurgicalPrecision',
+    descKey: 'titleSurgicalPrecisionDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_blade_dancer',
+    nameKey: 'titleBladeDancer',
+    descKey: 'titleBladeDancerDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_supersonic',
+    nameKey: 'titleSupersonic',
+    descKey: 'titleSupersonicDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_flawless_streak',
+    nameKey: 'titleFlawlessStreak',
+    descKey: 'titleFlawlessStreakDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_absolute_ear',
+    nameKey: 'titleAbsoluteEar',
+    descKey: 'titleAbsoluteEarDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_blood_moon',
+    nameKey: 'titleBloodMoon',
+    descKey: 'titleBloodMoonDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_crystal_heart',
+    nameKey: 'titleCrystalHeart',
+    descKey: 'titleCrystalHeartDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_synth_pulse',
+    nameKey: 'titleSynthPulse',
+    descKey: 'titleSynthPulseDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_one_sec_away',
+    nameKey: 'titleOneSecAway',
+    descKey: 'titleOneSecAwayDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_lucky_777',
+    nameKey: 'titleLucky777',
+    descKey: 'titleLucky777Desc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_neon_insomnia',
+    nameKey: 'titleNeonInsomnia',
+    descKey: 'titleNeonInsomniaDesc',
+    unlockedByDefault: false
+  },
+  {
+    id: 'title_iron_patience',
+    nameKey: 'titleIronPatience',
+    descKey: 'titleIronPatienceDesc',
     unlockedByDefault: false
   }
 ];
@@ -449,6 +594,313 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
     if (unlockTitle('title_neon_legend', getText, showNotification)) {
       unlocked.push('title_neon_legend');
     }
+  }
+
+  // --- NEW FRAMES (Physical Non-Neon Materials) ---
+
+  // 13. Frame: Cyber Alloy (15+ completed levels)
+  const completedCount = ctx.completedLevelsCount || 0;
+  if (completedCount >= 15) {
+    if (unlockFrame('frame_cyber_alloy', getText, showNotification)) {
+      unlocked.push('frame_cyber_alloy');
+    }
+  }
+
+  // 14. Frame: Baroque Gold (50+ total stars in game)
+  if ((ctx.totalStarsInGame || 0) >= 50) {
+    if (unlockFrame('frame_baroque_gold', getText, showNotification)) {
+      unlocked.push('frame_baroque_gold');
+    }
+  }
+
+  // 15. Frame: Frostbound (700+ combo)
+  if ((ctx.maxCombo || 0) >= 700) {
+    if (unlockFrame('frame_frostbound', getText, showNotification)) {
+      unlocked.push('frame_frostbound');
+    }
+  }
+
+  // 16. Frame: Street Drift & Title: One With Phonk (Win on Phonk track in Hardcore mode)
+  if (ctx.victory && ctx.isHardcore && ctx.isPhonk) {
+    if (unlockFrame('frame_street_drift', getText, showNotification)) {
+      unlocked.push('frame_street_drift');
+    }
+    if (unlockTitle('title_one_with_phonk', getText, showNotification)) {
+      unlocked.push('title_one_with_phonk');
+    }
+  }
+
+  // 17. Frame: Gothic Thorn (5+ hardcore victories across the game)
+  if ((ctx.hardcoreCompletionsCount || 0) >= 5) {
+    if (unlockFrame('frame_gothic_thorn', getText, showNotification)) {
+      unlocked.push('frame_gothic_thorn');
+    }
+  }
+
+  // 18. Frame: Steampunk Chrono & Title: Iron Patience (5+ hours total pure playtime: >= 18000s)
+  let totalPlaytimeSec = ctx.totalPlaytimeSeconds || 0;
+  if (!totalPlaytimeSec && typeof localStorage !== 'undefined') {
+    try { totalPlaytimeSec = parseInt(localStorage.getItem('neon_total_playtime') || '0', 10); } catch (e) {}
+  }
+  if (totalPlaytimeSec >= 18000) {
+    if (unlockFrame('frame_steampunk_chrono', getText, showNotification)) {
+      unlocked.push('frame_steampunk_chrono');
+    }
+    if (unlockTitle('title_iron_patience', getText, showNotification)) {
+      unlocked.push('title_iron_patience');
+    }
+  }
+
+  // 19. Frame: Sakura Urushi (100% Perfect run: accuracy 100% and 0 misses on victory)
+  if (ctx.victory && ctx.totalMisses === 0 && (ctx.accuracy >= 99.9 || (ctx.perfectHits > 0 && ctx.perfectHits === ctx.totalHits))) {
+    if (unlockFrame('frame_sakura_urushi', getText, showNotification)) {
+      unlocked.push('frame_sakura_urushi');
+    }
+  }
+
+  // --- NEW TITLES ---
+
+  // 20. Title: Night Drift King (Win on Phonk track at 1.3x+ speed with 0 dropped holds)
+  if (ctx.victory && ctx.isPhonk && (ctx.speed || 1.0) >= 1.29 && (ctx.holdsDropped === 0 || ctx.brokenHolds === 0)) {
+    if (unlockTitle('title_night_drift_king', getText, showNotification)) {
+      unlocked.push('title_night_drift_king');
+    }
+  }
+
+  // 21. Title: 808 Impulse (600+ combo on Phonk track)
+  if (ctx.isPhonk && (ctx.maxCombo || 0) >= 600) {
+    if (unlockTitle('title_808_impulse', getText, showNotification)) {
+      unlocked.push('title_808_impulse');
+    }
+  }
+
+  // 22. Title: Highway Ghost (3 stars on Phonk track between 23:00 and 04:00)
+  if (ctx.isPhonk && (ctx.starsEarned || 0) >= 3 && (currentHour >= 23 || currentHour < 4)) {
+    if (unlockTitle('title_highway_ghost', getText, showNotification)) {
+      unlocked.push('title_highway_ghost');
+    }
+  }
+
+  // 23. Title: Surgical Precision (>95% Perfect hits in a level, min 30 hits)
+  if ((ctx.totalHits || 0) >= 30 && ((ctx.perfectHits || 0) / ctx.totalHits) >= 0.95) {
+    if (unlockTitle('title_surgical_precision', getText, showNotification)) {
+      unlocked.push('title_surgical_precision');
+    }
+  }
+
+  // 24. Title: Blade Dancer (Hardcore victory or victory after surviving critical situation)
+  if (ctx.victory && (ctx.isHardcore || ctx.survivedCritical || (ctx.maxConsecutiveMisses && ctx.maxConsecutiveMisses >= 3))) {
+    if (unlockTitle('title_blade_dancer', getText, showNotification)) {
+      unlocked.push('title_blade_dancer');
+    }
+  }
+
+  // 25. Title: Supersonic (Win on Hard difficulty at 1.4x speed)
+  if (ctx.victory && (ctx.difficulty === 'hard' || ctx.isHardDifficulty) && (ctx.speed || 1.0) >= 1.38) {
+    if (unlockTitle('title_supersonic', getText, showNotification)) {
+      unlocked.push('title_supersonic');
+    }
+  }
+
+  // 26. Title: Flawless Streak (3 consecutive victories with 0 misses)
+  if (typeof localStorage !== 'undefined') {
+    let streak = 0;
+    try { streak = parseInt(localStorage.getItem('neon_flawless_streak') || '0', 10); } catch (e) {}
+    if (ctx.victory && ctx.totalMisses === 0) {
+      streak++;
+      try { localStorage.setItem('neon_flawless_streak', String(streak)); } catch (e) {}
+      if (streak >= 3) {
+        if (unlockTitle('title_flawless_streak', getText, showNotification)) {
+          unlocked.push('title_flawless_streak');
+        }
+      }
+    } else if (ctx.totalMisses > 0 || (!ctx.victory && ctx.playedSong)) {
+      try { localStorage.setItem('neon_flawless_streak', '0'); } catch (e) {}
+    }
+  }
+
+  // 27. Title: Absolute Ear (3+ diamond stars on different tracks)
+  if ((ctx.totalDiamondsInGame || 0) >= 3 || (ctx.diamondsEarned || 0) >= 3) {
+    if (unlockTitle('title_absolute_ear', getText, showNotification)) {
+      unlocked.push('title_absolute_ear');
+    }
+  }
+
+  // 28. Title: Blood Moon (800+ combo in Hiyuki theme)
+  if (ctx.themeId === 'hiyuki' && (ctx.maxCombo || 0) >= 800) {
+    if (unlockTitle('title_blood_moon', getText, showNotification)) {
+      unlocked.push('title_blood_moon');
+    }
+  }
+
+  // 29. Title: Crystal Heart (100% hold notes held in Sanhua theme)
+  if (ctx.themeId === 'sanhua' && ctx.victory && (ctx.totalHolds || 0) > 0 && (ctx.holdsDropped || 0) === 0) {
+    if (unlockTitle('title_crystal_heart', getText, showNotification)) {
+      unlocked.push('title_crystal_heart');
+    }
+  }
+
+  // 30. Title: Synth Pulse (25+ completed levels)
+  if (completedCount >= 25) {
+    if (unlockTitle('title_synth_pulse', getText, showNotification)) {
+      unlocked.push('title_synth_pulse');
+    }
+  }
+
+  // 31. Title: One Sec Away (Loss in the last 5% of track: songProgress >= 0.95)
+  if (!ctx.victory && (ctx.songProgress || 0) >= 0.95) {
+    if (unlockTitle('title_one_sec_away', getText, showNotification)) {
+      unlocked.push('title_one_sec_away');
+    }
+  }
+
+  // 32. Title: Lucky 777 (Max combo 777 or perfect hits 777 or score ending in 777)
+  if (ctx.maxCombo === 777 || ctx.perfectHits === 777 || ctx.score === 777 || ((ctx.score || 0) > 0 && (ctx.score % 1000 === 777))) {
+    if (unlockTitle('title_lucky_777', getText, showNotification)) {
+      unlocked.push('title_lucky_777');
+    }
+  }
+
+  // 33. Title: Neon Insomnia (Play 3 matches between 03:00 and 05:00)
+  if (currentHour >= 3 && currentHour < 5) {
+    if (typeof localStorage !== 'undefined') {
+      let nightPlays = 0;
+      try {
+        nightPlays = parseInt(localStorage.getItem('neon_insomnia_plays') || '0', 10) + 1;
+        localStorage.setItem('neon_insomnia_plays', String(nightPlays));
+      } catch (e) {}
+      if (nightPlays >= 3) {
+        if (unlockTitle('title_neon_insomnia', getText, showNotification)) {
+          unlocked.push('title_neon_insomnia');
+        }
+      }
+    }
+  }
+
+  return unlocked;
+}
+
+/**
+ * Retroactive qualification check:
+ * Inspects existing player progress in localStorage (scores, stars, diamonds, hardcore wins, phonk records, playtime)
+ * and immediately unlocks any titles and frames the player has already qualified for.
+ * Never overrides user's currently equipped cosmetic choices.
+ */
+export function checkRetroactiveCosmeticsUnlocks(songsList = [], getText = null, showNotification = null) {
+  if (typeof localStorage === 'undefined') return [];
+
+  let totalStars = 0;
+  let totalDiamonds = 0;
+  let completedLevels = 0;
+  let hardcoreCompletions = 0;
+  let hasPhonkHardcore = false;
+  let hasPlayedAny = false;
+  let hasThreeStar = false;
+  let totalPlaytime = 0;
+
+  try {
+    totalPlaytime = parseInt(localStorage.getItem('neon_total_playtime') || '0', 10);
+  } catch (e) {}
+
+  // Map/Set of phonk titles for lookup
+  const phonkTrackTitles = new Set();
+  if (Array.isArray(songsList)) {
+    songsList.forEach(s => {
+      if (s && s.title && (s.isPhonk || (s.genre && s.genre.toLowerCase().includes('phonk')) || s.title.toLowerCase().includes('phonk'))) {
+        phonkTrackTitles.add(s.title);
+      }
+    });
+  }
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith('neon_rhythm_')) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      let data = null;
+      try { data = JSON.parse(raw); } catch (e) { continue; }
+      if (!data) continue;
+
+      const trackTitle = key.replace('neon_rhythm_', '');
+      hasPlayedAny = true;
+
+      const stars = data.stars || 0;
+      if (stars > 0) totalStars += stars;
+      if (stars >= 3) hasThreeStar = true;
+
+      const score = data.score || 0;
+      if (score > 0 || stars > 0) completedLevels++;
+
+      const isHardcore = Boolean(data.isHardcore || (Array.isArray(data.completedDifficulties) && data.completedDifficulties.includes('hardcore')));
+      if (isHardcore) {
+        hardcoreCompletions++;
+        if (phonkTrackTitles.has(trackTitle) || trackTitle.toLowerCase().includes('phonk')) {
+          hasPhonkHardcore = true;
+        }
+      }
+
+      const starTypes = Array.isArray(data.starTypes) ? data.starTypes : [];
+      if (starTypes.some(t => t === 2)) {
+        totalDiamonds++;
+      }
+    }
+  } catch (e) {
+    console.warn("[Cosmetics] Error reading localStorage for retroactive unlocks:", e);
+  }
+
+  const unlocked = [];
+
+  // Retroactive frame checks
+  if (hasPlayedAny && unlockFrame('frame_neon_start', getText, showNotification)) {
+    unlocked.push('frame_neon_start');
+  }
+  if (hasThreeStar && unlockFrame('frame_gold_prestige', getText, showNotification)) {
+    unlocked.push('frame_gold_prestige');
+  }
+  if (hardcoreCompletions > 0 && unlockFrame('frame_crimson_fire', getText, showNotification)) {
+    unlocked.push('frame_crimson_fire');
+  }
+  if (totalDiamonds > 0 && unlockFrame('frame_prismatic', getText, showNotification)) {
+    unlocked.push('frame_prismatic');
+  }
+  if (completedLevels >= 15 && unlockFrame('frame_cyber_alloy', getText, showNotification)) {
+    unlocked.push('frame_cyber_alloy');
+  }
+  if (totalStars >= 50 && unlockFrame('frame_baroque_gold', getText, showNotification)) {
+    unlocked.push('frame_baroque_gold');
+  }
+  if (hasPhonkHardcore && unlockFrame('frame_street_drift', getText, showNotification)) {
+    unlocked.push('frame_street_drift');
+  }
+  if (hardcoreCompletions >= 5 && unlockFrame('frame_gothic_thorn', getText, showNotification)) {
+    unlocked.push('frame_gothic_thorn');
+  }
+  if (totalPlaytime >= 18000 && unlockFrame('frame_steampunk_chrono', getText, showNotification)) {
+    unlocked.push('frame_steampunk_chrono');
+  }
+
+  // Retroactive title checks
+  if (hardcoreCompletions > 0 && unlockTitle('title_no_mercy', getText, showNotification)) {
+    unlocked.push('title_no_mercy');
+  }
+  if (totalStars >= 20 && unlockTitle('title_star_collector', getText, showNotification)) {
+    unlocked.push('title_star_collector');
+  }
+  if (totalDiamonds > 0 && unlockTitle('title_neon_legend', getText, showNotification)) {
+    unlocked.push('title_neon_legend');
+  }
+  if (totalDiamonds >= 3 && unlockTitle('title_absolute_ear', getText, showNotification)) {
+    unlocked.push('title_absolute_ear');
+  }
+  if (hasPhonkHardcore && unlockTitle('title_one_with_phonk', getText, showNotification)) {
+    unlocked.push('title_one_with_phonk');
+  }
+  if (completedLevels >= 25 && unlockTitle('title_synth_pulse', getText, showNotification)) {
+    unlocked.push('title_synth_pulse');
+  }
+  if (totalPlaytime >= 18000 && unlockTitle('title_iron_patience', getText, showNotification)) {
+    unlocked.push('title_iron_patience');
   }
 
   return unlocked;
