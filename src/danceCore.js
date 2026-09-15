@@ -1215,7 +1215,11 @@ function bootGame() {
     }
 
     function checkRetroactiveCosmetics(notify = null) {
-        const delta = Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, notify);
+        const themeContext = {
+            availableThemeIds: FieldThemes.FIELD_THEMES.map(theme => theme.id),
+            unlockedThemeIds: FieldThemes.getUnlockedThemes()
+        };
+        const delta = Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, notify, [], themeContext);
         void persistCosmeticsDelta(delta);
         const userId = getCurrentUser()?.id;
         if (userId && !cosmeticHistorySessions.has(userId)) {
@@ -1227,7 +1231,10 @@ function bootGame() {
             ]).then(([history, ranking]) => {
                 if (getCurrentUser()?.id !== userId) return;
                 const earned = history.status === 'fulfilled'
-                    ? Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, notify, history.value) : [];
+                    ? Cosmetics.checkRetroactiveCosmeticsUnlocks(songsDB, getText, notify, history.value, {
+                        availableThemeIds: FieldThemes.FIELD_THEMES.map(theme => theme.id),
+                        unlockedThemeIds: FieldThemes.getUnlockedThemes()
+                    }) : [];
                 if (ranking.status === 'fulfilled') {
                     const rank = ranking.value.docs.findIndex(d => d.id === userId);
                     if (rank >= 0) earned.push(...Cosmetics.checkCosmeticsUnlocks({ retrospective: true, globalRank: rank + 1 }, getText, notify));
@@ -2026,6 +2033,7 @@ function bootGame() {
         State.hitCombo777 = false;
         State.cosmeticsResultRecorded = false;
         State.cosmeticsPlayedAt = Date.now();
+        State.cosmeticsRun = Cosmetics.createCosmeticsRun(State.isMuted);
         Cosmetics.seedCosmeticsProgress(songsDB);
         State.holdsDropped = 0;
         State.totalHolds = 0;
@@ -2770,6 +2778,7 @@ function update(songTime) {
                         tile.hitRating = (Math.abs(yStart - hitY) <= 75) ? 'perfect' : 'good';
                         State.totalHits++;
                         if (tile.hitRating === 'perfect') State.perfectHits++;
+                        Cosmetics.recordCosmeticsJudgment(State.cosmeticsRun, tile.hitRating);
                         tile.lastValidHoldTime = now;
                         State.holdingTiles[tile.lane] = tile;
                         toggleHoldEffect(tile.lane, true);
@@ -2800,6 +2809,7 @@ function update(songTime) {
                             const mult = getComboMultiplier();
                             State.score += Math.round(CONFIG.scoreHoldTick * mult * State.scoreMultiplier);
                             State.combo += 10;
+                            Cosmetics.observeCosmeticsCombo(State.cosmeticsRun, State.combo);
                             if (State.combo === 777) State.hitCombo777 = true;
                             State.lastComboUpdateTime = now;
                             if (State.combo > State.maxCombo) State.maxCombo = State.combo;
@@ -2822,6 +2832,7 @@ function update(songTime) {
                             tile.holding = false;
                             tile.released = true;
                             State.holdsDropped++;
+                            Cosmetics.recordCosmeticsJudgment(State.cosmeticsRun, 'drop');
                             if (!tile.fadeStartTime) tile.fadeStartTime = now;
                             if (!tile.releaseSongTime) tile.releaseSongTime = songTime;
                             
@@ -2871,6 +2882,7 @@ function update(songTime) {
         const mult = getComboMultiplier();
         State.score += Math.round((CONFIG.scoreHoldTick * 5) * mult * State.scoreMultiplier);
         State.combo++;
+        Cosmetics.observeCosmeticsCombo(State.cosmeticsRun, State.combo);
         if (State.combo === 777) State.hitCombo777 = true;
         State.lastComboUpdateTime = Date.now();
         if (State.combo > State.maxCombo) State.maxCombo = State.combo;
@@ -3903,6 +3915,7 @@ function handleInputDown(lane, touchY, touchX) {
                 showRating(getText('good'), "rating-good");
                 target.hitRating = 'good';
             }
+            Cosmetics.recordCosmeticsJudgment(State.cosmeticsRun, target.hitRating);
 
             if (target.type === 'long') {
                 target.holding = true;
@@ -3913,6 +3926,7 @@ function handleInputDown(lane, touchY, touchX) {
                 showRating(getText('perfect'), "rating-perfect");
             } else {
                 State.combo++;
+                Cosmetics.observeCosmeticsCombo(State.cosmeticsRun, State.combo);
                 if (State.combo === 777) State.hitCombo777 = true;
                 if (State.combo > State.maxCombo) State.maxCombo = State.combo;
             }
@@ -3988,6 +4002,9 @@ function handleInputDown(lane, touchY, touchX) {
     }
 
     function missNote(tile, isSpawnedMiss) {
+        const runProgress = State.audioBuffer?.duration > 0 && State.audioCtx
+            ? (State.audioCtx.currentTime - State.startTime) / State.audioBuffer.duration : 0;
+        Cosmetics.recordCosmeticsMiss(State.cosmeticsRun, runProgress);
         if (tile) {
             tile.failed = true;
             tile.missed = true;
@@ -4454,6 +4471,7 @@ function updateRipples(dt) {
 
         const startDelay = 2;
         State.cosmeticsPlayedAt = Date.now();
+        State.cosmeticsRun = Cosmetics.createCosmeticsRun(State.isMuted);
         State.startTime = State.audioCtx.currentTime + startDelay;
         // Мелодія завжди звучить у природному темпі 1.0x (pitch та темп чисті, без спотворень)
         State.sourceNode.playbackRate.value = 1.0;
@@ -4533,6 +4551,7 @@ function updateRipples(dt) {
             });
         }
         if (victory && leftoverMisses > 0) {
+            Cosmetics.recordCosmeticsJudgment(State.cosmeticsRun, 'miss');
             State.totalMisses = (State.totalMisses || 0) + leftoverMisses;
         }
 
@@ -4722,7 +4741,10 @@ function updateRipples(dt) {
             const matchContext = {
                 victory: Boolean(victory), difficulty: currentDiff,
                 isHardcore: Boolean(State.isHardcore), totalMisses: State.totalMisses || 0,
-                playedAt: State.cosmeticsPlayedAt
+                playedAt: State.cosmeticsPlayedAt,
+                track: currentSong,
+                themeId: activeThemeId,
+                perfectHits: State.perfectHits || 0
             };
             if (!State.cosmeticsResultRecorded) {
                 State.cosmeticsResultRecorded = true;
@@ -4742,6 +4764,13 @@ function updateRipples(dt) {
                 hitCombo777: State.hitCombo777,
                 enteredCriticalDanger: State.survivedCritical,
                 goldStarsEarned: goldCount,
+                maxPerfectStreak: State.cosmeticsRun?.maxPerfectStreak || 0,
+                finalPerfectStreak: State.cosmeticsRun?.perfectStreak || 0,
+                maxComboAfterMiss: State.cosmeticsRun?.maxComboAfterMiss || 0,
+                hadLateMiss: Boolean(State.cosmeticsRun?.hadLateMiss),
+                mutedWholeRun: Boolean(State.cosmeticsRun && !State.cosmeticsRun.heardAudio),
+                availableThemeIds: FieldThemes.FIELD_THEMES.map(theme => theme.id),
+                unlockedThemeIds: FieldThemes.getUnlockedThemes(),
                 playedSong: true,
                 victory: Boolean(victory),
                 score: State.score,
@@ -4982,6 +5011,7 @@ function updateRipples(dt) {
             if (State.masterGain && State.audioCtx) {
                 try {
                     State.masterGain.gain.setValueAtTime(State.isMuted ? 0 : 1, State.audioCtx.currentTime);
+                    if (!State.isMuted && State.cosmeticsRun) State.cosmeticsRun.heardAudio = true;
                 } catch (e) {}
             }
 
@@ -6310,6 +6340,7 @@ function updateRipples(dt) {
 
         function toggleSoundMode() {
             State.isMuted = !State.isMuted;
+            if (State.isPlaying && !State.isPaused && !State.isMuted && State.cosmeticsRun) State.cosmeticsRun.heardAudio = true;
             localStorage.setItem('isMuted', State.isMuted);
             if (State.masterGain) State.masterGain.gain.value = State.isMuted ? 0 : 1;
             if (bgMusicEl) State.isMuted ? bgMusicEl.pause() : (!State.isPlaying && bgMusicEl.play().catch(() => {}));
@@ -8821,9 +8852,11 @@ function updateRipples(dt) {
                     iconUserContainer.innerHTML = icons.user(16);
                 }
             }
-            Cosmetics.FRAMES.forEach(f => { if (f.cssClass) userBadge.classList.remove(f.cssClass); });
+            Cosmetics.FRAMES.forEach(f => {
+                if (f.cssClass) f.cssClass.split(/\s+/).filter(Boolean).forEach(cls => userBadge.classList.remove(cls));
+            });
             const bFrameCls = curUser ? Cosmetics.getFrameCssClass(cosm.selectedFrame) : '';
-            if (bFrameCls) userBadge.classList.add(bFrameCls);
+            if (bFrameCls) bFrameCls.split(/\s+/).filter(Boolean).forEach(cls => userBadge.classList.add(cls));
         };
 
         onAuthStateChanged(updateAuthUI);
@@ -8945,9 +8978,11 @@ function updateRipples(dt) {
             const profileAvatarPill = document.querySelector('.profile-avatar-pill');
             if (profileAvatarPill) {
                 profileAvatarPill.innerHTML = Cosmetics.getAvatarContent(playerName, cosm.avatarUrl);
-                Cosmetics.FRAMES.forEach(f => { if (f.cssClass) profileAvatarPill.classList.remove(f.cssClass); });
+                Cosmetics.FRAMES.forEach(f => {
+                    if (f.cssClass) f.cssClass.split(/\s+/).filter(Boolean).forEach(cls => profileAvatarPill.classList.remove(cls));
+                });
                 const pFrameCls = Cosmetics.getFrameCssClass(cosm.selectedFrame);
-                if (pFrameCls) profileAvatarPill.classList.add(pFrameCls);
+                if (pFrameCls) pFrameCls.split(/\s+/).filter(Boolean).forEach(cls => profileAvatarPill.classList.add(cls));
             }
 
             profileModal.classList.remove('hidden');
@@ -9160,10 +9195,10 @@ function updateRipples(dt) {
             if (upAvatar) {
                 upAvatar.innerHTML = Cosmetics.getAvatarContent(name, playerData.avatarUrl);
                 Cosmetics.FRAMES.forEach(f => {
-                    if (f.cssClass) upAvatar.classList.remove(f.cssClass);
+                    if (f.cssClass) f.cssClass.split(/\s+/).filter(Boolean).forEach(cls => upAvatar.classList.remove(cls));
                 });
                 const activeFrameClass = Cosmetics.getFrameCssClass(playerData.selectedFrame || 'frame_none');
-                if (activeFrameClass) upAvatar.classList.add(activeFrameClass);
+                if (activeFrameClass) activeFrameClass.split(/\s+/).filter(Boolean).forEach(cls => upAvatar.classList.add(cls));
             }
 
             // Титул гравця
@@ -10669,7 +10704,11 @@ function updateRipples(dt) {
             if (!panelFrames) return;
             const cosm = Cosmetics.getLocalCosmetics();
 
-            panelFrames.innerHTML = Cosmetics.FRAMES.map(f => {
+            const frames = Cosmetics.groupCosmetics(Cosmetics.FRAMES);
+            panelFrames.innerHTML = frames.map((f, index) => {
+                const group = f.collectionKey || 'collectionOriginal';
+                const heading = index === 0 || group !== (frames[index - 1].collectionKey || 'collectionOriginal')
+                    ? `<h3 class="cust-collection-heading">${escapeHtml(getText(group))}</h3>` : '';
                 const isUnlocked = cosm.unlockedFrames.includes(f.id);
                 const isEquipped = cosm.selectedFrame === f.id;
                 const frameName = getText(f.nameKey) || f.id;
@@ -10679,6 +10718,7 @@ function updateRipples(dt) {
                     : (isUnlocked ? (getText('custEquip') || 'Обрати') : (getText('custLocked') || 'Заблоковано'));
                 const statusCls = isEquipped ? 'equipped' : (isUnlocked ? 'unlocked' : 'locked');
                 return `
+                    ${heading}
                     <div class="cosmetic-item-card ${statusCls}" data-frame-id="${f.id}" title="${escapeHtml(frameDesc)}">
                         <div class="cust-frame-preview ${f.cssClass}">${isUnlocked ? '★' : '🔒'}</div>
                         <div class="cust-item-info">
@@ -10719,7 +10759,11 @@ function updateRipples(dt) {
             if (!panelTitles) return;
             const cosm = Cosmetics.getLocalCosmetics();
 
-            panelTitles.innerHTML = Cosmetics.TITLES.map(t => {
+            const titles = Cosmetics.groupCosmetics(Cosmetics.TITLES);
+            panelTitles.innerHTML = titles.map((t, index) => {
+                const group = t.collectionKey || 'collectionOriginal';
+                const heading = index === 0 || group !== (titles[index - 1].collectionKey || 'collectionOriginal')
+                    ? `<h3 class="cust-collection-heading">${escapeHtml(getText(group))}</h3>` : '';
                 const isUnlocked = cosm.unlockedTitles.includes(t.id);
                 const isEquipped = cosm.selectedTitle === t.id;
                 const titleName = getText(t.nameKey) || t.id;
@@ -10729,6 +10773,7 @@ function updateRipples(dt) {
                     : (isUnlocked ? (getText('custEquip') || 'Обрати') : (getText('custLocked') || 'Заблоковано'));
                 const statusCls = isEquipped ? 'equipped' : (isUnlocked ? 'unlocked' : 'locked');
                 return `
+                    ${heading}
                     <div class="cosmetic-item-card ${statusCls}" data-title-id="${t.id}" title="${escapeHtml(titleDesc)}">
                         <div class="cust-frame-preview" style="font-size: 0.95rem;">${isUnlocked ? '👑' : '🔒'}</div>
                         <div class="cust-item-info">

@@ -10815,6 +10815,36 @@ body[data-theme="light"] :is(.frame-cyber-alloy, .frame-baroque-gold, .frame-fro
   grid-template-columns: 1fr;
 }
 
+.cust-tab-pane .cust-panel {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.cust-collection-heading {
+  grid-column: 1 / -1;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--highlight, #00d2ff);
+  padding: 10px 4px 4px 4px;
+  margin: 8px 0 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cust-collection-heading:first-child {
+  margin-top: 0;
+  padding-top: 2px;
+}
+
+body[data-theme="light"] .cust-collection-heading {
+  color: #0284c7;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
 .cosmetic-item-card {
   padding: 8px 10px;
   border-radius: 10px;
@@ -12217,3 +12247,216 @@ body.simulated-fullscreen canvas#pixiCanvas {
     radial-gradient(ellipse at 36% 72%, #f7e0ee 0 16%, transparent 18%) right bottom / 12px 12px no-repeat,
     radial-gradient(ellipse at 65% 72%, #c6cbdc 0 16%, transparent 18%) right bottom / 12px 12px no-repeat,
     radial-gradient(circle, #ba9955 0 20%, transparent 22%) right bottom / 12px 12px no-repeat; }
+
+/* ------------------------------------------
+   10 THEMED COLLECTION AVATAR FRAMES
+   Sanhua/Hiyuki, Cosmic, Phonk/Drift, Prestige
+   ------------------------------------------ */
+.frame-collection {
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+  border-radius: var(--frame-radius, 50%) !important;
+  transition: all 0.25s ease;
+}
+
+.frame-collection > .avatar-photo,
+.frame-collection > img {
+  border-radius: inherit;
+}
+
+/* 1. Moon Rime: Pale Lunar Hoarfrost & Cyan Shimmer */
+.frame-moon-rime {
+  border: 2px solid #a5f3fc !important;
+  box-shadow: 0 0 10px rgba(165, 243, 252, 0.75), 0 0 22px rgba(56, 189, 248, 0.45), inset 0 0 8px rgba(224, 242, 254, 0.6) !important;
+  animation: frame-moon-rime-shimmer 3s infinite ease-in-out !important;
+}
+
+@keyframes frame-moon-rime-shimmer {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(165, 243, 252, 0.6), 0 0 18px rgba(56, 189, 248, 0.35), inset 0 0 6px rgba(224, 242, 254, 0.5);
+    border-color: #a5f3fc;
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(165, 243, 252, 0.95), 0 0 30px rgba(56, 189, 248, 0.7), inset 0 0 10px rgba(224, 242, 254, 0.85);
+    border-color: #ffffff;
+  }
+}
+
+/* 2. Crimson Dawn: Blood Moon Obsidian & Vermilion Aura */
+.frame-crimson-dawn {
+  border: 2px solid #ef4444 !important;
+  box-shadow: 0 0 12px #dc2626, 0 0 26px rgba(185, 28, 28, 0.8), inset 0 0 9px rgba(239, 68, 68, 0.5) !important;
+  animation: frame-crimson-dawn-glow 2s infinite alternate ease-in-out !important;
+}
+
+@keyframes frame-crimson-dawn-glow {
+  0% {
+    box-shadow: 0 0 10px #dc2626, 0 0 20px rgba(185, 28, 28, 0.6), inset 0 0 6px rgba(239, 68, 68, 0.4);
+    border-color: #dc2626;
+  }
+  100% {
+    box-shadow: 0 0 18px #ef4444, 0 0 34px rgba(248, 113, 113, 0.85), inset 0 0 12px rgba(239, 68, 68, 0.7);
+    border-color: #f87171;
+  }
+}
+
+/* 3. Ice Moon Throne: Royal Sapphire Crystal & Diamond Spark */
+.frame-ice-moon-throne {
+  border: 2.5px solid #38bdf8 !important;
+  box-shadow: 0 0 14px #0284c7, 0 0 28px rgba(56, 189, 248, 0.65), inset 0 0 9px #e0f2fe !important;
+  animation: frame-ice-moon-throne-pulse 2.8s infinite ease-in-out !important;
+}
+
+@keyframes frame-ice-moon-throne-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px #0284c7, 0 0 22px rgba(56, 189, 248, 0.5), inset 0 0 7px #bae6fd;
+    border-color: #38bdf8;
+  }
+  50% {
+    box-shadow: 0 0 20px #38bdf8, 0 0 40px rgba(14, 165, 233, 0.85), inset 0 0 12px #f0f9ff;
+    border-color: #bae6fd;
+  }
+}
+
+/* 4. Blades of Silence: Razor Titanium Edge & Silver Gleam */
+.frame-silence-blades {
+  border: 2px solid #cbd5e1 !important;
+  box-shadow: 0 0 10px rgba(226, 232, 240, 0.8), 0 0 22px rgba(148, 163, 184, 0.5), inset 0 0 7px rgba(248, 250, 252, 0.7) !important;
+  animation: frame-silence-blades-gleam 2.4s infinite ease-in-out !important;
+}
+
+@keyframes frame-silence-blades-gleam {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(203, 213, 225, 0.6), 0 0 18px rgba(148, 163, 184, 0.4), inset 0 0 5px rgba(241, 245, 249, 0.5);
+    border-color: #94a3b8;
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.95), 0 0 30px rgba(203, 213, 225, 0.8), inset 0 0 10px #ffffff;
+    border-color: #ffffff;
+  }
+}
+
+/* 5. Blossom Charm: Frozen Cherry Blossom & Petal Frost */
+.frame-blossom-charm {
+  border: 2px solid #f472b6 !important;
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.75), 0 0 24px rgba(251, 207, 232, 0.45), inset 0 0 8px rgba(244, 114, 182, 0.45) !important;
+  animation: frame-blossom-charm-breathe 3.2s infinite ease-in-out !important;
+}
+
+@keyframes frame-blossom-charm-breathe {
+  0%, 100% {
+    box-shadow: 0 0 9px rgba(244, 114, 182, 0.6), 0 0 18px rgba(244, 114, 182, 0.35), inset 0 0 6px rgba(251, 207, 232, 0.3);
+    border-color: #f472b6;
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(244, 114, 182, 0.9), 0 0 32px rgba(251, 207, 232, 0.7), inset 0 0 11px rgba(253, 242, 248, 0.8);
+    border-color: #fbcfe8;
+  }
+}
+
+/* 6. Abyss Portal: Cosmic Event Horizon & Pulsing Void Vortex */
+.frame-abyss-portal {
+  border: 2.5px solid #a855f7 !important;
+  box-shadow: 0 0 16px #7c3aed, 0 0 32px rgba(124, 58, 237, 0.8), 0 0 46px rgba(6, 182, 212, 0.45), inset 0 0 10px rgba(168, 85, 247, 0.65) !important;
+  animation: frame-abyss-portal-vortex 3.5s infinite ease-in-out !important;
+}
+
+@keyframes frame-abyss-portal-vortex {
+  0%, 100% {
+    box-shadow: 0 0 12px #7c3aed, 0 0 24px rgba(124, 58, 237, 0.6), 0 0 38px rgba(6, 182, 212, 0.35), inset 0 0 8px rgba(168, 85, 247, 0.5);
+    border-color: #a855f7;
+  }
+  50% {
+    box-shadow: 0 0 22px #c084fc, 0 0 42px rgba(124, 58, 237, 0.95), 0 0 54px rgba(6, 182, 212, 0.7), inset 0 0 14px rgba(192, 132, 252, 0.85);
+    border-color: #38bdf8;
+  }
+}
+
+/* 7. Cassette 808: Street Drift Synthwave & 808 Punch */
+.frame-cassette-808 {
+  border: 2px solid #ec4899 !important;
+  box-shadow: 0 0 12px #ec4899, 0 0 26px rgba(234, 179, 8, 0.7), inset 0 0 8px rgba(236, 72, 153, 0.5) !important;
+  animation: frame-cassette-808-beat 1.6s infinite ease-in-out !important;
+}
+
+@keyframes frame-cassette-808-beat {
+  0%, 100% {
+    box-shadow: 0 0 9px #ec4899, 0 0 20px rgba(234, 179, 8, 0.5), inset 0 0 6px rgba(236, 72, 153, 0.35);
+    border-color: #ec4899;
+  }
+  50% {
+    box-shadow: 0 0 18px #f43f5e, 0 0 34px rgba(234, 179, 8, 0.9), inset 0 0 12px rgba(250, 204, 21, 0.7);
+    border-color: #eab308;
+  }
+}
+
+/* 8. Leader's Crown: Sovereign Radiant Gold & Imperial Aura */
+.frame-leader-crown {
+  border: 2.5px solid #fbbf24 !important;
+  box-shadow: 0 0 16px #f59e0b, 0 0 34px rgba(251, 191, 36, 0.85), 0 0 50px rgba(254, 240, 138, 0.55), inset 0 0 11px rgba(253, 230, 138, 0.75) !important;
+  animation: frame-leader-crown-radiance 2.6s infinite ease-in-out !important;
+}
+
+@keyframes frame-leader-crown-radiance {
+  0%, 100% {
+    box-shadow: 0 0 12px #f59e0b, 0 0 26px rgba(251, 191, 36, 0.65), 0 0 40px rgba(254, 240, 138, 0.4), inset 0 0 8px rgba(253, 230, 138, 0.5);
+    border-color: #f59e0b;
+  }
+  50% {
+    box-shadow: 0 0 22px #fbbf24, 0 0 44px rgba(251, 191, 36, 0.98), 0 0 60px rgba(254, 240, 138, 0.8), inset 0 0 14px #fffbeb;
+    border-color: #fde68a;
+  }
+}
+
+/* 9. Neon Archive: Cyber Matrix Data Grid & Emerald Scan */
+.frame-neon-archive {
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 0 12px #10b981, 0 0 26px rgba(6, 182, 212, 0.65), inset 0 0 8px rgba(16, 185, 129, 0.45) !important;
+  animation: frame-neon-archive-scan 2.2s infinite ease-in-out !important;
+}
+
+@keyframes frame-neon-archive-scan {
+  0%, 100% {
+    box-shadow: 0 0 9px #10b981, 0 0 20px rgba(6, 182, 212, 0.45), inset 0 0 6px rgba(16, 185, 129, 0.35);
+    border-color: #10b981;
+  }
+  50% {
+    box-shadow: 0 0 18px #06b6d4, 0 0 34px rgba(16, 185, 129, 0.85), inset 0 0 12px rgba(6, 182, 212, 0.65);
+    border-color: #06b6d4;
+  }
+}
+
+/* 10. Star Forge: Celestial Diamond Hypernova & Stellar Coronal Flares */
+.frame-star-forge {
+  border: 2.5px solid #ffffff !important;
+  box-shadow: 0 0 16px #38bdf8, 0 0 32px rgba(245, 158, 11, 0.7), 0 0 48px rgba(56, 189, 248, 0.75), inset 0 0 10px #ffffff !important;
+  animation: frame-star-forge-flare 2.5s infinite ease-in-out !important;
+}
+
+@keyframes frame-star-forge-flare {
+  0%, 100% {
+    box-shadow: 0 0 12px #38bdf8, 0 0 24px rgba(245, 158, 11, 0.5), 0 0 36px rgba(56, 189, 248, 0.55), inset 0 0 7px #e0f2fe;
+    border-color: #ffffff;
+  }
+  50% {
+    box-shadow: 0 0 24px #38bdf8, 0 0 46px rgba(245, 158, 11, 0.9), 0 0 60px rgba(56, 189, 248, 0.95), inset 0 0 14px #ffffff;
+    border-color: #fef08a;
+  }
+}
+
+/* Light Mode Overrides for Collection Frames */
+body[data-theme="light"] :is(.frame-moon-rime, .frame-crimson-dawn, .frame-ice-moon-throne, .frame-silence-blades, .frame-blossom-charm, .frame-abyss-portal, .frame-cassette-808, .frame-leader-crown, .frame-neon-archive, .frame-star-forge) {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+}
+
+body[data-theme="light"] .frame-moon-rime { border-color: #0284c7 !important; }
+body[data-theme="light"] .frame-crimson-dawn { border-color: #dc2626 !important; }
+body[data-theme="light"] .frame-ice-moon-throne { border-color: #0284c7 !important; }
+body[data-theme="light"] .frame-silence-blades { border-color: #475569 !important; }
+body[data-theme="light"] .frame-blossom-charm { border-color: #db2777 !important; }
+body[data-theme="light"] .frame-abyss-portal { border-color: #7c3aed !important; }
+body[data-theme="light"] .frame-cassette-808 { border-color: #db2777 !important; }
+body[data-theme="light"] .frame-leader-crown { border-color: #d97706 !important; }
+body[data-theme="light"] .frame-neon-archive { border-color: #059669 !important; }
+body[data-theme="light"] .frame-star-forge { border-color: #0284c7 !important; }
