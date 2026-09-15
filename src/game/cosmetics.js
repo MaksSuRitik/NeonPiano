@@ -1,3 +1,4 @@
+import { normalizeResultMetadata } from './resultMetadata.js';
 // ==========================================
 // COSMETICS SYSTEM: AVATARS, FRAMES, TITLES & BIO
 // Client-side 128x128 WebP compression, unlock evaluation, storage & rendering
@@ -845,9 +846,10 @@ export function readCosmeticsHistory(songs = []) {
     let data;
     try { data = JSON.parse(localStorage.getItem(key)); } catch { continue; }
     if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
+    data = normalizeResultMetadata(data);
     const track = tracks.get(key.slice('neon_rhythm_'.length));
     const diffs = Array.isArray(data.completedDifficulties) ? data.completedDifficulties : [];
-    const hardcore = data.isHardcore === true || data.difficulty === 'hardcore' || diffs.includes('hardcore');
+    const hardcore = data.hardcoreCompleted;
     const victory = hardcore || ['easy', 'normal', 'hard'].includes(data.difficulty) || diffs.some(d => ['easy', 'normal', 'hard'].includes(d));
     const hard = data.difficulty === 'hard' || diffs.includes('hard');
     const types = Array.isArray(data.starTypes) ? data.starTypes : [];

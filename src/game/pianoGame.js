@@ -1,3 +1,4 @@
+import { getCurrentUser } from "../services/auth.js";
 // ==========================================
 // NEON PIANO GAME ENGINE
 // ==========================================
@@ -186,6 +187,7 @@ export class NeonPianoGame {
   }
 
   start() {
+    if (!getCurrentUser()?.id) return;
     if (!this.audioBuffer || this.isRunning || this._destroyed) return;
     this.isRunning = true;
     this.isPaused = false;
@@ -210,6 +212,7 @@ export class NeonPianoGame {
   }
 
   resume() {
+    if (!getCurrentUser()?.id) return;
     if (!this.isRunning || !this.isPaused) return;
     this.isPaused = false;
     audioEngine.resume(this.audioBuffer);
@@ -608,6 +611,8 @@ export class NeonPianoGame {
     const stats = this.getStatsSnapshot();
     const result = {
       ...stats,
+      difficulty: 'normal',
+      isHardcore: false,
       trackId: this.currentTrack?.id || "demo",
       trackTitle: this.currentTrack?.title || "Neon Anthem",
       artist: this.currentTrack?.artist || "Cyber Synth"

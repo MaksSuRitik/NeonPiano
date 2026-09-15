@@ -109,6 +109,17 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
   ctx.translate(rawX, rawY);
   ctx.rotate(rot);
 
+  if (isT5 && p.t5Sprite) {
+    ctx.drawImage(p.t5Sprite, -p.spriteExtent, -p.spriteExtent, p.spriteExtent * 2, p.spriteExtent * 2);
+  } else {
+    paintGlassPlate(ctx, p, sz, alpha, isT5);
+  }
+
+  ctx.restore();
+}
+
+// T5 uses the same authored facets, baked at 2x for rotating crystal edges.
+function paintGlassPlate(ctx, p, sz, alpha, isT5) {
   // Shard body: translucent broken mirror / glass plate
   if (!p.gradT5) {
     const gT5 = ctx.createLinearGradient(-sz * 0.5, -sz * 0.5, sz * 0.5, sz * 0.5);
@@ -168,7 +179,16 @@ function drawGlassPlate(ctx, p, now, gw, gh, isT5, alphaMult = 1.0) {
     ctx.stroke();
   }
 
-  ctx.restore();
+}
+function prewarmEclipseGlass(p, alphaMult) {
+  const extent = Math.ceil(p.size + 4);
+  const sprite = document.createElement('canvas');
+  sprite.width = sprite.height = extent * 4;
+  const ctx = sprite.getContext('2d');
+  ctx.scale(2, 2); ctx.translate(extent, extent);
+  paintGlassPlate(ctx, { ...p }, p.size, p.baseAlpha * alphaMult, true);
+  p.spriteExtent = extent;
+  p.t5Sprite = sprite;
 }
 
 function bakeEnvironment(w,h,eclipse) {
@@ -335,6 +355,9 @@ function ensureEnvCache(w,h) {
   const entry={normal:bakeEnvironment(w,h,false),eclipse:bakeEnvironment(w,h,true),
     glass:initGlassPlates(w,h),
     snow:Array.from({length:32},()=>({x:rng()*w,y:rng()*h,s:.5+rng()*1.3,speed:2+rng()*5,alpha:.10+rng()*.2}))};
+  SANHUA_THEME._getHiyukiNotePalette(800);
+  entry.glass.forEach((p, i) => prewarmEclipseGlass(p, i < 8 ? .85 : i < 18 ? 1 : .92));
+  getVeilGradients(entry.eclipse.getContext('2d'), w, h, true);
   if(environmentCache.size>=2) environmentCache.delete(environmentCache.keys().next().value);
   environmentCache.set(key,entry);return entry;
 }
@@ -656,14 +679,15 @@ export const SANHUA_THEME = {
     }
 
     if (isT5) {
+      if (this._t5NotePalette) return this._t5NotePalette;
       // T5: 800+ MAX COMBO — OBSIDIAN BLOOD
       // Polished black obsidian + vivid burning crimson (ZERO BLUE)
-      return {
+      return this._t5NotePalette = {
         tierIndex: 5,
         isObsidian: true,
         bgStops: [
-          [0.00, '#1b0a10'],
-          [0.25, '#10090d'],
+          [0.00, '#391823'],
+          [0.25, '#201019'],
           [0.50, '#070609'],
           [0.75, '#020203'],
           [1.00, '#000000']
@@ -677,8 +701,8 @@ export const SANHUA_THEME = {
         finTip: '#e61e3c',
         // Vertical gradient: Wine-Obsidian -> Deep Crimson -> Rich Crimson (0.62-0.96 smooth longitudinal progression)
         holdVerticalStops: [
-          [0.00, 'rgba(46, 8, 18, 0.96)'],     // BOTTOM: dark wine-obsidian (#2e0812)
-          [0.20, 'rgba(88, 14, 34, 0.94)'],   // MID-LOW: deep wine crimson (#580e22)
+          [0.00, 'rgba(104, 19, 42, 0.96)'],     // BOTTOM: readable wine reflection
+          [0.20, 'rgba(125, 24, 49, 0.94)'],   // MID-LOW: deep wine crimson
           [0.45, 'rgba(148, 22, 48, 0.90)'],  // MID: rich crimson (#941630)
           [0.70, 'rgba(205, 34, 68, 0.82)'],  // MID-HIGH: vivid crimson energy (#cd2244)
           [0.90, 'rgba(180, 26, 56, 0.70)'],  // HIGH: crimson taper (#b41a38)
@@ -993,7 +1017,7 @@ export const SANHUA_THEME = {
     ctx.fill();
 
     // Crisp crystal perimeter stroke
-    ctx.strokeStyle = isObsidian ? 'rgba(255, 154, 170, 0.75)' : 'rgba(255, 80, 110, 0.65)';
+    ctx.strokeStyle = isObsidian ? 'rgba(255, 184, 195, 0.85)' : pal.specular;
     ctx.lineWidth = 0.7;
     ctx.beginPath();
     ctx.moveTo(cx, cy - ch);
@@ -1053,7 +1077,7 @@ export const SANHUA_THEME = {
       cross.addColorStop(0, 'rgba(255, 35, 75, 0.42)');    // Left rim reflection
       cross.addColorStop(0.04, 'rgba(215, 25, 58, 0.25)'); // Left rim bevel
       cross.addColorStop(0.12, 'rgba(10, 3, 6, 0.30)');    // Obsidian crevice/depth
-      cross.addColorStop(0.38, 'rgba(4, 1, 3, 0.10)');     // Subtle dark core
+      cross.addColorStop(0.38, 'rgba(244, 128, 149, 0.16)');     // Soft crystal reflection
       cross.addColorStop(0.68, 'rgba(175, 22, 52, 0.15)'); // Crimson refraction streak
       cross.addColorStop(0.88, 'rgba(10, 3, 6, 0.30)');    // Obsidian crevice/depth
       cross.addColorStop(0.96, 'rgba(215, 25, 58, 0.25)'); // Right rim bevel
@@ -1093,6 +1117,10 @@ export const SANHUA_THEME = {
     const width = Math.max(1, Math.round(w));
     const height = Math.max(1, Math.round(h));
     const tier = this._resolveTierNum(comboTier);
+    // Do not construct palettes on a warm T5 hold path.
+    const warm = this._holdPaintCache;
+    const warmKey = (dead ? 12 : 10) + (isLight ? 1 : 0);
+    if (tier >= 800 && warm?.width === width && warm.height === height && warm.entries[warmKey]) return warm.entries[warmKey];
     const pal = this._getHiyukiNotePalette(tier, dead, isLight);
 
     let cache = this._holdPaintCache;
@@ -1106,7 +1134,7 @@ export const SANHUA_THEME = {
     const entry = this._bakeHoldEntry(width, height, tier, dead, isLight, pal);
     cache.entries[key] = entry;
 
-    // Self-prewarm T5 (combo >= 800) during initial hold cache setup so crossing 800 combo has ZERO allocation hitch
+    // Self-prewarm T5 (combo >= 800) during initial hold cache setup to avoid constructing hold textures at the 800 threshold
     if (isNew && tier < 800) {
       try {
         const t5PalDark = this._getHiyukiNotePalette(800, false, false);

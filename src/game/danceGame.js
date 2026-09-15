@@ -1,3 +1,4 @@
+import { getCurrentUser } from "../services/auth.js";
 // ==========================================
 // DANCE GAME: AUTHENTIC CANVAS 2D RHYTHM ENGINE
 // ==========================================
@@ -267,6 +268,7 @@ export class DanceGame {
   }
 
   start() {
+    if (!getCurrentUser()?.id) return;
     if (!this.audioBuffer) return;
     this.isPlaying = true;
     this.isPaused = false;
@@ -291,6 +293,7 @@ export class DanceGame {
   }
 
   resume() {
+    if (!getCurrentUser()?.id) return;
     if (!this.isPlaying || !this.isPaused) return;
     this.isPaused = false;
     audioEngine.resume(this.audioBuffer);

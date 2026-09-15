@@ -26,7 +26,8 @@ let authListeners = [];
 export function getCurrentUser() {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const user = raw ? JSON.parse(raw) : null;
+    return user && typeof user.id === 'string' && user.id.trim() && typeof user.username === 'string' && user.username.trim() ? user : null;
   } catch (e) {
     console.error("Failed to parse session:", e);
     return null;

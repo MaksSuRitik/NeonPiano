@@ -1,3 +1,4 @@
+import { normalizeResultMetadata } from "../game/resultMetadata.js";
 // ==========================================
 // STATS SERVICE: CLIENT-SIDE ENCRYPTED GAME STATS
 // ==========================================
@@ -33,7 +34,10 @@ export async function saveGameStats(gameResult) {
   }
 
   // Raw statistics object
+  const mode = normalizeResultMetadata(gameResult);
   const rawStats = {
+    difficulty: mode.difficulty,
+    isHardcore: mode.isHardcore,
     userId: user.id,
     username: user.username,
     trackId: gameResult.trackId || "track_unknown",
@@ -91,7 +95,7 @@ export async function getUserStats() {
         const decrypted = await decryptGameStats(data.encryptedData, data.iv, user.passwordHash);
         results.push({
           id: docSnap.id,
-          ...decrypted
+          ...normalizeResultMetadata(decrypted)
         });
       } catch (decryptErr) {
         console.warn("Could not decrypt stat entry:", docSnap.id, decryptErr);

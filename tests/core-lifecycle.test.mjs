@@ -101,7 +101,7 @@ const pianoSource = (await readFile(new URL('../src/game/pianoGame.js', import.m
   .replace(/^import .*;$/gm, '').replace('export class NeonPianoGame', 'class NeonPianoGame');
 function pianoFixture(audio = {}) {
   const audioStub = { play() {}, pause() {}, resume() {}, stop() {}, ...audio };
-  const Game = new Function('audioEngine', 'saveGameStats', `${pianoSource}\nreturn NeonPianoGame;`)(audioStub, async () => {});
+  const Game = new Function('audioEngine', 'saveGameStats', 'getCurrentUser', `${pianoSource}\nreturn NeonPianoGame;`) (audioStub, async () => {}, () => ({ id: 'test-player', username: 'Test' }));
   Game.prototype.initCanvas = function() {};
   const game = new Game({});
   game.update = () => {};
@@ -313,4 +313,3 @@ test('watchdog compositor stall contract: detects frozen rAF (Hyprland workspace
   assert.equal(reasonGiven, 'watchdog compositor stall');
   assert.equal(mockState.isPaused, true);
 });
-

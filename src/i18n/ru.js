@@ -3,6 +3,7 @@
 // ==========================================
 
 export default {
+  authRequiredToPlay: 'Войдите или зарегистрируйтесь, чтобы начать игру.',
   // Navigation & Header
   appTitle: "NEON PIANO",
   login: "Вход",

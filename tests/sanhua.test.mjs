@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-let canvases = 0;
+let canvases = 0, gradients = 0, paths = 0;
 function context(alpha = 1) {
   const stack = [], draws = [];
   const c = {
@@ -14,10 +14,10 @@ function context(alpha = 1) {
     canvas: { clientHeight: 800, width: 800, height: 600 },
     save() { stack.push({alpha:this.globalAlpha, composite:this.globalCompositeOperation}); },
     restore() { const state=stack.pop(); if(state) { this.globalAlpha=state.alpha; this.globalCompositeOperation=state.composite; } },
-    createLinearGradient() { return { addColorStop() {} }; },
-    createRadialGradient() { return { addColorStop() {} }; },
+    createLinearGradient() { gradients++; return { addColorStop() {} }; },
+    createRadialGradient() { gradients++; return { addColorStop() {} }; },
     drawImage(...args) { draws.push({ args, alpha: this.globalAlpha }); },
-    beginPath() {},
+    beginPath() { paths++; },
     closePath() {},
     moveTo() {},
     lineTo() {},
@@ -164,4 +164,22 @@ test('self-prewarms T5 hold cache and guarantees zero canvas allocations when cr
   // Reaching combo 800 during gameplay
   S._getHoldPaintCache(120, 50, 800, false, false);
   assert.equal(canvases, canvasesAfterInit, 'Crossing combo 800 must not allocate any new DOM canvases');
+});
+
+
+test('Ice transition reuses prewarmed gradients and T5 replaces facet paths with sprites', () => {
+  const ctx = context(), state = {combo:799, gameWidth:361, gameHeight:641};
+  S.updateAndDrawAtmosphere(ctx, 0, 1, 1, state);
+  const startPaths = paths;
+  S.updateAndDrawAtmosphere(ctx, 16, 1, 1, state);
+  const normalPaths = paths - startPaths;
+  const warmCanvases = canvases, warmGradients = gradients;
+  state.combo = 800;
+  for (let frame = 2; frame < 240; frame++) S.updateAndDrawAtmosphere(ctx, frame * 16, 1, 1, state);
+  assert.equal(canvases, warmCanvases, 'No new texture allocations at the eclipse threshold');
+  assert.equal(gradients, warmGradients, 'Eclipse veil gradients are already warm');
+  const t5Start = paths;
+  S.updateAndDrawAtmosphere(ctx, 4000, 1, 1, state);
+  assert.ok(paths - t5Start < normalPaths / 2, 'T5 glass uses cached sprites, preserving moving transforms');
+  assert.strictEqual(S._getHiyukiNotePalette(800), S._getHiyukiNotePalette(900));
 });

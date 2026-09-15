@@ -1,3 +1,5 @@
+import { resultModeLabel } from "../game/resultMetadata.js";
+import { i18n } from "../i18n/index.js";
 // ==========================================
 // UI CONTROLLER & MODAL MANAGEMENT
 // ==========================================
@@ -460,6 +462,13 @@ class UIController {
     else if (result.accuracy >= 85) grade = "A";
     else if (result.accuracy >= 70) grade = "B";
 
+    let mode = this.modalResults.querySelector('[data-result-mode]');
+    if (!mode) {
+      mode = document.createElement('p');
+      mode.dataset.resultMode = '';
+      this.resultsScore.parentElement.appendChild(mode);
+    }
+    mode.textContent = resultModeLabel(result, key => i18n.t(key));
     this.resultsGrade.textContent = grade;
     this.resultsScore.textContent = result.score;
     this.resultsAccuracy.textContent = `${result.accuracy}%`;
@@ -556,6 +565,7 @@ class UIController {
         const dateStr = item.playedAt ? new Date(item.playedAt).toLocaleString() : "";
 
         row.innerHTML = `
+          <div>${this.escapeHtml(resultModeLabel(item, key => i18n.t(key)))}</div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
             <span style="font-weight: 700; color: #fff;">${this.escapeHtml(item.trackTitle || "Трек")}</span>
             <span style="color: var(--neon-yellow); font-weight: 800;">${item.score} очков</span>

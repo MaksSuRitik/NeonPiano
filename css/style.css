@@ -12460,3 +12460,66 @@ body[data-theme="light"] .frame-cassette-808 { border-color: #db2777 !important;
 body[data-theme="light"] .frame-leader-crown { border-color: #d97706 !important; }
 body[data-theme="light"] .frame-neon-archive { border-color: #059669 !important; }
 body[data-theme="light"] .frame-star-forge { border-color: #0284c7 !important; }
+
+/* Circular material rings. Shared construction, individually authored inlays. */
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge) {
+  position: relative; isolation: isolate; overflow: visible !important;
+  border: 0 !important; border-radius: 50% !important;
+  background-clip: padding-box; animation: none !important;
+  filter: none !important; outline: none !important;
+  box-shadow: inset 0 0 0 1px var(--ring-shadow), 0 2px 4px #0005 !important;
+}
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge) > :is(.avatar-photo, .avatar-letter) { border-radius: 50%; }
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::before,
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::after {
+  content: ''; position: absolute; pointer-events: none; box-sizing: border-box;
+  border-radius: 50% !important; clip-path: none !important;
+  animation: none !important; filter: none !important; transform: none !important;
+  opacity: 1; width: auto; height: auto; margin: 0;
+}
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::before {
+  inset: -5px; padding: 5px; z-index: 2; border: 1px solid var(--ring-shadow);
+  background: var(--ring-inlay), conic-gradient(from 145deg, var(--ring-shadow), var(--ring-metal) 12%, var(--ring-light) 26%, var(--ring-metal) 38%, var(--ring-shadow) 53%, var(--ring-metal) 70%, var(--ring-light) 78%, var(--ring-shadow));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  box-shadow: inset 0 1px 1px var(--ring-light), inset 0 -1px 2px var(--ring-shadow);
+}
+:is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge)::after {
+  inset: -6px; z-index: 3; border: 1px solid var(--ring-metal);
+  background: none; padding: 0; -webkit-mask: none; mask: none;
+  box-shadow: inset 0 1px 0 var(--ring-light), 0 1px 2px #0006;
+}
+.frame-neon-start { --ring-metal:#6be4d8; --ring-shadow:#143d47; --ring-light:#d6ffff; --ring-inlay:repeating-conic-gradient(#061c29 0deg 4deg, transparent 4deg 45deg); }
+.frame-gold-prestige { --ring-metal:#e9b852; --ring-shadow:#543416; --ring-light:#fff0bc; --ring-inlay:repeating-conic-gradient(#71421199 0deg 2deg, transparent 2deg 12deg); }
+.frame-crimson-fire { --ring-metal:#d94b28; --ring-shadow:#390e13; --ring-light:#ffc28a; --ring-inlay:conic-gradient(from 30deg, transparent, #ffb85b 18%, transparent 25%, #711823 52%, transparent 60%, #ffcf8b 85%, transparent); }
+.frame-cosmic-nebula { --ring-metal:#7468a5; --ring-shadow:#181827; --ring-light:#ced5ff; --ring-inlay:radial-gradient(circle at 50% 2%, #fff 0 2%, transparent 3%), conic-gradient(#31345e, #9985c9, #101529, #476884, #31345e); }
+.frame-cyber-glitch { --ring-metal:#76b99a; --ring-shadow:#24302e; --ring-light:#ddf8e8; --ring-inlay:repeating-conic-gradient(from 12deg, #102b26 0deg 6deg, transparent 6deg 40deg, #abe9ca 40deg 43deg, transparent 43deg 60deg); }
+.frame-prismatic { --ring-metal:#d7c6d4; --ring-shadow:#65556d; --ring-light:#fff7f0; --ring-inlay:conic-gradient(#efb9b8, #e5d69b, #b6d6cb, #a6b7dc, #ccb4dd, #efb9b8); }
+.frame-cyber-alloy { --ring-metal:#a0b6be; --ring-shadow:#27363e; --ring-light:#edf8fa; --ring-inlay:repeating-conic-gradient(#263e4899 0deg 2deg, transparent 2deg 30deg, #e7f3f6 30deg 32deg, transparent 32deg 60deg); }
+.frame-baroque-gold { --ring-metal:#d7a34c; --ring-shadow:#58351a; --ring-light:#fff2c6; --ring-inlay:repeating-conic-gradient(from 9deg, #5c351999 0deg 3deg, #e4bd75 3deg 6deg, transparent 6deg 18deg); }
+.frame-frostbound { --ring-metal:#a6d8e5; --ring-shadow:#486880; --ring-light:#f4ffff; --ring-inlay:repeating-conic-gradient(from 15deg, #ffffffbb 0deg 2deg, #6288a966 2deg 12deg, transparent 12deg 30deg); }
+.frame-street-drift { --ring-metal:#8f959b; --ring-shadow:#17191e; --ring-light:#e2e5e8; --ring-inlay:repeating-conic-gradient(from 8deg, #080b10 0deg 7deg, #69717b 7deg 10deg, #222731 10deg 20deg); }
+.frame-gothic-thorn { --ring-metal:#977b83; --ring-shadow:#261b27; --ring-light:#e5cbd1; --ring-inlay:repeating-conic-gradient(from 15deg, #1d1727 0deg 3deg, #b3959e 3deg 5deg, transparent 5deg 30deg); }
+.frame-steampunk-chrono { --ring-metal:#b99052; --ring-shadow:#493324; --ring-light:#ffe2a0; --ring-inlay:repeating-conic-gradient(#241e17 0deg 2deg, transparent 2deg 30deg, #fff1b8 30deg 33deg, transparent 33deg 36deg); }
+.frame-sakura-urushi { --ring-metal:#ba8b81; --ring-shadow:#391623; --ring-light:#f6ddca; --ring-inlay:conic-gradient(from 120deg, #441a2c, #ab625f 28%, #f2cf8b 29%, #5e293a 30%, #211b29 70%, #f2cf8b 71%, #441a2c 72%); }
+.frame-moon-rime { --ring-metal:#cfdae4; --ring-shadow:#526179; --ring-light:#f8ffff; --ring-inlay:conic-gradient(from 220deg, #35445d, #9aafc9 45%, #fff 70%, #becfe0 85%, #35445d); }
+.frame-crimson-dawn { --ring-metal:#c37883; --ring-shadow:#371d32; --ring-light:#ffdacb; --ring-inlay:conic-gradient(from 90deg, #311c30, #773e58, #edb09a, #b86072, #311c30); }
+.frame-ice-moon-throne { --ring-metal:#c3c5e7; --ring-shadow:#484066; --ring-light:#fff7ff; --ring-inlay:repeating-conic-gradient(from 18deg, #faf1ff 0deg 2deg, #746495 2deg 12deg, transparent 12deg 36deg); }
+.frame-silence-blades { --ring-metal:#bbc7ce; --ring-shadow:#2e3548; --ring-light:#ffffff; --ring-inlay:repeating-conic-gradient(from 45deg, #1e2637 0deg 20deg, #cbdde4 20deg 42deg, #fff 42deg 45deg, #778999 45deg 90deg); }
+.frame-blossom-charm { --ring-metal:#e7b5c1; --ring-shadow:#805666; --ring-light:#fff2e8; --ring-inlay:repeating-conic-gradient(from 18deg, #f9e3de 0deg 7deg, #b88097 7deg 12deg, transparent 12deg 72deg); }
+.frame-abyss-portal { --ring-metal:#6e608b; --ring-shadow:#171622; --ring-light:#d1b4e0; --ring-inlay:repeating-conic-gradient(from 30deg, #0e1323 0deg 28deg, #b5a4c6 28deg 30deg, #40384f 30deg 60deg); }
+.frame-cassette-808 { --ring-metal:#a2a7af; --ring-shadow:#26222a; --ring-light:#eeeeef; --ring-inlay:repeating-conic-gradient(#18171c 0deg 6deg, #b4b9bf 6deg 8deg, #34303b 8deg 30deg); }
+.frame-leader-crown { --ring-metal:#e0b25d; --ring-shadow:#5f4523; --ring-light:#fff1b9; --ring-inlay:repeating-conic-gradient(from 30deg, #8b5e2d 0deg 4deg, #fae3a5 4deg 7deg, transparent 7deg 60deg); }
+.frame-neon-archive { --ring-metal:#75a797; --ring-shadow:#263c39; --ring-light:#daf3da; --ring-inlay:repeating-conic-gradient(from 5deg, #122d2d 0deg 3deg, transparent 3deg 10deg, #dbeab6 10deg 12deg, transparent 12deg 45deg); }
+.frame-star-forge { --ring-metal:#d7baa0; --ring-shadow:#504454; --ring-light:#fff3d9; --ring-inlay:repeating-conic-gradient(from 22deg, #fbeedc 0deg 2deg, #827188 2deg 20deg, transparent 20deg 45deg); }
+.frame-baroque-gold::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #a62542 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
+.frame-gothic-thorn::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #86273e 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
+.frame-leader-crown::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #48766c 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
+.frame-ice-moon-throne::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #babbea 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
+.frame-sakura-urushi::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #f5b9bc 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
+.frame-cassette-808::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #c84753 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
+.frame-neon-archive::after { background: radial-gradient(ellipse at 50% 4%, #fff7 0 1%, #b6d990 2% 4%, var(--ring-shadow) 5%, transparent 6%); }
+@media (prefers-reduced-motion: reduce) { .frame-collection { animation: none !important; } }
+
+body[data-theme] :is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge) { box-shadow: inset 0 0 0 1px var(--ring-shadow), 0 2px 4px #0005 !important; }
+.icon-user-container { width:24px; height:24px; flex:0 0 24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }

@@ -1,3 +1,4 @@
+import { normalizeResultMetadata, difficultyFromSpeed, resultModeLabel } from './game/resultMetadata.js';
 /* ==========================================
    NEON PIANO: ULTIMATE EDITION + FIREBASE
    Рендерер: Canvas 2D (Оптимізовано для GPU/Пам'яті)
@@ -917,13 +918,8 @@ function bootGame() {
         return key;
     }
 
-    // Ранжування складності: hardcore (4) > hard (3) > normal (2) > easy (1)
-    const DIFF_RANK = { hardcore: 4, hard: 3, normal: 2, easy: 1 };
-    function getDiffRank(diff, isHardcore) {
-        const d = String(diff || '').toLowerCase().trim();
-        if (isHardcore || d === 'hardcore') return 4;
-        return DIFF_RANK[d] || 0;
-    }
+    const DIFF_RANK = { hard: 3, normal: 2, easy: 1 };
+    function getDiffRank(diff) { return DIFF_RANK[diff] || 0; }
 
     // Двостороння синхронізація найкращих результатів та часу гри
     async function syncUserProgressBidirectional(userId) {
@@ -1029,6 +1025,7 @@ function bootGame() {
                     const stars = Number(local.stars) || 0;
                     if (score > 0 || stars > 0 || local.difficulty) {
                         initialTracks[safeKey] = {
+                            ...local,
                             title: title,
                             score: score,
                             stars: stars,
@@ -1093,18 +1090,21 @@ function bootGame() {
                     const localCompleted = Array.isArray(local.completedDifficulties) ? local.completedDifficulties : (localDiff ? [localDiff] : []);
 
                     if (cloud) {
+                        cloud = normalizeResultMetadata(cloud);
                         const cloudScore = Number(cloud.score) || 0;
                         const cloudStars = Number(cloud.stars) || 0;
                         let cloudTypes = Array.isArray(cloud.starTypes) ? cloud.starTypes.slice(0, 5) : [0, 0, 0, 0, 0];
                         while (cloudTypes.length < 5) cloudTypes.push(0);
                         const cloudDiff = cloud.difficulty || '';
-                        const cloudIsHardcore = Boolean(cloud.isHardcore || cloudDiff === 'hardcore');
+                        const cloudIsHardcore = cloud.isHardcore;
                         const cloudCompleted = Array.isArray(cloud.completedDifficulties) ? cloud.completedDifficulties : (cloudDiff ? [cloudDiff] : []);
 
                         const localCompletedSorted = [...localCompleted].sort().join(',');
                         const cloudCompletedSorted = [...cloudCompleted].sort().join(',');
 
                         const isLocalDifferent = (
+                            local.hardcoreCompleted !== cloud.hardcoreCompleted ||
+                            local.legacyDifficulty !== cloud.legacyDifficulty ||
                             localScore !== cloudScore ||
                             localStars !== cloudStars ||
                             JSON.stringify(localTypes) !== JSON.stringify(cloudTypes) ||
@@ -1115,6 +1115,7 @@ function bootGame() {
 
                         if (isLocalDifferent) {
                             const trackPayload = {
+                                ...cloud,
                                 title: title,
                                 score: cloudScore,
                                 stars: cloudStars,
@@ -2098,24 +2099,7 @@ function getSavedData(songTitle) {
     try {
         const data = localStorage.getItem(`neon_rhythm_${songTitle}`);
         if (!data) return { score: 0, stars: 0, starTypes: [], difficulty: '', isHardcore: false, completedDifficulties: [] };
-        const parsed = JSON.parse(data);
-        // Автоматичне виправлення: якщо результат з попереднього сеансу зберігся як 'hard' через неточність визначення хардкору
-        if (parsed && parsed.difficulty === 'hard' && parsed.isHardcore !== false) {
-            parsed.difficulty = 'hardcore';
-            parsed.isHardcore = true;
-        }
-        if (parsed) {
-            if (!Array.isArray(parsed.completedDifficulties)) {
-                const diffs = [];
-                if (parsed.difficulty) diffs.push(parsed.difficulty);
-                if (parsed.isHardcore && !diffs.includes('hardcore')) diffs.push('hardcore');
-                parsed.completedDifficulties = diffs;
-            }
-            if (typeof parsed.isHardcore === 'undefined') {
-                parsed.isHardcore = parsed.difficulty === 'hardcore';
-            }
-        }
-        return parsed;
+        return normalizeResultMetadata(JSON.parse(data));
     } catch (e) { return { score: 0, stars: 0, starTypes: [], difficulty: '', isHardcore: false, completedDifficulties: [] }; }
 }
 
@@ -2154,7 +2138,7 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
         const newDiffKey = getDifficultyKey();
         const newRank = getDiffRank(newDiffKey, State.isHardcore);
         completedSet.add(newDiffKey);
-        if (State.isHardcore) completedSet.add('hardcore');
+
 
         const isNewBest = newScore >= (current.score || 0);
         // Якщо новий результат здобуто на вищій/рівній складності або це новий абсолютний рекорд
@@ -2166,7 +2150,9 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
     const finalCompletedDiffs = Array.from(completedSet).filter(Boolean);
 
-    const payload = { 
+    const payload = {
+        ...current,
+        hardcoreCompleted: current.hardcoreCompleted === true || (isVictory && State.isHardcore),
         score: finalScore, 
         stars: finalStars, 
         starTypes: finalTypes,
@@ -2215,7 +2201,7 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
         // Перевірка in-memory кешу аудіобуферів та згенерованих нот з урахуванням обраної складності
         const diffKey = getDifficultyKey() || 'easy';
-        const cacheKey = `${url}_${State.currentSongIndex}_${diffKey}_v58`;
+        const cacheKey = `${url}_${State.currentSongIndex}_${diffKey}_${State.isHardcore ? "hc" : "standard"}_v59`;
         if (audioBufferCache.has(cacheKey) && tileMapCache.has(cacheKey)) {
             State.audioBuffer = audioBufferCache.get(cacheKey);
             const cachedData = tileMapCache.get(cacheKey);
@@ -2334,7 +2320,7 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
             let midSens = 0.40;         // Поріг чутливості мелодії
             let minHoldDur = 0.40;
 
-            if (diffKey === 'hardcore') {
+            if (State.isHardcore) {
                 minNoteGap = 0.18;      // Hardcore: 0.18с для максимального драйву
                 chordPadding = 0.28;
                 chordCooldown = 1.4;
@@ -4062,19 +4048,10 @@ function handleInputDown(lane, touchY, touchX) {
 
     // Визначення мітки складності для відображення на картці треку.
     function getDifficultyLabel() {
-        if (State.isHardcore) return getText('modHardcore');
-        if (State.selectedSpeed >= 1.35) return getText('diffHard');
-        if (State.selectedSpeed >= 1.15) return getText('diffNormal');
-        return getText('diffEasy');
+        return resultModeLabel({ difficulty: getDifficultyKey(), isHardcore: State.isHardcore }, getText);
     }
 
-    // Отримання ключа складності для збереження (не залежить від мови).
-    function getDifficultyKey() {
-        if (State.isHardcore) return 'hardcore';
-        if (State.selectedSpeed >= 1.35) return 'hard';
-        if (State.selectedSpeed >= 1.15) return 'normal';
-        return 'easy';
-    }
+    function getDifficultyKey() { return difficultyFromSpeed(State.selectedSpeed); }
 
     // Оптимізація: оновлюємо DOM тільки при реальній зміні значень та кешуємо посилання
     let lastRenderedScore = -1;
@@ -4353,7 +4330,15 @@ function updateRipples(dt) {
 }
 
     // Функції керування життєвим циклом гри (старт, кінець, вихід).
+    function requirePlayerAccount() {
+        if (getCurrentUser()?.id) return true;
+        document.getElementById('btn-open-auth')?.click();
+        alert(getText('authRequiredToPlay'));
+        return false;
+    }
+
     async function startGame(idx) {
+        if (!requirePlayerAccount()) { State.isPreviewMode = false; return; }
         const song = songsDB[idx];
         if (!song || !song.audioUrl) {
             alert(getText('errorMissingAudio') || "Помилка: Аудіофайл для цього треку відсутній.");
@@ -4429,6 +4414,7 @@ function updateRipples(dt) {
 
         analyzeAudio(song.audioUrl, mySession).then(generatedTiles => {
             if (mySession !== State.currentSessionId) return;
+            if (!requirePlayerAccount()) { quitGame(); return; }
             if (generatedTiles) {
                 State.mapTiles = generatedTiles;
                 State.mapTiles.sort((a, b) => a.time - b.time);
@@ -4446,6 +4432,7 @@ function updateRipples(dt) {
     }
 
     async function playMusic() {
+        if (!requirePlayerAccount()) { quitGame(); return; }
         if (State.sourceNode) {
             try { State.sourceNode.stop(); } catch (e) { }
             State.sourceNode = null;
@@ -4453,6 +4440,7 @@ function updateRipples(dt) {
         if (State.audioCtx && State.audioCtx.state !== 'running') {
             try { await State.audioCtx.resume(); } catch (e) { }
         }
+        if (!requirePlayerAccount()) { quitGame(); return; }
         resizeCanvas();
 
         State.sourceNode = State.audioCtx.createBufferSource();
@@ -4672,16 +4660,14 @@ function updateRipples(dt) {
             const diffLabelMap = { 
                 easy: getText('diffEasy'), 
                 normal: getText('diffNormal'), 
-                hard: getText('diffHard'),
-                hardcore: getText('modHardcore')
+                hard: getText('diffHard')
             };
             const diffColorMap = { 
                 easy: '#4ade80', 
                 normal: '#facc15', 
-                hard: '#fb923c',
-                hardcore: '#f43f5e'
+                hard: '#fb923c'
             };
-            const diffLabel = diffLabelMap[currentDiffKey] || currentDiffKey;
+            const diffLabel = getDifficultyLabel();
             const diffColor = diffColorMap[currentDiffKey] || '#38bdf8';
             finalDiffEl.innerHTML = `<span class="track-diff-badge ${currentDiffKey}" style="font-size: 0.85rem; font-weight: 700; padding: 4px 14px; border-radius: 20px; background: ${diffColor}22; color: ${diffColor}; border: 1px solid ${diffColor}55; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px ${diffColor}33;">${State.isHardcore ? icons.skull(13) : ''}${diffLabel}</span>`;
         }
@@ -5272,7 +5258,7 @@ function updateRipples(dt) {
         } else if (currentSongFilter === 'hardcore') {
             displayedSongs = displayedSongs.filter(item => {
                 const s = item.saved;
-                return s.isHardcore || s.difficulty === 'hardcore' || (Array.isArray(s.completedDifficulties) && s.completedDifficulties.includes('hardcore'));
+                return s.hardcoreCompleted === true;
             });
         } else if (currentSongFilter === 'secret') {
             displayedSongs = displayedSongs.filter(item => item.song.isSecret);
@@ -5381,7 +5367,7 @@ function updateRipples(dt) {
 
             // Мітка складності рекорду
             let diffKey = saved.difficulty || '';
-            const isSavedHardcore = diffKey === 'hardcore' || Boolean(saved.isHardcore);
+            const isSavedHardcore = saved.isHardcore === true;
             if (!diffKey && Array.isArray(saved.completedDifficulties) && saved.completedDifficulties.length > 0) {
                 let maxR = 0;
                 saved.completedDifficulties.forEach(d => {
@@ -5392,18 +5378,16 @@ function updateRipples(dt) {
             const diffLabelMap = {
                 easy: getText('diffEasy'),
                 normal: getText('diffNormal'),
-                hard: getText('diffHard'),
-                hardcore: getText('modHardcore')
+                hard: getText('diffHard')
             };
             const diffColorMap = {
                 easy: '#4ade80',
                 normal: '#facc15',
-                hard: '#fb923c',
-                hardcore: '#f43f5e'
+                hard: '#fb923c'
             };
-            const effectiveDiff = isSavedHardcore ? 'hardcore' : diffKey;
-            const diffBadgeHtml = (effectiveDiff && saved.score > 0)
-                ? `<span class="track-diff-badge ${effectiveDiff}" style="font-size:0.68rem; padding:2px 7px; border-radius:4px; background:${diffColorMap[effectiveDiff] || '#888'}22; color:${diffColorMap[effectiveDiff] || '#888'}; border:1px solid ${diffColorMap[effectiveDiff] || '#888'}44; display:inline-flex; align-items:center; gap:3px;">${effectiveDiff === 'hardcore' ? icons.skull(11) : ''}${diffLabelMap[effectiveDiff] || effectiveDiff}</span>`
+            const effectiveDiff = diffKey;
+            const diffBadgeHtml = ((effectiveDiff || isSavedHardcore) && saved.score > 0)
+                ? `<span class="track-diff-badge ${effectiveDiff}" style="font-size:0.68rem; padding:2px 7px; border-radius:4px; background:${diffColorMap[effectiveDiff] || '#888'}22; color:${diffColorMap[effectiveDiff] || '#888'}; border:1px solid ${diffColorMap[effectiveDiff] || '#888'}44; display:inline-flex; align-items:center; gap:3px;">${isSavedHardcore ? icons.skull(11) : ''}${resultModeLabel(saved, getText)}</span>`
                 : '';
 
             const bestStatHtml = saved.score > 0
@@ -5506,10 +5490,7 @@ function updateRipples(dt) {
         }
 
         function getDiffText(speed, hardcore) {
-            if (hardcore) return getText('modHardcore');
-            if (speed >= 1.35) return getText('diffHard');
-            if (speed >= 1.15) return getText('diffNormal');
-            return getText('diffEasy');
+            return resultModeLabel({ difficulty: difficultyFromSpeed(speed), isHardcore: hardcore }, getText);
         }
 
         function getDiffColor(speed, hardcore) {
@@ -7682,10 +7663,11 @@ function updateRipples(dt) {
                 }
 
                 if (trackData) {
+                    trackData = normalizeResultMetadata(trackData);
                     if (adminInputScore) adminInputScore.value = trackData.score || 0;
                     if (adminInputStars) adminInputStars.value = trackData.stars || 0;
                     if (adminInputDifficulty) adminInputDifficulty.value = trackData.difficulty || '';
-                    if (adminInputIsHardcore) adminInputIsHardcore.checked = Boolean(trackData.isHardcore || trackData.difficulty === 'hardcore');
+                    if (adminInputIsHardcore) adminInputIsHardcore.checked = trackData.isHardcore;
 
                     adminCurrentStarTypes = Array.isArray(trackData.starTypes) 
                         ? [...trackData.starTypes] 
@@ -7932,22 +7914,24 @@ function updateRipples(dt) {
                     const currentTracks = currentData.tracks || {};
                     const safeKey = toFirestoreTrackKey(trackTitle);
 
-                    const existingTrack = currentTracks[safeKey] || {};
+                    const existingTrack = normalizeResultMetadata(currentTracks[safeKey] || {});
                     const existingCompleted = Array.isArray(existingTrack.completedDifficulties) 
                         ? existingTrack.completedDifficulties 
                         : (existingTrack.difficulty ? [existingTrack.difficulty] : []);
 
                     const completedSet = new Set(existingCompleted);
                     if (newDiff) completedSet.add(newDiff);
-                    if (isHardcore) completedSet.add('hardcore');
+
                     const finalCompletedDiffs = Array.from(completedSet).filter(Boolean);
 
                     const trackPayload = {
+                        ...existingTrack,
+                        hardcoreCompleted: existingTrack.hardcoreCompleted || isHardcore,
                         title: trackTitle,
                         score: newScore,
                         stars: newStars,
                         starTypes: starTypes,
-                        difficulty: isHardcore ? 'hardcore' : newDiff,
+                        difficulty: newDiff,
                         isHardcore: isHardcore,
                         completedDifficulties: finalCompletedDiffs,
                         adminModifiedAt: Date.now()
@@ -8063,6 +8047,7 @@ function updateRipples(dt) {
                     const safeKey = toFirestoreTrackKey(trackTitle);
 
                     const trackPayload = {
+                        hardcoreCompleted: false,
                         title: trackTitle,
                         score: 0,
                         stars: 0,
@@ -8355,6 +8340,7 @@ function updateRipples(dt) {
                         }
                     }
 
+                    if (tr) tr = normalizeResultMetadata(tr);
                     if (tr && ((tr.score || 0) > 0 || (tr.stars || 0) > 0)) {
                         const playerObj = adminCachedPlayers.find(p => p.id === userId);
                         const playerName = playerObj ? playerObj.name : ("Player_" + userId.slice(0, 5));
@@ -8382,14 +8368,12 @@ function updateRipples(dt) {
                 const diffLabelMap = { 
                     easy: getText('diffEasy'), 
                     normal: getText('diffNormal'), 
-                    hard: getText('diffHard'),
-                    hardcore: getText('modHardcore')
+                    hard: getText('diffHard')
                 };
                 const diffColorMap = { 
                     easy: '#4ade80', 
                     normal: '#facc15', 
-                    hard: '#fb923c',
-                    hardcore: '#f43f5e'
+                    hard: '#fb923c'
                 };
 
                 results.forEach((res, idx) => {
@@ -8397,9 +8381,9 @@ function updateRipples(dt) {
                     tr.className = `admin-level-row ${adminSelectPlayer?.value === res.userId ? 'selected' : ''}`;
                     tr.dataset.userId = res.userId;
                     
-                    const effDiff = res.isHardcore ? 'hardcore' : (res.difficulty || '');
-                    const badgeHtml = effDiff 
-                        ? `<span class="track-diff-badge ${effDiff}" style="font-size:0.7rem; padding:2px 7px; border-radius:4px; background:${diffColorMap[effDiff] || '#888'}22; color:${diffColorMap[effDiff] || '#888'}; border:1px solid ${diffColorMap[effDiff] || '#888'}44; display:inline-flex; align-items:center; gap:3px;">${effDiff === 'hardcore' ? icons.skull(11) : ''}${diffLabelMap[effDiff] || effDiff}</span>`
+                    const effDiff = res.difficulty || '';
+                    const badgeHtml = (effDiff || res.isHardcore)
+                        ? `<span class="track-diff-badge ${effDiff}" style="font-size:0.7rem; padding:2px 7px; border-radius:4px; background:${diffColorMap[effDiff] || '#888'}22; color:${diffColorMap[effDiff] || '#888'}; border:1px solid ${diffColorMap[effDiff] || '#888'}44; display:inline-flex; align-items:center; gap:3px;">${res.isHardcore ? icons.skull(11) : ''}${resultModeLabel(res, getText)}</span>`
                         : '<span style="opacity:0.4;">—</span>';
 
                     let starsVisual = '';
@@ -8829,6 +8813,7 @@ function updateRipples(dt) {
                 // Завантажуємо та синхронізуємо збережений прогрес рівнів користувача з хмари
                 await syncUserProgressBidirectional(user.id);
             } else {
+                if (document.body.classList.contains('in-game')) quitGame();
                 if (btnOpenAuth) btnOpenAuth.style.display = 'inline-flex';
                 if (userBadge) {
                     userBadge.style.display = 'none';
@@ -8853,10 +8838,10 @@ function updateRipples(dt) {
                 }
             }
             Cosmetics.FRAMES.forEach(f => {
-                if (f.cssClass) f.cssClass.split(/\s+/).filter(Boolean).forEach(cls => userBadge.classList.remove(cls));
+                if (f.cssClass) f.cssClass.split(/\s+/).filter(Boolean).forEach(cls => { userBadge.classList.remove(cls); iconUserContainer?.classList.remove(cls); });
             });
             const bFrameCls = curUser ? Cosmetics.getFrameCssClass(cosm.selectedFrame) : '';
-            if (bFrameCls) bFrameCls.split(/\s+/).filter(Boolean).forEach(cls => userBadge.classList.add(cls));
+            if (bFrameCls) bFrameCls.split(/\s+/).filter(Boolean).forEach(cls => iconUserContainer?.classList.add(cls));
         };
 
         onAuthStateChanged(updateAuthUI);
