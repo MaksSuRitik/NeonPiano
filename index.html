@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Neon Piano">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="css/style.css?v=93.0">
-  <link rel="stylesheet" href="css/social-panels.css?v=1">
+  <link rel="stylesheet" href="css/social-panels.css?v=2">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8v4'/><path d='M10 8v4'/><path d='M14 8v4'/><path d='M18 8v4'/></svg>">
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.7.3/dist/pixi.min.js"></script>
 </head>
@@ -1081,7 +1081,10 @@
       <!-- Profile Header with Glow Avatar & Customization Controls -->
       <div class="user-profile-header">
         <div class="user-profile-avatar-wrap">
+          <div class="user-profile-portrait">
           <div class="user-profile-avatar" id="up-avatar">P</div>
+          </div>
+          <div class="user-profile-avatar-tools">
           <button type="button" id="up-avatar-edit-btn" class="avatar-action-btn edit-avatar-btn hidden" title="Змінити аватар" data-i18n-title="profileChangeAvatar">
             <span class="icon-camera-up"></span>
           </button>
@@ -1089,10 +1092,11 @@
             <span class="icon-trash-up-avatar"></span>
           </button>
           <input type="file" id="up-avatar-file-input" accept="image/*" class="hidden" />
-          <div class="user-profile-rank-badge" id="up-rank-badge">#1</div>
+          </div>
         </div>
         <div class="user-profile-identity">
           <div class="user-profile-name-row">
+            <div class="user-profile-rank-badge" id="up-rank-badge">#1</div>
             <h3 class="user-profile-name" id="up-name">Player</h3>
             <span class="user-title-badge" id="up-title-badge">Новачок біту</span>
           </div>

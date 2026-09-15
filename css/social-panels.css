@@ -1,6 +1,7 @@
 /* The largest equipped ornament spans 2.84 times its avatar diameter.
    Stages reserve that footprint independently of names and controls. */
-.profile-avatar-stage { height:220px; width:100%; display:flex; align-items:center; justify-content:center; }
+.profile-avatar-stage { height:128px; width:100%; display:flex; align-items:center; justify-content:center; }
+.profile-avatar-stage:has(.frame-champion-crown) { height:206px; }
 .profile-avatar-stage .profile-avatar-pill { width:72px; height:72px; margin:0; }
 .profile-header-section { text-align:center; }
 .user-profile-card {
@@ -13,28 +14,36 @@
 }
 .user-profile-card .user-profile-header {
   flex-direction:column;
-  gap:16px !important;
-  padding:0 0 24px !important;
-  margin-bottom:20px !important;
+  gap:8px !important;
+  padding:0 0 18px !important;
+  margin-bottom:16px !important;
   text-align:center;
 }
 .user-profile-header .user-profile-avatar-wrap {
-  width:250px;
-  height:250px;
+  width:100%;
+  height:auto;
   box-sizing:border-box;
-  padding-bottom:40px;
+  padding:0;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
   flex-shrink:0;
 }
+.user-profile-portrait { width:100%; height:136px; display:flex; align-items:center; justify-content:center; }
+.user-profile-portrait:has(.frame-champion-crown) { height:226px; }
+.user-profile-portrait:has(.frame-silver-crown,.frame-leader-crown) { height:154px; }
+.user-profile-portrait .frame-champion-crown { transform:translateY(-12px); }
+.user-profile-avatar-tools { display:flex; justify-content:center; gap:10px; padding:4px 0; }
+.user-profile-avatar-tools:not(:has(.avatar-action-btn:not(.hidden))) { display:none; }
 .user-profile-header .user-profile-avatar {
-  width:72px !important;
-  height:72px !important;
-  flex:0 0 72px;
+  width:80px !important;
+  height:80px !important;
+  flex:0 0 80px;
   font-size:1.8rem !important;
 }
 .user-profile-avatar-wrap .avatar-action-btn {
+  position:static;
   top:auto !important;
   bottom:0 !important;
   width:36px;
@@ -45,15 +54,19 @@
 }
 .user-profile-avatar-wrap .edit-avatar-btn { right:46px !important; left:auto !important; }
 .user-profile-avatar-wrap .reset-avatar-btn { right:0 !important; left:auto !important; }
-.user-profile-avatar-wrap .user-profile-rank-badge {
-  top:auto; bottom:5px; left:0; right:auto;
-  padding:5px 12px; border-radius:8px;
+.user-profile-name-row .user-profile-rank-badge {
+  position:static;
+  padding:4px 9px; border-radius:8px;
+  font-size:.75rem; line-height:1.4;
+  background:#f59e0b18; color:#fbbf24; border:1px solid #dba34166;
 }
+body[data-theme="light"] .user-profile-name-row .user-profile-rank-badge { color:#85520b; background:#fff3d6; }
 .user-profile-identity { width:100%; min-width:0; }
 .user-profile-name-row { justify-content:center; flex-wrap:wrap; gap:8px 12px; }
 .user-profile-header .user-profile-name { margin:0; font-size:1.6rem !important; overflow-wrap:anywhere; }
 .user-profile-meta { justify-content:center; margin-top:12px; }
-.user-profile-status-wrap { margin-top:14px; }
+.user-profile-status-wrap { margin-top:8px; }
+.user-profile-bio:empty { display:none; }
 .user-profile-bio { line-height:1.6; overflow-wrap:anywhere; }
 .user-bio-edit-box { width:100%; min-width:0; gap:8px; }
 .user-bio-edit-box .up-bio-input { min-width:0; flex:1; }
@@ -63,11 +76,17 @@
 .favorite-track-header .fav-title { overflow-wrap:anywhere; white-space:normal; overflow:visible; }
 .user-profile-stats-grid { gap:10px; }
 .profile-stat-box {
-  padding:18px 12px;
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  gap:3px 10px;
+  align-items:center;
+  text-align:left;
   background:linear-gradient(140deg,#38bdf809,transparent),var(--surface-hover);
   border-radius:16px;
 }
-.profile-stat-box .stat-box-icon { margin-bottom:8px; color:var(--highlight); }
+.profile-stat-box .stat-box-icon { grid-row:1 / 3; margin:0; color:var(--highlight); }
+.profile-stat-box .stat-box-val, .profile-stat-box .stat-box-lbl { grid-column:2; }
 .profile-stat-box .stat-box-val { font-size:1.35rem; letter-spacing:-.035em; font-variant-numeric:tabular-nums; }
 .profile-stat-box .stat-box-lbl { margin-top:5px; font-size:.76rem; }
 .profile-stat-box.stat-box-wide { padding:16px; flex-wrap:wrap; gap:8px 12px; }
@@ -76,7 +95,7 @@
 
 .leaderboard-modal {
   max-width:900px !important;
-  padding:28px !important;
+  padding:24px !important;
   max-height:92dvh !important;
   overflow-y:auto;
   scrollbar-width:thin;
@@ -87,14 +106,14 @@
 .leaderboard-modal .lb-podium-container {
   align-items:stretch !important;
   gap:14px !important;
-  margin:24px 0 !important;
+  margin:18px 0 !important;
   padding:0 !important;
   flex-shrink:0;
 }
 .leaderboard-modal .podium-card {
   min-width:0;
   max-width:none !important;
-  padding:20px 12px !important;
+  padding:12px !important;
   border-radius:20px !important;
   transition:transform .18s ease, border-color .18s ease !important;
 }
@@ -114,22 +133,22 @@
   border-color:#c58e6266 !important;
   box-shadow:0 8px 28px #0002 !important;
 }
-.leaderboard-modal .podium-crown-icon { height:24px; margin-bottom:4px; }
+.leaderboard-modal .podium-crown-icon { position:absolute; top:12px; left:12px; height:24px; margin:0; }
 .podium-avatar-stage {
-  width:100%; height:190px;
+  width:100%; height:148px;
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0;
 }
 .leaderboard-modal .podium-avatar {
-  width:62px !important; height:62px !important;
-  margin:0 !important; flex-shrink:0;
+  width:64px !important; height:64px !important;
+  margin:0 !important; flex-shrink:0; transform:translateY(-10px);
 }
 .leaderboard-modal .podium-name {
   margin-top:8px; line-height:1.35;
   white-space:normal; overflow-wrap:anywhere;
   font-size:1rem !important;
 }
-.leaderboard-modal .podium-title-wrap { min-height:24px; margin:6px 0 10px; width:100%; }
+.leaderboard-modal .podium-title-wrap { min-height:22px; margin:5px 0 6px; width:100%; }
 .leaderboard-modal .podium-title-badge { max-width:100%; box-sizing:border-box; }
 .leaderboard-modal .podium-score { font-size:1.15rem !important; letter-spacing:-.025em; font-variant-numeric:tabular-nums; }
 .leaderboard-modal .podium-levels { margin-top:6px; font-size:.76rem; }
@@ -145,12 +164,24 @@
 .leaderboard-modal .lb-table td:first-child { border-radius:12px 0 0 12px; color:var(--text-secondary); }
 .leaderboard-modal .lb-table td:last-child { border-radius:0 12px 12px 0; }
 .leaderboard-modal .lb-player-cell { gap:12px; min-width:0; flex-direction:row; align-items:center; }
-.lb-avatar-stage { width:80px; height:80px; flex:0 0 80px; display:flex; align-items:center; justify-content:center; }
-.leaderboard-modal .lb-avatar-mini { margin:0; width:26px; height:26px; flex:0 0 26px; }
+.lb-avatar-stage { width:78px; height:78px; flex:0 0 78px; display:flex; align-items:center; justify-content:center; }
+.lb-avatar-stage:has(.frame-champion-crown) { width:120px; height:116px; flex-basis:120px; }
+.leaderboard-modal .lb-avatar-mini { margin:0; width:44px; height:44px; flex:0 0 44px; font-size:1rem; }
 .leaderboard-modal .lb-player-name { min-width:0; flex:1; white-space:normal; overflow-wrap:anywhere; line-height:1.4; }
 .leaderboard-modal .lb-player-name .user-title-badge { display:table; margin:5px 0 0 !important; max-width:100%; box-sizing:border-box; white-space:normal; }
 .leaderboard-modal .lb-player-name { max-width:none !important; overflow:visible !important; }
 .leaderboard-modal .lb-score-val { font-size:.95rem; font-variant-numeric:tabular-nums; white-space:normal; }
+/* Silver asset has an oval aperture above its geometric centre.
+   Crop the photo into that aperture; object-fit keeps faces undistorted. */
+.frame-silver-crown > :is(.avatar-photo,.avatar-letter,img) {
+  position:absolute !important;
+  width:112% !important; height:130% !important;
+  max-width:none;
+  left:50%; top:40%; transform:translate(-50%,-50%);
+  object-fit:cover;
+  border-radius:50% !important;
+}
+.frame-silver-crown > .avatar-letter { display:flex !important; align-items:center; justify-content:center; background:inherit; }
 body[data-theme="light"] .user-profile-card,
 body[data-theme="light"] .leaderboard-modal { background:radial-gradient(ellipse at 50% 0,#e4eff7,transparent 480px),#fafcfe !important; }
 body[data-theme="light"] .profile-stat-box,
@@ -160,8 +191,9 @@ body[data-theme="light"] .leaderboard-modal .lb-table td { background:#edf2f7; }
   .user-profile-card { padding:20px 16px !important; }
   .leaderboard-modal { padding:20px 12px !important; width:96vw !important; }
   .leaderboard-modal .lb-podium-container { gap:6px !important; margin:20px 0 14px !important; }
-  .leaderboard-modal .podium-card { padding:14px 5px !important; border-radius:14px !important; }
-  .podium-avatar-stage { height:110px; }
+  .leaderboard-modal .podium-card { padding:10px 5px !important; border-radius:14px !important; }
+  .leaderboard-modal .podium-crown-icon { top:8px; left:8px; }
+  .podium-avatar-stage { height:106px; padding-top:12px; box-sizing:border-box; }
   .leaderboard-modal .podium-avatar { width:clamp(24px,7vw,38px) !important; height:clamp(24px,7vw,38px) !important; }
   .leaderboard-modal .podium-name { font-size:.8rem !important; }
   .leaderboard-modal .podium-score { font-size:clamp(.7rem,2.6vw,.95rem) !important; }
@@ -172,8 +204,12 @@ body[data-theme="light"] .leaderboard-modal .lb-table td { background:#edf2f7; }
   .leaderboard-modal .lb-table th:first-child, .leaderboard-modal .lb-table td:first-child { width:9%; }
   .leaderboard-modal .lb-table td:nth-child(2) { width:47%; }
   .leaderboard-modal .lb-player-cell { gap:6px; }
-  .lb-avatar-stage { width:60px; height:64px; flex-basis:60px; }
-  .leaderboard-modal .lb-avatar-mini { width:20px; height:20px; flex-basis:20px; }
+  .lb-avatar-stage { width:64px; height:66px; flex-basis:64px; }
+  .lb-avatar-stage:has(.frame-champion-crown) { width:80px; height:86px; flex-basis:80px; }
+  .leaderboard-modal .lb-avatar-mini { width:36px; height:36px; flex-basis:36px; }
+  .lb-avatar-stage .lb-avatar-mini.frame-champion-crown { width:28px; height:28px; flex-basis:28px; }
+  .user-profile-stats-grid .profile-stat-box { padding:12px 10px; grid-template-columns:20px minmax(0,1fr); gap:3px 7px; }
+  .user-profile-stats-grid .stat-box-val { font-size:1.1rem; }
   .leaderboard-modal .lb-score-val { font-size:.76rem; }
 }
 @media (prefers-reduced-motion:reduce) {
