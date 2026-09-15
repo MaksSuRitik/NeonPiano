@@ -5836,8 +5836,8 @@ function updateRipples(dt) {
                 <button class="lb-close-btn" aria-label="Close">${icons.close(16)}</button>
             </div>
 
-            <div class="lb-limit-bar" style="display: flex; align-items: center; gap: 6px; margin: 10px 0 6px 0;">
-                <span style="font-size: 0.8rem; color: var(--text-secondary); margin-right: 2px;">${getText('lbLimitLabel') || 'Ліміт:'}</span>
+            <div class="lb-limit-bar">
+                <span class="lb-limit-label">${getText('lbLimitLabel') || 'Ліміт:'}</span>
                 <button type="button" class="lb-limit-btn ${currentLeaderboardLimit === 25 ? 'active' : ''}" data-limit="25">${getText('lbLimitTop25') || 'Топ 25'}</button>
                 <button type="button" class="lb-limit-btn ${currentLeaderboardLimit === 50 ? 'active' : ''}" data-limit="50">${getText('lbLimitTop50') || 'Топ 50'}</button>
                 <button type="button" class="lb-limit-btn ${currentLeaderboardLimit === 100 ? 'active' : ''}" data-limit="100">${getText('lbLimitTop100') || 'Топ 100'}</button>
@@ -5847,8 +5847,8 @@ function updateRipples(dt) {
             <!-- Top 3 Podium -->
             <div id="lb-podium" class="lb-podium-container"></div>
             
-            <div class="lb-content-wrapper" style="margin-top: 6px;">
-                <div class="lb-scroll-area" id="lb-scroll-area" style="max-height: 440px; overflow-y: auto;">
+            <div class="lb-content-wrapper">
+                <div class="lb-scroll-area" id="lb-scroll-area">
                     <table class="lb-table">
                         <thead id="lb-header"></thead>
                         <tbody id="lb-body"></tbody>
@@ -5898,10 +5898,10 @@ function updateRipples(dt) {
         if (podiumEl) podiumEl.innerHTML = '';
 
         thead.innerHTML = `<tr>
-            <th width="15%">#</th>
-            <th width="45%">${getText('lbName')}</th>
-            <th width="20%">${getText('lbLevels')}</th>
-            <th width="20%">${getText('lbTotalScore')}</th>
+            <th class="lb-th-rank">#</th>
+            <th class="lb-th-player">${getText('lbName')}</th>
+            <th class="lb-th-levels">${getText('lbLevels')}</th>
+            <th class="lb-th-score">${getText('lbTotalScore')}</th>
         </tr>`;
 
         // Відображення індикатора завантаження під час очікування відповіді від Firebase.
@@ -5955,12 +5955,25 @@ function updateRipples(dt) {
                     const p2FrameClass = Cosmetics.getFrameCssClass(p2.selectedFrame);
                     podiumHtml += `
                         <div class="podium-card podium-rank-2" data-podium-idx="1" title="${getText('clickToViewProfile')}">
-                            <div class="podium-crown-icon" style="color: #cbd5e1;">${icons.medal(20)}</div>
+                            <div class="podium-card-top">
+                                <div class="podium-rank-badge rank-2">
+                                    <span class="podium-crown-icon" style="color: #cbd5e1;">${icons.medal(18)}</span>
+                                    <span class="podium-rank-num">#2</span>
+                                </div>
+                                <div class="podium-tier-label">${getText('lbRankSilver') || 'SILVER'}</div>
+                            </div>
                             <div class="podium-avatar-stage"><div class="podium-avatar ${p2FrameClass}">${p2AvatarHtml}</div></div>
-                            <div class="podium-name">${escapeHtml(p2.name || 'Unknown')}</div>
-                            ${getPodiumTitleHtml(p2)}
-                            <div class="podium-score">${(p2.totalScore || 0).toLocaleString()}</div>
-                            <div class="podium-levels">${p2.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
+                            <div class="podium-player-details">
+                                <div class="podium-name">${escapeHtml(p2.name || 'Unknown')}</div>
+                                ${getPodiumTitleHtml(p2)}
+                                <div class="podium-score-wrap">
+                                    <div class="podium-score">${(p2.totalScore || 0).toLocaleString()}</div>
+                                    <div class="podium-levels">${p2.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
+                                </div>
+                            </div>
+                            <div class="podium-pedestal-base">
+                                <span class="podium-base-num">2</span>
+                            </div>
                         </div>
                     `;
                 }
@@ -5971,12 +5984,25 @@ function updateRipples(dt) {
                     const p1FrameClass = Cosmetics.getFrameCssClass(p1.selectedFrame);
                     podiumHtml += `
                         <div class="podium-card podium-rank-1" data-podium-idx="0" title="${getText('clickToViewProfile')}">
-                            <div class="podium-crown-icon" style="color: #fbbf24;">${icons.crown(24)}</div>
+                            <div class="podium-card-top">
+                                <div class="podium-rank-badge rank-1">
+                                    <span class="podium-crown-icon" style="color: #fbbf24;">${icons.crown(22)}</span>
+                                    <span class="podium-rank-num">#1</span>
+                                </div>
+                                <div class="podium-tier-label">${getText('lbRankChampion') || 'CHAMPION'}</div>
+                            </div>
                             <div class="podium-avatar-stage"><div class="podium-avatar ${p1FrameClass}">${p1AvatarHtml}</div></div>
-                            <div class="podium-name">${escapeHtml(p1.name || 'Unknown')}</div>
-                            ${getPodiumTitleHtml(p1)}
-                            <div class="podium-score">${(p1.totalScore || 0).toLocaleString()}</div>
-                            <div class="podium-levels">${p1.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
+                            <div class="podium-player-details">
+                                <div class="podium-name">${escapeHtml(p1.name || 'Unknown')}</div>
+                                ${getPodiumTitleHtml(p1)}
+                                <div class="podium-score-wrap">
+                                    <div class="podium-score">${(p1.totalScore || 0).toLocaleString()}</div>
+                                    <div class="podium-levels">${p1.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
+                                </div>
+                            </div>
+                            <div class="podium-pedestal-base">
+                                <span class="podium-base-num">1</span>
+                            </div>
                         </div>
                     `;
                 }
@@ -5987,12 +6013,25 @@ function updateRipples(dt) {
                     const p3FrameClass = Cosmetics.getFrameCssClass(p3.selectedFrame);
                     podiumHtml += `
                         <div class="podium-card podium-rank-3" data-podium-idx="2" title="${getText('clickToViewProfile')}">
-                            <div class="podium-crown-icon" style="color: #d97706;">${icons.medal(20)}</div>
+                            <div class="podium-card-top">
+                                <div class="podium-rank-badge rank-3">
+                                    <span class="podium-crown-icon" style="color: #d97706;">${icons.medal(18)}</span>
+                                    <span class="podium-rank-num">#3</span>
+                                </div>
+                                <div class="podium-tier-label">${getText('lbRankBronze') || 'BRONZE'}</div>
+                            </div>
                             <div class="podium-avatar-stage"><div class="podium-avatar ${p3FrameClass}">${p3AvatarHtml}</div></div>
-                            <div class="podium-name">${escapeHtml(p3.name || 'Unknown')}</div>
-                            ${getPodiumTitleHtml(p3)}
-                            <div class="podium-score">${(p3.totalScore || 0).toLocaleString()}</div>
-                            <div class="podium-levels">${p3.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
+                            <div class="podium-player-details">
+                                <div class="podium-name">${escapeHtml(p3.name || 'Unknown')}</div>
+                                ${getPodiumTitleHtml(p3)}
+                                <div class="podium-score-wrap">
+                                    <div class="podium-score">${(p3.totalScore || 0).toLocaleString()}</div>
+                                    <div class="podium-levels">${p3.levelsCompleted || 0} ${getText('lbLevels') || 'рівнів'}</div>
+                                </div>
+                            </div>
+                            <div class="podium-pedestal-base">
+                                <span class="podium-base-num">3</span>
+                            </div>
                         </div>
                     `;
                 }
@@ -6015,30 +6054,37 @@ function updateRipples(dt) {
                 let rank = 4;
                 remainingPlayers.forEach(p => {
                     const tr = document.createElement('tr');
-                    tr.className = 'lb-player-row';
+                    const tierClass = rank <= 10 ? 'lb-top-tier' : 'lb-standard-row';
+                    tr.className = `lb-player-row ${tierClass} lb-rank-${rank}`;
                     tr.title = getText('clickToViewProfile');
+                    tr.dataset.rank = String(rank);
 
-                    const rankDisplay = `<span style="font-weight:700; opacity:0.8;">#${rank}</span>`;
                     const pAvatarHtml = Cosmetics.getAvatarContent(p.name, p.avatarUrl);
                     const pFrameClass = Cosmetics.getFrameCssClass(p.selectedFrame);
                     let titleHtml = '';
                     if (p.selectedTitle && p.selectedTitle !== 'title_novice') {
                         const tDef = Cosmetics.TITLES.find(item => item.id === p.selectedTitle);
                         if (tDef) {
-                            titleHtml = `<span class="user-title-badge" style="font-size: 0.65rem; padding: 1px 6px; margin-left: 6px;">${escapeHtml(getText(tDef.nameKey) || tDef.id)}</span>`;
+                            titleHtml = `<span class="user-title-badge">${escapeHtml(getText(tDef.nameKey) || tDef.id)}</span>`;
                         }
                     }
 
                     tr.innerHTML = `
-                        <td width="15%"><b>${rankDisplay}</b></td>
-                        <td width="45%">
+                        <td class="lb-col-rank"><span class="lb-rank-num">#${rank}</span></td>
+                        <td class="lb-col-player">
                             <div class="lb-player-cell">
                                 <div class="lb-avatar-stage"><div class="lb-avatar-mini ${pFrameClass}">${pAvatarHtml}</div></div>
-                                <span class="lb-player-name">${escapeHtml(p.name || 'Unknown')}${titleHtml}</span>
+                                <div class="lb-player-info">
+                                    <span class="lb-player-name">${escapeHtml(p.name || 'Unknown')}</span>
+                                    ${titleHtml ? `<div class="lb-player-title-box">${titleHtml}</div>` : ''}
+                                </div>
                             </div>
                         </td>
-                        <td width="20%">${p.levelsCompleted || 0}</td>
-                        <td width="20%"><span class="lb-score-val">${(p.totalScore || 0).toLocaleString()}</span></td>
+                        <td class="lb-col-levels">
+                            <span class="lb-stat-levels">${p.levelsCompleted || 0}</span>
+                            <span class="lb-stat-levels-sub">${getText('lbLevels') || 'рівнів'}</span>
+                        </td>
+                        <td class="lb-col-score"><span class="lb-score-val">${(p.totalScore || 0).toLocaleString()}</span></td>
                     `;
 
                     const currentRank = rank;
