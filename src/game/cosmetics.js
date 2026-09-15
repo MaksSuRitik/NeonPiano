@@ -119,7 +119,8 @@ export const FRAMES = [
     ['cassette_808', 'frameCassette808', 'collectionPhonk'],
     ['leader_crown', 'frameLeaderCrown', 'collectionPrestige'],
     ['neon_archive', 'frameNeonArchive', 'collectionPrestige'],
-    ['star_forge', 'frameStarForge', 'collectionPrestige']
+    ['star_forge', 'frameStarForge', 'collectionPrestige'],
+    ['eared_melon', 'frameEaredMelon', 'collectionPrestige']
   ].map(([slug, key, group]) => collectionItem(`frame_${slug}`, key, group, `frame-collection frame-${slug.replaceAll('_', '-')}`))
 ];
 
@@ -764,12 +765,13 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
   earn('frame_leader_crown', ctx.globalRank >= 1 && ctx.globalRank <= 3);
   earn('frame_neon_archive', getLocalCosmetics().unlockedTitles.filter(id => TITLES.some(t => t.id === id && !t.unlockedByDefault)).length >= 20);
   earn('frame_star_forge', ctx.totalDiamondStars >= 10);
+  earn('frame_eared_melon', (totals.hardHardcoreTrackTitles || []).length >= 15);
   return unlocked;
 }
 
 const counterKeys = ['completedLevelsCount', 'hardCompletedLevelsCount', 'hardcoreVictoryCount', 'flawlessVictoryStreak', 'neonInsomniaMatches',
   'victoryStreak', 'bestVictoryStreak', 'sanhuaVictoryCount', 'phonkVictoryCount', 'totalPerfectHits'];
-const arrayKeys = ['completedTrackTitles', 'phonkTrackTitles', 'sanhuaTrackTitles', 'sanhuaDiamondTrackTitles', 'secretTrackTitles', 'playedHours'];
+const arrayKeys = ['completedTrackTitles', 'phonkTrackTitles', 'sanhuaTrackTitles', 'sanhuaDiamondTrackTitles', 'secretTrackTitles', 'playedHours', 'hardHardcoreTrackTitles'];
 const validArray = (key, value) => [...new Set((Array.isArray(value) ? value : []).filter(v =>
   key === 'playedHours' ? Number.isInteger(v) && v >= 0 && v < 24 : typeof v === 'string' && v.length > 0))];
 const number = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
@@ -810,6 +812,7 @@ export function recordCosmeticsMatch(ctx) {
     if (ctx.track?.isPhonk === true) progress.phonkVictoryCount++;
     const title = ctx.track?.title;
     if (title) {
+      if (ctx.difficulty === 'hard' && ctx.isHardcore === true) progress.hardHardcoreTrackTitles = validArray('hardHardcoreTrackTitles', [...progress.hardHardcoreTrackTitles, title]);
       progress.completedTrackTitles = validArray('completedTrackTitles', [...progress.completedTrackTitles, title]);
       if (ctx.themeId === 'sanhua') progress.sanhuaTrackTitles = validArray('sanhuaTrackTitles', [...progress.sanhuaTrackTitles, title]);
       if (ctx.track.isPhonk === true) progress.phonkTrackTitles = validArray('phonkTrackTitles', [...progress.phonkTrackTitles, title]);
@@ -839,7 +842,7 @@ export function readCosmeticsHistory(songs = []) {
   const records = [];
   const totals = { completedLevelsCount: 0, hardCompletedLevelsCount: 0, hardcoreVictoryCount: 0,
     totalGoldStars: 0, totalStarsInGame: 0, diamondTracksCount: 0, totalDiamondStars: 0,
-    completedTrackTitles: [], phonkTrackTitles: [], secretTrackTitles: [], phonkVictoryCount: 0 };
+    completedTrackTitles: [], phonkTrackTitles: [], secretTrackTitles: [], hardHardcoreTrackTitles: [], phonkVictoryCount: 0 };
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key?.startsWith('neon_rhythm_')) continue;
@@ -861,6 +864,7 @@ export function readCosmeticsHistory(songs = []) {
     if (victory) {
       const title = key.slice('neon_rhythm_'.length);
       totals.completedTrackTitles.push(title);
+      if (data.hardHardcoreCompleted) totals.hardHardcoreTrackTitles.push(title);
       if (track?.isPhonk === true) { totals.phonkTrackTitles.push(title); totals.phonkVictoryCount++; }
       if (track?.isSecret === true) totals.secretTrackTitles.push(title);
     }
@@ -896,6 +900,9 @@ export function checkRetroactiveCosmeticsUnlocks(songsList = [], getText = null,
     if (!match || (match.id && seenMatches.has(match.id))) continue;
     if (match.id) seenMatches.add(match.id);
     const track = songsList.find(s => s && ((s.id && s.id === match.trackId) || s.title === match.trackTitle));
+    if (match.victory === true && match.difficulty === 'hard' && match.isHardcore === true && (track?.title || match.trackTitle)) {
+      totals.hardHardcoreTrackTitles.push(track?.title || match.trackTitle);
+    }
     const date = new Date(match.playedAt || NaN);
     const hour = date.getHours();
     historicalHours.push(hour);
@@ -954,6 +961,7 @@ export function checkRetroactiveCosmeticsUnlocks(songsList = [], getText = null,
 
   const progress = getCosmeticsProgress();
   unlocked.push(...checkCosmeticsUnlocks({ ...totals, ...progress, ...context, retrospective: true,
+    hardHardcoreTrackTitles: mergeCosmeticsProgress({ hardHardcoreTrackTitles: totals.hardHardcoreTrackTitles }).hardHardcoreTrackTitles,
     neonInsomniaMatches: Math.max(progress.neonInsomniaMatches, nightMatches),
     completedLevelsCount: Math.max(totals.completedLevelsCount, progress.completedLevelsCount),
     hardCompletedLevelsCount: Math.max(totals.hardCompletedLevelsCount, progress.hardCompletedLevelsCount),

@@ -12523,3 +12523,27 @@ body[data-theme="light"] .frame-star-forge { border-color: #0284c7 !important; }
 
 body[data-theme] :is(.frame-neon-start,.frame-gold-prestige,.frame-crimson-fire,.frame-cosmic-nebula,.frame-cyber-glitch,.frame-prismatic,.frame-cyber-alloy,.frame-baroque-gold,.frame-frostbound,.frame-street-drift,.frame-gothic-thorn,.frame-steampunk-chrono,.frame-sakura-urushi,.frame-moon-rime,.frame-crimson-dawn,.frame-ice-moon-throne,.frame-silence-blades,.frame-blossom-charm,.frame-abyss-portal,.frame-cassette-808,.frame-leader-crown,.frame-neon-archive,.frame-star-forge) { box-shadow: inset 0 0 0 1px var(--ring-shadow), 0 2px 4px #0005 !important; }
 .icon-user-container { width:24px; height:24px; flex:0 0 24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
+
+/* A second, secondary badge; the original difficulty badge retains its styling. */
+.track-diff-badge.hardcore-modifier {
+  display:inline-flex; align-items:center; vertical-align:middle;
+  margin-inline-start:5px; padding:2px 7px; border-radius:4px;
+  font-size:.7rem; font-weight:700; line-height:1.4;
+  color:#fda4af; background:#9f123922; border:1px solid #fb718566;
+}
+body[data-theme="light"] .track-diff-badge.hardcore-modifier { color:#9f1239; background:#ffe4e6; border-color:#e9a9b5; }
+
+/* Eared Melon: transparent hoop, feline ears, silver companions and brass charm. */
+.frame-eared-melon {
+  position:relative; isolation:isolate; overflow:visible !important;
+  border:0 !important; border-radius:50% !important;
+  animation:none !important; filter:none !important;
+  box-shadow:inset 0 0 0 1px #5b7279 !important;
+}
+.frame-eared-melon > :is(.avatar-photo,.avatar-letter) { border-radius:50%; }
+.frame-eared-melon::before {
+  content:''; position:absolute; inset:-22%; z-index:3; pointer-events:none;
+  background:url('../assets/frames/eared-melon.svg') center / 100% 100% no-repeat;
+  border:0; border-radius:50%; animation:none; filter:none;
+}
+.frame-eared-melon::after { content:none; }
