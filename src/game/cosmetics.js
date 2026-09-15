@@ -767,7 +767,7 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
   earn('frame_silver_crown', ctx.globalRank >= 1 && ctx.globalRank <= 2);
   earn('frame_neon_archive', getLocalCosmetics().unlockedTitles.filter(id => TITLES.some(t => t.id === id && !t.unlockedByDefault)).length >= 20);
   earn('frame_star_forge', ctx.totalDiamondStars >= 10);
-  earn('frame_eared_melon', (totals.hardHardcoreTrackTitles || []).length >= 15);
+  earn('frame_eared_melon', (totals.hardHardcoreTrackTitles || []).length >= 1);
   return unlocked;
 }
 

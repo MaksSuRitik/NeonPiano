@@ -225,7 +225,7 @@ test('strict live conditions and their negative boundaries', () => {
     ['frame_leader_crown', {globalRank: 1}, {globalRank: 2}],
     ['frame_silver_crown', {globalRank: 2}, {globalRank: 3}],
     ['frame_star_forge', {totalDiamondStars: 10}, {totalDiamondStars: 9}],
-    ['frame_eared_melon', {hardHardcoreTrackTitles: Array.from({length: 15}, (_, i) => 'T' + i)}, {hardHardcoreTrackTitles: Array.from({length: 14}, (_, i) => 'T' + i)}],
+    ['frame_eared_melon', {hardHardcoreTrackTitles: ['T0']}, {hardHardcoreTrackTitles: []}],
   ];
   for (const [id, positive, negative] of cases) {
     localStorage.clear();
@@ -572,25 +572,25 @@ test('I: Cosmic theme achievement (frame_abyss_portal) is evaluated when histori
   assert.ok(!delta2.includes('frame_abyss_portal'), 'frame_abyss_portal must NOT unlock without themeId');
 });
 
-test('J: Eared Melon (frame_eared_melon) unlocks retroactively with 15 Hard + Hardcore tracks', () => {
+test('J: Eared Melon (frame_eared_melon) unlocks retroactively with 1 Hard + Hardcore track', () => {
   localStorage.clear();
-  const songs = Array.from({length: 15}, (_, i) => ({ title: `Track_${i}`, id: `t_${i}` }));
-  const history = songs.map((s, i) => ({
-    id: `h_${i}`, trackId: s.id, trackTitle: s.title,
+  const songs = [{ title: 'Track_0', id: 't_0' }];
+  const history = [{
+    id: 'h_0', trackId: 't_0', trackTitle: 'Track_0',
     difficulty: 'hard', isHardcore: true, victory: true,
-    playedAt: new Date(2026, 0, 1 + i, 12).toISOString()
-  }));
+    playedAt: new Date(2026, 0, 1, 12).toISOString()
+  }];
   const delta = checkRetroactiveCosmeticsUnlocks(songs, null, null, history, {});
-  assert.ok(delta.includes('frame_eared_melon'), 'frame_eared_melon must unlock with 15 Hard + Hardcore victories');
+  assert.ok(delta.includes('frame_eared_melon'), 'frame_eared_melon must unlock with 1 Hard + Hardcore victory');
 });
 
 test('K: Eared Melon localization is complete in RU, UA, EN', () => {
   assert.equal(ru.frameEaredMelon, 'Ушастая дыня');
-  assert.ok(ru.frameEaredMelonDesc.includes('15') && ru.frameEaredMelonDesc.includes('Hard'));
+  assert.ok(ru.frameEaredMelonDesc.includes('1') && ru.frameEaredMelonDesc.includes('Hard'));
   assert.equal(ua.frameEaredMelon, 'Вухата диня');
-  assert.ok(ua.frameEaredMelonDesc.includes('15') && ua.frameEaredMelonDesc.includes('Hard'));
+  assert.ok(ua.frameEaredMelonDesc.includes('1') && ua.frameEaredMelonDesc.includes('Hard'));
   assert.equal(en.frameEaredMelon, 'Eared Melon');
-  assert.ok(en.frameEaredMelonDesc.includes('15') && en.frameEaredMelonDesc.includes('Hard'));
+  assert.ok(en.frameEaredMelonDesc.includes('1') && en.frameEaredMelonDesc.includes('Hard'));
 });
 
 test('L: Leader Crown (Rank 1) and Silver Crown (Rank 1-2) unlock behavior', () => {

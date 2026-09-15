@@ -546,7 +546,7 @@ export default {
   frameStarForge: "Звёздная кузница",
   frameStarForgeDesc: "Получите 10 алмазных звёзд суммарно.",
   frameEaredMelon: "Ушастая дыня",
-  frameEaredMelonDesc: "Пройдите 15 уровней на сложности Hard с модом Hardcore.",
+  frameEaredMelonDesc: "Пройдите 1 уровень на сложности Hard с модом Hardcore.",
   collectionOriginal: "Классическая коллекция",
   collectionSanhua: "Ледяная тема",
   cosmeticsCollectionIceTheme: "Ледяная тема",

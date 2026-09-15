@@ -546,7 +546,7 @@ export default {
   frameStarForge: "Star Forge",
   frameStarForgeDesc: "Earn 10 Diamond Stars in total.",
   frameEaredMelon: "Eared Melon",
-  frameEaredMelonDesc: "Complete 15 levels on Hard difficulty with the Hardcore mod.",
+  frameEaredMelonDesc: "Complete 1 level on Hard difficulty with the Hardcore mod.",
   collectionOriginal: "Original collection",
   collectionSanhua: "Ice Theme",
   cosmeticsCollectionIceTheme: "Ice Theme",

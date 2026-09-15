@@ -546,7 +546,7 @@ export default {
   frameStarForge: "Зоряна кузня",
   frameStarForgeDesc: "Отримайте сумарно 10 діамантових зірок.",
   frameEaredMelon: "Вухата диня",
-  frameEaredMelonDesc: "Пройдіть 15 рівнів на складності Hard з модом Hardcore.",
+  frameEaredMelonDesc: "Пройдіть 1 рівень на складності Hard з модом Hardcore.",
   collectionOriginal: "Класична колекція",
   collectionSanhua: "Крижана тема",
   cosmeticsCollectionIceTheme: "Крижана тема",
