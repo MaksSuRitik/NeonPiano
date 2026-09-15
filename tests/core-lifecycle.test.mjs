@@ -313,3 +313,84 @@ test('watchdog compositor stall contract: detects frozen rAF (Hyprland workspace
   assert.equal(reasonGiven, 'watchdog compositor stall');
   assert.equal(mockState.isPaused, true);
 });
+
+test('long note head visual contract: head stays at hit position during hold without snapping to hitY', () => {
+  const pool = new PixiNotePool();
+  pool.isReady = true;
+  pool.noteWidth = 80;
+  pool.noteHeight = 30;
+  pool.margin = 16;
+  const PIXI = {
+    Container: class {
+      constructor() {
+        this.visible = true;
+        this.alpha = 1;
+        this.addChild = () => {};
+      }
+    },
+    Graphics: class {
+      constructor() {
+        this.clear = () => {};
+        this.roundRect = () => {};
+        this.fill = () => {};
+        this.stroke = () => {};
+        this.moveTo = () => {};
+        this.lineTo = () => {};
+        this.quadraticCurveTo = () => {};
+        this.closePath = () => {};
+      }
+    },
+    Sprite: class {
+      constructor() {
+        this.visible = true;
+        this.alpha = 1;
+        this.x = 0;
+        this.y = 0;
+        this.width = 0;
+        this.height = 0;
+      }
+    },
+    Texture: { from: () => ({}) }
+  };
+  const layer = { addChild: () => {}, removeChildren: () => {} };
+  pool._generateFallbackTextures = () => {};
+  pool.init(PIXI, {}, layer, { laneWidth: 100, noteWidth: 80, noteHeight: 30, padding: 6 });
+
+  const speed = 1200;
+  const hitY = 704;
+  const noteHeight = 30;
+  const hitVisualY = 620; // Hit 84px above judgment line (704 - 620 = 84px)
+
+  const holdTile = {
+    type: 'long',
+    lane: 1,
+    time: 1000,
+    endTime: 3000,
+    hit: true,
+    holding: true,
+    hitVisualY: hitVisualY,
+    completed: false,
+    failed: false,
+    released: false
+  };
+
+  const state = {
+    combo: 10,
+    gameHeight: 800,
+    activeTiles: [holdTile]
+  };
+
+  // Render while holding
+  pool.update(1500, [holdTile], state, { hitPosition: 0.88 }, null);
+
+  const item = holdTile._pixiItem;
+  assert.ok(item, 'Hold item must be acquired in PixiNotePool');
+  const expectedHeadTop = Math.round(hitVisualY - noteHeight);
+  assert.equal(item.headSprite.y, expectedHeadTop - pool.margin, 'Head sprite Y must remain anchored at hitVisualY - headH, not snapped to hitY');
+  assert.notEqual(item.headSprite.y, Math.round(hitY - noteHeight - pool.margin), 'Head must not snap to hitY');
+
+  // Verify that as song progresses while holding, head remains at exactly hitVisualY
+  pool.update(2200, [holdTile], state, { hitPosition: 0.88 }, null);
+  assert.equal(item.headSprite.y, expectedHeadTop - pool.margin, 'Head sprite Y must remain fixed at hit position throughout the hold duration');
+});
+

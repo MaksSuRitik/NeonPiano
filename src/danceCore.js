@@ -3389,7 +3389,8 @@ function update(songTime) {
                     const elapsedRelease = songTime - tile.releaseSongTime;
                     
                     // Голова (місце відриву пальця) опускається вниз крізь струни:
-                    yHead = hitY + (elapsedRelease / State.currentSpeed) * hitY;
+                    const baseHeadY = (tile.hitVisualY > 0) ? tile.hitVisualY : hitY;
+                    yHead = baseHeadY + (elapsedRelease / State.currentSpeed) * hitY;
                     
                     // Хвіст опускається за темпом музики:
                     const progressEnd = 1 - (tile.endTime - songTime) / State.currentSpeed;
@@ -3402,8 +3403,8 @@ function update(songTime) {
                     const rawTailY = progressEnd * hitY;
 
                     if (tile.hit && tile.holding) {
-                        yHead = hitY;
-                        yTail = Math.min(rawTailY, hitY);
+                        yHead = (tile.hitVisualY > 0) ? tile.hitVisualY : rawHeadY;
+                        yTail = Math.min(rawTailY, yHead);
                     } else {
                         yHead = rawHeadY;
                         yTail = rawTailY;

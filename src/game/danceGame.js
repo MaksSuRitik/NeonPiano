@@ -550,7 +550,7 @@ export class DanceGame {
       const x = tile.lane * laneW + padding;
       const w = laneW - (padding * 2);
       const progressStart = 1 - (tile.time - songTime) / this.currentSpeed;
-      const visualY = tile.hit ? hitY : progressStart * hitY;
+      const visualY = (tile.hit && tile.hitVisualY > 0) ? tile.hitVisualY : (tile.hit ? hitY : progressStart * hitY);
 
       if (tile.type === "tap") {
         if (visualY >= -CONFIG.noteHeight && visualY <= this.gameHeight + 100) {
@@ -739,6 +739,7 @@ export class DanceGame {
     if (closestTile && minDiff <= goodWindow) {
       closestTile.hit = true;
       closestTile.hitAnimStart = now;
+      closestTile.hitVisualY = (1 - (closestTile.time - songTime) / this.currentSpeed) * hitY;
 
       if (closestTile.type === "long") {
         this.holdingTiles[lane] = closestTile;

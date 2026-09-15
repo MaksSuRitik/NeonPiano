@@ -560,7 +560,8 @@ export class PixiNotePool {
         if (tile.released) {
           if (!tile.releaseSongTime) tile.releaseSongTime = songTime;
           const elapsedRelease = songTime - tile.releaseSongTime;
-          yHead = hitY + (elapsedRelease / speed) * hitY;
+          const baseHeadY = (tile.hitVisualY > 0) ? tile.hitVisualY : hitY;
+          yHead = baseHeadY + (elapsedRelease / speed) * hitY;
           const progressEnd = 1 - (tile.endTime - songTime) / speed;
           yTail = progressEnd * hitY;
           if (yTail > yHead) yTail = yHead;
@@ -571,8 +572,8 @@ export class PixiNotePool {
           const rawTailY = progressEnd * hitY;
 
           if (tile.hit && tile.holding) {
-            yHead = hitY;
-            yTail = Math.min(rawTailY, hitY);
+            yHead = (tile.hitVisualY > 0) ? tile.hitVisualY : rawHeadY;
+            yTail = Math.min(rawTailY, yHead);
           } else {
             yHead = rawHeadY;
             yTail = rawTailY;
