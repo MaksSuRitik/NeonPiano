@@ -1008,159 +1008,156 @@ function bootGame() {
                 }
             });
 
-            const mergedTracksForCloud = {};
-            let cloudNeedsUpdate = false;
             let localUpdated = false;
 
-            tracksToSync.forEach(title => {
-                const local = getSavedData(title);
-                const safeKey = toFirestoreTrackKey(title);
+            if (!snap.exists()) {
+                // Новий акаунт: одноразова ініціалізація хмари локальними даними гостя
+                const initialTracks = {};
+                tracksToSync.forEach(title => {
+                    const local = getSavedData(title);
+                    const safeKey = toFirestoreTrackKey(title);
+                    const score = Number(local.score) || 0;
+                    const stars = Number(local.stars) || 0;
+                    if (score > 0 || stars > 0 || local.difficulty) {
+                        initialTracks[safeKey] = {
+                            title: title,
+                            score: score,
+                            stars: stars,
+                            starTypes: Array.isArray(local.starTypes) ? local.starTypes : [0, 0, 0, 0, 0],
+                            difficulty: local.difficulty || '',
+                            isHardcore: Boolean(local.isHardcore),
+                            completedDifficulties: Array.isArray(local.completedDifficulties) ? local.completedDifficulties : []
+                        };
+                    }
+                });
 
-                // Пошук у хмарі (безпечний ключ з b64_, legacy base64, legacy encodeURI або пряма назва)
-                let cloud = cloudTracks[safeKey] || null;
-                if (!cloud) {
-                    const legacyB64 = safeKey.startsWith('b64_') ? safeKey.slice(4) : '';
-                    if (legacyB64 && cloudTracks[legacyB64]) cloud = cloudTracks[legacyB64];
-                    else if (cloudTracks[encodeURIComponent(title)]) cloud = cloudTracks[encodeURIComponent(title)];
-                    else if (cloudTracks[title]) cloud = cloudTracks[title];
-                    else {
-                        for (const [ck, cv] of Object.entries(cloudTracks)) {
-                            if (cv && (cv.title === title || fromFirestoreTrackKey(ck, cv) === title)) {
-                                cloud = cv;
-                                break;
+                const currentUser = getCurrentUser();
+                const hasLocalProgress = Object.keys(initialTracks).length > 0 || bestPlaytime > 0;
+                if (currentUser || hasLocalProgress) {
+                    await setDoc(progressRef, {
+                        userId: userId,
+                        tracks: initialTracks,
+                        playtimeSeconds: bestPlaytime,
+                        avatarUrl: mergedAvatarUrl,
+                        selectedFrame: mergedSelectedFrame,
+                        selectedTitle: mergedSelectedTitle,
+                        unlockedFrames: mergedUnlockedFrames,
+                        unlockedTitles: mergedUnlockedTitles,
+                        userStatus: mergedUserStatus,
+                        favoriteTrack: mergedFavoriteTrack,
+                        unlockedFieldThemes: FieldThemes.getUnlockedThemes(),
+                        activeFieldTheme: FieldThemes.getActiveThemeId(),
+                        spentCoins: parseInt(localStorage.getItem('neon_spent_coins') || '0', 10),
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                }
+            } else {
+                // Хмара вже існує: ХМАРА Є АВТОРИТЕТНИМ ДЖЕРЕЛОМ ІСТИНИ!
+                // Оновлюємо localStorage з хмари (включаючи скидання та правки адміна).
+                // За жодних обставин НЕ перезаписуємо треки в базі під час завантаження/перезавантаження сторінки!
+                tracksToSync.forEach(title => {
+                    const local = getSavedData(title);
+                    const safeKey = toFirestoreTrackKey(title);
+
+                    // Пошук у хмарі (безпечний ключ з b64_, legacy base64, legacy encodeURI або пряма назва)
+                    let cloud = cloudTracks[safeKey] || null;
+                    if (!cloud) {
+                        const legacyB64 = safeKey.startsWith('b64_') ? safeKey.slice(4) : '';
+                        if (legacyB64 && cloudTracks[legacyB64]) cloud = cloudTracks[legacyB64];
+                        else if (cloudTracks[encodeURIComponent(title)]) cloud = cloudTracks[encodeURIComponent(title)];
+                        else if (cloudTracks[title]) cloud = cloudTracks[title];
+                        else {
+                            for (const [ck, cv] of Object.entries(cloudTracks)) {
+                                if (cv && (cv.title === title || fromFirestoreTrackKey(ck, cv) === title)) {
+                                    cloud = cv;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
 
-                const localScore = Number(local.score) || 0;
-                const cloudScore = cloud ? (Number(cloud.score) || 0) : 0;
-                const bestScore = Math.max(localScore, cloudScore);
+                    const localScore = Number(local.score) || 0;
+                    const localStars = Number(local.stars) || 0;
+                    const localTypes = Array.isArray(local.starTypes) ? local.starTypes : [];
+                    const localDiff = local.difficulty || '';
+                    const localIsHardcore = Boolean(local.isHardcore);
+                    const localCompleted = Array.isArray(local.completedDifficulties) ? local.completedDifficulties : (localDiff ? [localDiff] : []);
 
-                const localStars = Number(local.stars) || 0;
-                const cloudStars = cloud ? (Number(cloud.stars) || 0) : 0;
-                const bestStars = Math.max(localStars, cloudStars);
+                    if (cloud) {
+                        const cloudScore = Number(cloud.score) || 0;
+                        const cloudStars = Number(cloud.stars) || 0;
+                        let cloudTypes = Array.isArray(cloud.starTypes) ? cloud.starTypes.slice(0, 5) : [0, 0, 0, 0, 0];
+                        while (cloudTypes.length < 5) cloudTypes.push(0);
+                        const cloudDiff = cloud.difficulty || '';
+                        const cloudIsHardcore = Boolean(cloud.isHardcore || cloudDiff === 'hardcore');
+                        const cloudCompleted = Array.isArray(cloud.completedDifficulties) ? cloud.completedDifficulties : (cloudDiff ? [cloudDiff] : []);
 
-                const mergedStarTypes = [];
-                const localTypes = Array.isArray(local.starTypes) ? local.starTypes : [];
-                const cloudTypes = (cloud && Array.isArray(cloud.starTypes)) ? cloud.starTypes : [];
-                for (let i = 0; i < 5; i++) {
-                    mergedStarTypes[i] = Math.max(Number(localTypes[i]) || 0, Number(cloudTypes[i]) || 0);
-                }
+                        const localCompletedSorted = [...localCompleted].sort().join(',');
+                        const cloudCompletedSorted = [...cloudCompleted].sort().join(',');
 
-                // Синхронізація інформації про складність проходження
-                const localDiff = local.difficulty || '';
-                const localIsHardcore = Boolean(local.isHardcore) || localDiff === 'hardcore';
-                const localRank = getDiffRank(localDiff, localIsHardcore);
+                        const isLocalDifferent = (
+                            localScore !== cloudScore ||
+                            localStars !== cloudStars ||
+                            JSON.stringify(localTypes) !== JSON.stringify(cloudTypes) ||
+                            localDiff !== cloudDiff ||
+                            localIsHardcore !== cloudIsHardcore ||
+                            localCompletedSorted !== cloudCompletedSorted
+                        );
 
-                const cloudDiff = cloud ? (cloud.difficulty || '') : '';
-                const cloudIsHardcore = Boolean(cloud && (cloud.isHardcore || cloudDiff === 'hardcore'));
-                const cloudRank = getDiffRank(cloudDiff, cloudIsHardcore);
-
-                // Злиття масивів пройдених складнощів
-                const localCompleted = Array.isArray(local.completedDifficulties) 
-                    ? local.completedDifficulties 
-                    : (localDiff ? [localDiff] : []);
-                const cloudCompleted = (cloud && Array.isArray(cloud.completedDifficulties)) 
-                    ? cloud.completedDifficulties 
-                    : (cloudDiff ? [cloudDiff] : []);
-
-                const mergedCompletedSet = new Set([...localCompleted, ...cloudCompleted]);
-                if (localDiff) mergedCompletedSet.add(localDiff);
-                if (cloudDiff) mergedCompletedSet.add(cloudDiff);
-                if (localIsHardcore || cloudIsHardcore) mergedCompletedSet.add('hardcore');
-                const mergedCompletedDiffs = Array.from(mergedCompletedSet).filter(Boolean);
-
-                // Визначення найкращої складності: вищий ранг перемагає; за однакового — за вищим очками
-                let bestDifficulty = '';
-                let bestIsHardcore = false;
-
-                if (cloudRank > localRank) {
-                    bestDifficulty = cloudDiff;
-                    bestIsHardcore = cloudIsHardcore;
-                } else if (localRank > cloudRank) {
-                    bestDifficulty = localDiff;
-                    bestIsHardcore = localIsHardcore;
-                } else {
-                    if (cloudScore > localScore && cloudDiff) {
-                        bestDifficulty = cloudDiff;
-                        bestIsHardcore = cloudIsHardcore;
+                        if (isLocalDifferent) {
+                            const trackPayload = {
+                                title: title,
+                                score: cloudScore,
+                                stars: cloudStars,
+                                starTypes: cloudTypes,
+                                difficulty: cloudDiff,
+                                isHardcore: cloudIsHardcore,
+                                completedDifficulties: cloudCompleted
+                            };
+                            localStorage.setItem(`neon_rhythm_${title}`, JSON.stringify(trackPayload));
+                            localUpdated = true;
+                        }
                     } else {
-                        bestDifficulty = localDiff || cloudDiff || '';
-                        bestIsHardcore = localIsHardcore || cloudIsHardcore;
+                        // Якщо трек відсутній у хмарі акаунта, очищаємо застарілі фантомні локальні бали
+                        if (localScore > 0 || localStars > 0 || localDiff) {
+                            const trackPayload = {
+                                title: title,
+                                score: 0,
+                                stars: 0,
+                                starTypes: [0, 0, 0, 0, 0],
+                                difficulty: '',
+                                isHardcore: false,
+                                completedDifficulties: []
+                            };
+                            localStorage.setItem(`neon_rhythm_${title}`, JSON.stringify(trackPayload));
+                            localUpdated = true;
+                        }
                     }
+                });
+
+                // Якщо в хмарі були застарілі ключі без префіксу, нормалізуємо їх без зміни результатів
+                const hasLegacyCloudKeys = Object.keys(cloudTracks).some(k => !k.startsWith('b64_') && !k.startsWith('enc_'));
+                if (hasLegacyCloudKeys) {
+                    const normalizedTracks = {};
+                    Object.entries(cloudTracks).forEach(([k, v]) => {
+                        if (!v) return;
+                        const trackTitle = v.title || fromFirestoreTrackKey(k, v);
+                        if (trackTitle) {
+                            const sk = toFirestoreTrackKey(trackTitle);
+                            normalizedTracks[sk] = { ...v, title: trackTitle };
+                        }
+                    });
+                    await setDoc(progressRef, {
+                        tracks: normalizedTracks,
+                        playtimeSeconds: bestPlaytime,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                } else if (bestPlaytime > cloudPlaytime) {
+                    await setDoc(progressRef, {
+                        playtimeSeconds: bestPlaytime,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
                 }
-                if (!bestDifficulty && bestIsHardcore) bestDifficulty = 'hardcore';
-
-                if (bestScore > 0 || bestStars > 0 || bestDifficulty) {
-                    const trackPayload = {
-                        title: title,
-                        score: bestScore,
-                        stars: bestStars,
-                        starTypes: mergedStarTypes,
-                        difficulty: bestDifficulty,
-                        isHardcore: bestIsHardcore,
-                        completedDifficulties: mergedCompletedDiffs
-                    };
-
-                    mergedTracksForCloud[safeKey] = trackPayload;
-
-                    const localCompletedSorted = [...localCompleted].sort().join(',');
-                    const mergedCompletedSorted = [...mergedCompletedDiffs].sort().join(',');
-
-                    // Оновлюємо локально, якщо хмара містить новіші або кращі дані
-                    const isLocalStale = (
-                        bestScore > localScore ||
-                        bestStars > localStars ||
-                        JSON.stringify(mergedStarTypes) !== JSON.stringify(localTypes) ||
-                        bestDifficulty !== localDiff ||
-                        bestIsHardcore !== localIsHardcore ||
-                        localCompletedSorted !== mergedCompletedSorted
-                    );
-
-                    if (isLocalStale) {
-                        localStorage.setItem(`neon_rhythm_${title}`, JSON.stringify(trackPayload));
-                        localUpdated = true;
-                    }
-
-                    // Перевіряємо, чи хмара потребує синхронізації
-                    const cloudCompletedSorted = [...cloudCompleted].sort().join(',');
-                    const isCloudStale = (
-                        !cloud ||
-                        bestScore > cloudScore ||
-                        bestStars > cloudStars ||
-                        JSON.stringify(mergedStarTypes) !== JSON.stringify(cloudTypes) ||
-                        bestDifficulty !== cloudDiff ||
-                        bestIsHardcore !== cloudIsHardcore ||
-                        cloudCompletedSorted !== mergedCompletedSorted
-                    );
-
-                    if (isCloudStale) {
-                        cloudNeedsUpdate = true;
-                    }
-                }
-            });
-
-            // Якщо хмара мала застарілі ключі без префікса або оновлені дані:
-            const hasLegacyCloudKeys = Object.keys(cloudTracks).some(k => !k.startsWith('b64_') && !k.startsWith('enc_'));
-            if (cloudNeedsUpdate || bestPlaytime > cloudPlaytime || !snap.exists() || hasLegacyCloudKeys) {
-                // Очищаємо застарілі дублікати в хмарі, записуючи чисті дедупліковані дані
-                await setDoc(progressRef, {
-                    userId: userId,
-                    tracks: mergedTracksForCloud,
-                    playtimeSeconds: bestPlaytime,
-                    avatarUrl: mergedAvatarUrl,
-                    selectedFrame: mergedSelectedFrame,
-                    selectedTitle: mergedSelectedTitle,
-                    unlockedFrames: mergedUnlockedFrames,
-                    unlockedTitles: mergedUnlockedTitles,
-                    userStatus: mergedUserStatus,
-                    favoriteTrack: mergedFavoriteTrack,
-                    unlockedFieldThemes: FieldThemes.getUnlockedThemes(),
-                    activeFieldTheme: FieldThemes.getActiveThemeId(),
-                    spentCoins: parseInt(localStorage.getItem('neon_spent_coins') || '0', 10),
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
             }
 
             if (localUpdated && typeof renderMenu === 'function') {
@@ -1221,9 +1218,9 @@ function bootGame() {
             localStorage.setItem('playerName', currentUser.username);
         }
 
-        // Якщо користувач авторизований, синхронізуємо прогрес
-        if (currentUser && currentUser.id) {
-            await syncUserProgressBidirectional(currentUser.id);
+        // Синхронізація прогресу гравця (як для зареєстрованих, так і для гостей) з хмари
+        if (userId) {
+            await syncUserProgressBidirectional(userId);
         }
 
         // Синхронізація глобальної статистики
@@ -2091,8 +2088,9 @@ function saveGameData(songTitle, newScore, newStars, isVictory = true) {
 
     // Хмарна прив'язка до акаунта гравця
     const currentUser = getCurrentUser();
-    if (currentUser && currentUser.id) {
-        saveCloudUserProgress(currentUser.id, songTitle, payload);
+    const targetUserId = currentUser?.id || localStorage.getItem('playerId');
+    if (targetUserId) {
+        saveCloudUserProgress(targetUserId, songTitle, payload);
     }
 }
 
@@ -7626,9 +7624,16 @@ function updateRipples(dt) {
                         starTypes: starTypes,
                         difficulty: isHardcore ? 'hardcore' : newDiff,
                         isHardcore: isHardcore,
-                        completedDifficulties: finalCompletedDiffs
+                        completedDifficulties: finalCompletedDiffs,
+                        adminModifiedAt: Date.now()
                     };
 
+                    // Видаляємо всі можливі застарілі дублікати цього треку
+                    for (const [k, v] of Object.entries(currentTracks)) {
+                        if (k !== safeKey && v && (v.title === trackTitle || fromFirestoreTrackKey(k, v) === trackTitle)) {
+                            delete currentTracks[k];
+                        }
+                    }
                     currentTracks[safeKey] = trackPayload;
 
                     // 1. Оновлюємо user_progress
@@ -7641,15 +7646,25 @@ function updateRipples(dt) {
                     // 2. Перераховуємо global_leaderboard
                     let totalScore = 0;
                     let levelsCompleted = 0;
+                    let totalStars = 0;
+                    let totalDiamonds = 0;
                     const counted = new Set();
                     songsDB.forEach(s => {
                         if (!s || !s.title || s.isSecret) return;
                         counted.add(s.title);
                         const sk = toFirestoreTrackKey(s.title);
-                        const tr = currentTracks[sk] || Object.values(currentTracks).find(v => v && v.title === s.title);
-                        if (tr && tr.stars > 0) {
-                            levelsCompleted++;
-                            totalScore += (tr.score || 0);
+                        const tr = currentTracks[sk] || Object.values(currentTracks).find(v => v && (v.title === s.title || fromFirestoreTrackKey(sk, v) === s.title));
+                        if (tr && (Number(tr.stars) > 0 || Number(tr.score) > 0)) {
+                            if (Number(tr.stars) > 0) {
+                                levelsCompleted++;
+                                totalStars += Number(tr.stars);
+                                if (Array.isArray(tr.starTypes)) {
+                                    for (let i = 0; i < Number(tr.stars); i++) {
+                                        if (Number(tr.starTypes[i]) === 2) totalDiamonds++;
+                                    }
+                                }
+                            }
+                            totalScore += (Number(tr.score) || 0);
                         }
                     });
 
@@ -7661,6 +7676,10 @@ function updateRipples(dt) {
                         name: playerName,
                         totalScore: totalScore,
                         levelsCompleted: levelsCompleted,
+                        goldStarsCount: totalStars,
+                        starsCount: totalStars,
+                        totalStars: totalStars,
+                        diamondsCount: totalDiamonds,
                         updatedAt: serverTimestamp()
                     }, { merge: true });
 
@@ -7725,9 +7744,16 @@ function updateRipples(dt) {
                         starTypes: [0, 0, 0, 0, 0],
                         difficulty: '',
                         isHardcore: false,
-                        completedDifficulties: []
+                        completedDifficulties: [],
+                        adminModifiedAt: Date.now()
                     };
 
+                    // Видаляємо всі можливі застарілі дублікати цього треку
+                    for (const [k, v] of Object.entries(currentTracks)) {
+                        if (k !== safeKey && v && (v.title === trackTitle || fromFirestoreTrackKey(k, v) === trackTitle)) {
+                            delete currentTracks[k];
+                        }
+                    }
                     currentTracks[safeKey] = trackPayload;
 
                     await setDoc(progressRef, {
@@ -7739,13 +7765,23 @@ function updateRipples(dt) {
                     // Перераховуємо рейтинг
                     let totalScore = 0;
                     let levelsCompleted = 0;
+                    let totalStars = 0;
+                    let totalDiamonds = 0;
                     songsDB.forEach(s => {
                         if (!s || !s.title || s.isSecret) return;
                         const sk = toFirestoreTrackKey(s.title);
-                        const tr = currentTracks[sk] || Object.values(currentTracks).find(v => v && v.title === s.title);
-                        if (tr && tr.stars > 0) {
-                            levelsCompleted++;
-                            totalScore += (tr.score || 0);
+                        const tr = currentTracks[sk] || Object.values(currentTracks).find(v => v && (v.title === s.title || fromFirestoreTrackKey(sk, v) === s.title));
+                        if (tr && (Number(tr.stars) > 0 || Number(tr.score) > 0)) {
+                            if (Number(tr.stars) > 0) {
+                                levelsCompleted++;
+                                totalStars += Number(tr.stars);
+                                if (Array.isArray(tr.starTypes)) {
+                                    for (let i = 0; i < Number(tr.stars); i++) {
+                                        if (Number(tr.starTypes[i]) === 2) totalDiamonds++;
+                                    }
+                                }
+                            }
+                            totalScore += (Number(tr.score) || 0);
                         }
                     });
 
@@ -7754,6 +7790,10 @@ function updateRipples(dt) {
                         name: playerName,
                         totalScore: totalScore,
                         levelsCompleted: levelsCompleted,
+                        goldStarsCount: totalStars,
+                        starsCount: totalStars,
+                        totalStars: totalStars,
+                        diamondsCount: totalDiamonds,
                         updatedAt: serverTimestamp()
                     }, { merge: true });
 
