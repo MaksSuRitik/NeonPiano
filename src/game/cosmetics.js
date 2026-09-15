@@ -864,7 +864,7 @@ export function readCosmeticsHistory(songs = []) {
     if (victory) {
       const title = key.slice('neon_rhythm_'.length);
       totals.completedTrackTitles.push(title);
-      if (data.hardHardcoreCompleted) totals.hardHardcoreTrackTitles.push(title);
+      if (data.hardHardcoreCompleted || ((hard || diffs.includes('hard')) && (hardcore || data.isHardcore))) totals.hardHardcoreTrackTitles.push(title);
       if (track?.isPhonk === true) { totals.phonkTrackTitles.push(title); totals.phonkVictoryCount++; }
       if (track?.isSecret === true) totals.secretTrackTitles.push(title);
     }
@@ -900,7 +900,10 @@ export function checkRetroactiveCosmeticsUnlocks(songsList = [], getText = null,
     if (!match || (match.id && seenMatches.has(match.id))) continue;
     if (match.id) seenMatches.add(match.id);
     const track = songsList.find(s => s && ((s.id && s.id === match.trackId) || s.title === match.trackTitle));
-    if (match.victory === true && match.difficulty === 'hard' && match.isHardcore === true && (track?.title || match.trackTitle)) {
+    const isMatchHardHardcore = match.victory === true &&
+      (match.difficulty === 'hard' || track?.difficulty === 'hard') &&
+      (match.isHardcore === true || match.hardcoreCompleted === true);
+    if (isMatchHardHardcore && (track?.title || match.trackTitle)) {
       totals.hardHardcoreTrackTitles.push(track?.title || match.trackTitle);
     }
     const date = new Date(match.playedAt || NaN);

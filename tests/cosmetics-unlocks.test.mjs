@@ -52,10 +52,11 @@ test('FRAMES registry contains all 24 frames including physical and themed colle
     'frame_cassette_808',
     'frame_leader_crown',
     'frame_neon_archive',
-    'frame_star_forge'
+    'frame_star_forge',
+    'frame_eared_melon'
   ];
 
-  assert.equal(FRAMES.length, 24, 'Total frames must be 24');
+  assert.equal(FRAMES.length, 25, 'Total frames must be 25');
   for (const fId of expectedNewFrames) {
     const frame = FRAMES.find(f => f.id === fId);
     assert.ok(frame, `Frame ${fId} must be registered`);
@@ -150,8 +151,8 @@ test.beforeEach(() => localStorage.clear());
 const run = (ctx) => checkCosmeticsUnlocks({ playedAt: new Date(2026, 0, 1, 12).getTime(), ...ctx });
 const won = { victory: true, totalMisses: 0, track: { isPhonk: true }, isHardcore: true };
 
-test('unique stable IDs across all 24 frames and 55 titles', () => {
-  assert.equal(new Set(FRAMES.map(x => x.id)).size, 24);
+test('unique stable IDs across all 25 frames and 55 titles', () => {
+  assert.equal(new Set(FRAMES.map(x => x.id)).size, 25);
   assert.equal(new Set(TITLES.map(x => x.id)).size, 55);
   assert.ok(!TITLES.some(x => x.id.includes('grandmaster')));
 });
@@ -222,6 +223,7 @@ test('strict live conditions and their negative boundaries', () => {
     ['frame_cassette_808', {phonkVictoryCount: 10}, {phonkVictoryCount: 9}],
     ['frame_leader_crown', {globalRank: 3}, {globalRank: 4}],
     ['frame_star_forge', {totalDiamondStars: 10}, {totalDiamondStars: 9}],
+    ['frame_eared_melon', {hardHardcoreTrackTitles: Array.from({length: 15}, (_, i) => 'T' + i)}, {hardHardcoreTrackTitles: Array.from({length: 14}, (_, i) => 'T' + i)}],
   ];
   for (const [id, positive, negative] of cases) {
     localStorage.clear();
@@ -566,4 +568,25 @@ test('I: Cosmic theme achievement (frame_abyss_portal) is evaluated when histori
   }];
   const delta2 = checkRetroactiveCosmeticsUnlocks(songs, null, null, historyNoTheme, {});
   assert.ok(!delta2.includes('frame_abyss_portal'), 'frame_abyss_portal must NOT unlock without themeId');
+});
+
+test('J: Eared Melon (frame_eared_melon) unlocks retroactively with 15 Hard + Hardcore tracks', () => {
+  localStorage.clear();
+  const songs = Array.from({length: 15}, (_, i) => ({ title: `Track_${i}`, id: `t_${i}` }));
+  const history = songs.map((s, i) => ({
+    id: `h_${i}`, trackId: s.id, trackTitle: s.title,
+    difficulty: 'hard', isHardcore: true, victory: true,
+    playedAt: new Date(2026, 0, 1 + i, 12).toISOString()
+  }));
+  const delta = checkRetroactiveCosmeticsUnlocks(songs, null, null, history, {});
+  assert.ok(delta.includes('frame_eared_melon'), 'frame_eared_melon must unlock with 15 Hard + Hardcore victories');
+});
+
+test('K: Eared Melon localization is complete in RU, UA, EN', () => {
+  assert.equal(ru.frameEaredMelon, 'Ушастая дыня');
+  assert.ok(ru.frameEaredMelonDesc.includes('15') && ru.frameEaredMelonDesc.includes('Hard'));
+  assert.equal(ua.frameEaredMelon, 'Вухата диня');
+  assert.ok(ua.frameEaredMelonDesc.includes('15') && ua.frameEaredMelonDesc.includes('Hard'));
+  assert.equal(en.frameEaredMelon, 'Eared Melon');
+  assert.ok(en.frameEaredMelonDesc.includes('15') && en.frameEaredMelonDesc.includes('Hard'));
 });

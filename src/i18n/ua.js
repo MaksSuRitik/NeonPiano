@@ -543,6 +543,8 @@ export default {
   frameNeonArchiveDesc: "Відкрийте 20 титулів, не враховуючи початкового.",
   frameStarForge: "Зоряна кузня",
   frameStarForgeDesc: "Отримайте сумарно 10 діамантових зірок.",
+  frameEaredMelon: "Вухата диня",
+  frameEaredMelonDesc: "Пройдіть 15 рівнів на складності Hard з модом Hardcore.",
   collectionOriginal: "Класична колекція",
   collectionSanhua: "Крижана тема",
   cosmeticsCollectionIceTheme: "Крижана тема",

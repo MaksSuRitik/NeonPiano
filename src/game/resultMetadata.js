@@ -11,13 +11,15 @@ export function normalizeResultMetadata(record = {}) {
     : valid(record.baseDifficulty) ? record.baseDifficulty
     : legacy && Number.isFinite(record.speed) && record.speed > 0 ? difficultyFromSpeed(record.speed) : '';
   const isHardcore = record.isHardcore === true || legacy;
+  const hardcoreCompleted = record.hardcoreCompleted === true || isHardcore || completed.includes('hardcore');
+  const isHard = difficulty === 'hard' || completed.filter(valid).includes('hard');
   return {
     ...record,
     ...(legacy ? { legacyDifficulty: 'hardcore' } : {}),
     difficulty,
     isHardcore,
-    hardHardcoreCompleted: record.hardHardcoreCompleted === true || (difficulty === 'hard' && isHardcore),
-    hardcoreCompleted: record.hardcoreCompleted === true || isHardcore || completed.includes('hardcore'),
+    hardHardcoreCompleted: record.hardHardcoreCompleted === true || (isHard && hardcoreCompleted),
+    hardcoreCompleted,
     completedDifficulties: [...new Set([...completed.filter(valid), ...(difficulty ? [difficulty] : [])])],
   };
 }
