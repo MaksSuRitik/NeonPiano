@@ -3,6 +3,8 @@
 // Client-side 128x128 WebP compression, unlock evaluation, storage & rendering
 // ==========================================
 
+export const CURRENT_COSMETICS_REVISION = 2;
+
 const collectionItem = (id, nameKey, collectionKey, cssClass = '') => ({
   id, nameKey, descKey: `${nameKey}Desc`, collectionKey, cssClass, unlockedByDefault: false
 });
@@ -720,7 +722,9 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
   earn('title_last_petal', cold && cleanWin);
   earn('title_white_comet', cold && victory && ctx.speed >= 1.4);
   earn('title_frost_concert', cold && fullHolds);
-  earn('title_moon_blade', cold && victory && ctx.diamondsEarned >= 3);
+  const iceDiamondTracks = new Set(totals.sanhuaDiamondTrackTitles || []);
+  if (cold && ctx.diamondsEarned > 0 && ctx.track?.title) iceDiamondTracks.add(ctx.track.title);
+  earn('title_moon_blade', iceDiamondTracks.size >= 3);
   earn('title_blizzard_heart', cold && victory && !ctx.isHardcore && ctx.enteredCriticalDanger === true);
   earn('title_calm_before_storm', cold && perfectChain);
   earn('title_crystal_keeper', totals.sanhuaTrackTitles?.length >= 10);
@@ -764,7 +768,7 @@ export function checkCosmeticsUnlocks(ctx = {}, getText = null, showNotification
 
 const counterKeys = ['completedLevelsCount', 'hardCompletedLevelsCount', 'hardcoreVictoryCount', 'flawlessVictoryStreak', 'neonInsomniaMatches',
   'victoryStreak', 'bestVictoryStreak', 'sanhuaVictoryCount', 'phonkVictoryCount', 'totalPerfectHits'];
-const arrayKeys = ['completedTrackTitles', 'phonkTrackTitles', 'sanhuaTrackTitles', 'secretTrackTitles', 'playedHours'];
+const arrayKeys = ['completedTrackTitles', 'phonkTrackTitles', 'sanhuaTrackTitles', 'sanhuaDiamondTrackTitles', 'secretTrackTitles', 'playedHours'];
 const validArray = (key, value) => [...new Set((Array.isArray(value) ? value : []).filter(v =>
   key === 'playedHours' ? Number.isInteger(v) && v >= 0 && v < 24 : typeof v === 'string' && v.length > 0))];
 const number = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
@@ -810,6 +814,11 @@ export function recordCosmeticsMatch(ctx) {
       if (ctx.track.isPhonk === true) progress.phonkTrackTitles = validArray('phonkTrackTitles', [...progress.phonkTrackTitles, title]);
       if (ctx.track.isSecret === true) progress.secretTrackTitles = validArray('secretTrackTitles', [...progress.secretTrackTitles, title]);
     }
+  }
+  // Track distinct Ice Theme Diamond Star tracks (regardless of victory)
+  if (ctx.themeId === 'sanhua' && ctx.diamondsEarned > 0 && ctx.track?.title) {
+    progress.sanhuaDiamondTrackTitles = validArray('sanhuaDiamondTrackTitles',
+      [...(progress.sanhuaDiamondTrackTitles || []), ctx.track.title]);
   }
   progress.victoryStreak = ctx.victory ? progress.victoryStreak + 1 : 0;
   progress.bestVictoryStreak = Math.max(progress.bestVictoryStreak, progress.victoryStreak);
@@ -870,12 +879,17 @@ export function checkRetroactiveCosmeticsUnlocks(songsList = [], getText = null,
   const { records, totals } = readCosmeticsHistory(songsList);
   const unlocked = [];
   for (const record of records) unlocked.push(...checkCosmeticsUnlocks(record, getText, showNotification));
-  // Legacy encrypted game_stats proves combo / Perfect counts and timestamps,
-  // but contains no victory, modifier, theme or hold evidence.
+
+  // Process matchHistory entries that may carry themeId evidence
   let nightMatches = 0;
   let historicalPerfectHits = 0;
   const historicalHours = [];
   const seenMatches = new Set();
+  // Cumulative Ice-theme historical accumulators
+  let historicalIceVictories = 0;
+  const historicalIceTracks = new Set();
+  const historicalIceDiamondTracks = new Set();
+
   for (const match of Array.isArray(matchHistory) ? matchHistory : []) {
     if (!match || (match.id && seenMatches.has(match.id))) continue;
     if (match.id) seenMatches.add(match.id);
@@ -885,21 +899,71 @@ export function checkRetroactiveCosmeticsUnlocks(songsList = [], getText = null,
     historicalHours.push(hour);
     historicalPerfectHits += number(match.perfectCount);
     if (hour >= 3 && hour < 5) nightMatches++;
-    unlocked.push(...checkCosmeticsUnlocks({
-      retrospective: true, track, maxCombo: number(match.maxCombo), perfectHits: number(match.perfectCount),
-      playedSong: true
-    }, getText, showNotification));
+
+    // Build a historical ctx with actual themeId where present; null if absent
+    const themeId = (match.themeId && typeof match.themeId === 'string') ? match.themeId : null;
+    const matchCtx = {
+      retrospective: true, track, playedSong: true,
+      maxCombo: number(match.maxCombo), perfectHits: number(match.perfectCount),
+      themeId,
+      victory: match.victory === true,
+      totalMisses: typeof match.totalMisses === 'number' ? match.totalMisses : undefined,
+      accuracy: typeof match.accuracy === 'number' ? match.accuracy : undefined,
+      speed: typeof match.speed === 'number' ? match.speed : undefined,
+      isHardcore: match.isHardcore === true,
+      diamondsEarned: match.diamondsEarned > 0 ? match.diamondsEarned : 0,
+      totalHolds: typeof match.totalHolds === 'number' ? match.totalHolds : undefined,
+      completedHolds: typeof match.completedHolds === 'number' ? match.completedHolds : undefined,
+      hadLateMiss: match.hadLateMiss === true,
+      enteredCriticalDanger: match.enteredCriticalDanger === true,
+      maxPerfectStreak: number(match.maxPerfectStreak)
+    };
+
+    unlocked.push(...checkCosmeticsUnlocks(matchCtx, getText, showNotification));
+
+    // Ice-theme cumulative evidence
+    if (themeId === 'sanhua') {
+      const trackKey = match.trackId || match.trackTitle;
+      if (match.victory === true) {
+        historicalIceVictories++;
+        if (trackKey) historicalIceTracks.add(trackKey);
+      }
+      if (match.diamondsEarned > 0 && trackKey) historicalIceDiamondTracks.add(trackKey);
+    }
+
     if (hour >= 0 && hour < 5 && unlockTitle('title_night_pianist', getText, showNotification)) unlocked.push('title_night_pianist');
   }
-  mergeCosmeticsProgress({ ...totals, neonInsomniaMatches: nightMatches,
-    totalPerfectHits: historicalPerfectHits, playedHours: historicalHours });
+
+  // Merge historical Ice-theme cumulative data into progress
+  const progress0 = getCosmeticsProgress();
+  const mergedSanhuaVictoryCount = Math.max(progress0.sanhuaVictoryCount, historicalIceVictories);
+  const mergedSanhuaTrackTitles = validArray('sanhuaTrackTitles', [...(progress0.sanhuaTrackTitles || []), ...historicalIceTracks]);
+  const mergedSanhuaDiamondTracks = validArray('sanhuaDiamondTrackTitles', [...(progress0.sanhuaDiamondTrackTitles || []), ...historicalIceDiamondTracks]);
+
+  mergeCosmeticsProgress({
+    ...totals,
+    neonInsomniaMatches: nightMatches,
+    totalPerfectHits: historicalPerfectHits,
+    playedHours: historicalHours,
+    sanhuaVictoryCount: mergedSanhuaVictoryCount,
+    sanhuaTrackTitles: mergedSanhuaTrackTitles,
+    sanhuaDiamondTrackTitles: mergedSanhuaDiamondTracks
+  });
+
   const progress = getCosmeticsProgress();
   unlocked.push(...checkCosmeticsUnlocks({ ...totals, ...progress, ...context, retrospective: true,
     neonInsomniaMatches: Math.max(progress.neonInsomniaMatches, nightMatches),
     completedLevelsCount: Math.max(totals.completedLevelsCount, progress.completedLevelsCount),
     hardCompletedLevelsCount: Math.max(totals.hardCompletedLevelsCount, progress.hardCompletedLevelsCount),
-    hardcoreVictoryCount: Math.max(totals.hardcoreVictoryCount, progress.hardcoreVictoryCount)
+    hardcoreVictoryCount: Math.max(totals.hardcoreVictoryCount, progress.hardcoreVictoryCount),
+    sanhuaVictoryCount: Math.max(progress.sanhuaVictoryCount, historicalIceVictories),
+    sanhuaTrackTitles: mergedSanhuaTrackTitles,
+    sanhuaDiamondTrackTitles: mergedSanhuaDiamondTracks
   }, getText, showNotification));
+
+  // Persist revision marker so new checks can be re-triggered on future updates
+  localStorage.setItem('neon_cosmetics_revision', String(CURRENT_COSMETICS_REVISION));
+
   return [...new Set(unlocked)];
 }
 

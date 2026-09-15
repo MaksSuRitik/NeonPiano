@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { filterAdminLevels } from '../src/ui/adminLevelSearch.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FRAMES, TITLES, checkCosmeticsUnlocks, checkRetroactiveCosmeticsUnlocks, getLocalCosmetics, resetLocalCosmetics, recordCosmeticsMatch, getCosmeticsProgress, mergeCosmeticsProgress, seedCosmeticsProgress, groupCosmetics, createCosmeticsRun, recordCosmeticsJudgment, recordCosmeticsMiss, observeCosmeticsCombo } from '../src/game/cosmetics.js';
+import { FRAMES, TITLES, checkCosmeticsUnlocks, checkRetroactiveCosmeticsUnlocks, getLocalCosmetics, resetLocalCosmetics, recordCosmeticsMatch, getCosmeticsProgress, mergeCosmeticsProgress, seedCosmeticsProgress, groupCosmetics, createCosmeticsRun, recordCosmeticsJudgment, recordCosmeticsMiss, observeCosmeticsCombo, CURRENT_COSMETICS_REVISION } from '../src/game/cosmetics.js';
 import ru from '../src/i18n/ru.js';
 import ua from '../src/i18n/ua.js';
 import en from '../src/i18n/en.js';
@@ -187,7 +187,7 @@ test('strict live conditions and their negative boundaries', () => {
     ['title_last_petal', {...won, themeId: 'sanhua'}, {...won, themeId: 'sanhua', totalMisses: 1}],
     ['title_white_comet', {...won, themeId: 'sanhua', speed: 1.4}, {...won, themeId: 'sanhua', speed: 1.399}],
     ['title_frost_concert', {...won, themeId: 'sanhua', totalHolds: 2, completedHolds: 2}, {...won, themeId: 'sanhua', totalHolds: 2, completedHolds: 1}],
-    ['title_moon_blade', {...won, themeId: 'sanhua', diamondsEarned: 3}, {...won, themeId: 'sanhua', diamondsEarned: 2}],
+    ['title_moon_blade', {...won, themeId: 'sanhua', diamondsEarned: 1, track: {title: 'T1'}, sanhuaDiamondTrackTitles: ['T1', 'T2', 'T3']}, {...won, themeId: 'sanhua', diamondsEarned: 1, track: {title: 'T1'}, sanhuaDiamondTrackTitles: ['T1', 'T2']}],
     ['title_blizzard_heart', {...won, themeId: 'sanhua', isHardcore: false, enteredCriticalDanger: true}, {...won, themeId: 'sanhua', isHardcore: true, enteredCriticalDanger: true}],
     ['title_calm_before_storm', {themeId: 'sanhua', maxPerfectStreak: 100}, {themeId: 'sanhua', maxPerfectStreak: 99}],
     ['title_crystal_keeper', {sanhuaTrackTitles: Array.from({length: 10}, (_, i) => 'T' + i)}, {sanhuaTrackTitles: Array.from({length: 9}, (_, i) => 'T' + i)}],
@@ -418,4 +418,152 @@ test('cosmetics progress counters and array collections record and merge properl
   assert.ok(p2.phonkTrackTitles.includes('Another Phonk'));
   assert.ok(p2.playedHours.includes(15));
   assert.ok(p2.playedHours.includes(16));
+});
+
+// ============================================================
+// Tests A through I: Ice Theme terminology & retroactive logic
+// ============================================================
+
+test('A: Ice-theme collection localization exists in RU, UA, EN', () => {
+  // collectionSanhua must be the Ice Theme collection name
+  assert.equal(ru.collectionSanhua, 'Ледяная тема', 'RU collectionSanhua');
+  assert.equal(ua.collectionSanhua, 'Крижана тема', 'UA collectionSanhua');
+  assert.equal(en.collectionSanhua, 'Ice Theme', 'EN collectionSanhua');
+  // Alias keys should also exist
+  assert.equal(ru.cosmeticsCollectionIceTheme, 'Ледяная тема', 'RU cosmeticsCollectionIceTheme');
+  assert.equal(ua.cosmeticsCollectionIceTheme, 'Крижана тема', 'UA cosmeticsCollectionIceTheme');
+  assert.equal(en.cosmeticsCollectionIceTheme, 'Ice Theme', 'EN cosmeticsCollectionIceTheme');
+  // Descriptions
+  assert.ok(ru.cosmeticsCollectionIceThemeDesc, 'RU desc exists');
+  assert.ok(ua.cosmeticsCollectionIceThemeDesc, 'UA desc exists');
+  assert.ok(en.cosmeticsCollectionIceThemeDesc, 'EN desc exists');
+  // No user-facing description must mention character names in collectionSanhua
+  for (const [lang, d] of [['RU', ru], ['UA', ua], ['EN', en]]) {
+    assert.ok(!d.collectionSanhua.includes('Hiyuki'), `${lang} collectionSanhua must not say Hiyuki`);
+    assert.ok(!d.collectionSanhua.includes('Sanhua'), `${lang} collectionSanhua must not say Sanhua`);
+  }
+});
+
+test('B: All Ice-theme achievements use the same internal theme ID (sanhua)', () => {
+  // Internal check: all collectionSanhua cosmetics are evaluated via themeId === 'sanhua'
+  // Validate by evaluating with themeId 'sanhua' vs a different id
+  localStorage.clear();
+  const baseCtx = { victory: true, totalMisses: 0, maxCombo: 700, track: { title: 'IceTrack' }, playedAt: Date.now() };
+  const cold = { ...baseCtx, themeId: 'sanhua' };
+  const notCold = { ...baseCtx, themeId: 'hiyuki' }; // must NOT unlock ice achievements
+  const iceAchievements = ['title_ice_rhythm', 'title_last_petal', 'frame_frostbound'];
+  const coldd = checkCosmeticsUnlocks(cold);
+  for (const id of iceAchievements) assert.ok(coldd.includes(id), `${id} should unlock with themeId=sanhua`);
+  localStorage.clear();
+  const notColdd = checkCosmeticsUnlocks(notCold);
+  for (const id of iceAchievements) assert.ok(!notColdd.includes(id), `${id} must NOT unlock with themeId=hiyuki`);
+});
+
+test('C: Achievement logic uses stable ID not translated strings', () => {
+  // The logic must compare ctx.themeId === 'sanhua', never translated label
+  // Verify CURRENT_COSMETICS_REVISION is a number
+  assert.equal(typeof CURRENT_COSMETICS_REVISION, 'number');
+  assert.ok(CURRENT_COSMETICS_REVISION >= 2, 'Revision must be at least 2');
+  // Verify no i18n string appears in cosmetics.js logic by checking that themeId comparison works
+  // with any language. Passing the UA translated string as themeId must not unlock.
+  localStorage.clear();
+  const ctx = { victory: true, totalMisses: 0, maxCombo: 600, themeId: 'Крижана тема', track: { title: 'T' }, playedAt: Date.now() };
+  const result = checkCosmeticsUnlocks(ctx);
+  assert.ok(!result.includes('title_ice_rhythm'), 'Should not unlock with translated themeId string');
+});
+
+test('D: Historical match with themeId=sanhua + maxCombo=850 retroactively awards Ice-theme combo achievements', () => {
+  localStorage.clear();
+  const songs = [{ title: 'IceTrack', id: 'track-ice' }];
+  const history = [{
+    id: 'h1', trackId: 'track-ice', trackTitle: 'IceTrack',
+    themeId: 'sanhua', maxCombo: 850, victory: true, totalMisses: 0,
+    playedAt: new Date(2026, 0, 1, 12).toISOString()
+  }];
+  const delta = checkRetroactiveCosmeticsUnlocks(songs, null, null, history, {});
+  assert.ok(delta.includes('title_ice_rhythm'), 'title_ice_rhythm should unlock (500+ combo with Ice Theme)');
+  assert.ok(delta.includes('frame_frostbound'), 'frame_frostbound should unlock (700+ combo with Ice Theme)');
+  assert.ok(delta.includes('title_blood_moon'), 'title_blood_moon should unlock (800+ combo with Ice Theme)');
+  assert.ok(delta.includes('frame_crimson_dawn'), 'frame_crimson_dawn should unlock (800+ combo with Ice Theme)');
+});
+
+test('E: Historical match with maxCombo=850 but NO themeId does NOT award Ice-theme achievement', () => {
+  localStorage.clear();
+  const songs = [{ title: 'IceTrack', id: 'track-ice' }];
+  const history = [{
+    id: 'h2', trackId: 'track-ice', trackTitle: 'IceTrack',
+    maxCombo: 850, victory: true, totalMisses: 0,
+    playedAt: new Date(2026, 0, 1, 12).toISOString()
+    // themeId intentionally absent
+  }];
+  const delta = checkRetroactiveCosmeticsUnlocks(songs, null, null, history, {});
+  assert.ok(!delta.includes('title_ice_rhythm'), 'title_ice_rhythm must NOT unlock without themeId');
+  assert.ok(!delta.includes('title_blood_moon'), 'title_blood_moon must NOT unlock without themeId');
+  assert.ok(!delta.includes('frame_frostbound'), 'frame_frostbound must NOT unlock without themeId');
+});
+
+test('F: 3 different Diamond Star records with Ice Theme unlock Moon Blade', () => {
+  localStorage.clear();
+  const songs = [
+    { title: 'Track A', id: 'ta' },
+    { title: 'Track B', id: 'tb' },
+    { title: 'Track C', id: 'tc' }
+  ];
+  const history = [
+    { id: '1', trackId: 'ta', trackTitle: 'Track A', themeId: 'sanhua', maxCombo: 300, diamondsEarned: 1, victory: true, playedAt: new Date(2026,0,1,12).toISOString() },
+    { id: '2', trackId: 'tb', trackTitle: 'Track B', themeId: 'sanhua', maxCombo: 300, diamondsEarned: 1, victory: true, playedAt: new Date(2026,0,2,12).toISOString() },
+    { id: '3', trackId: 'tc', trackTitle: 'Track C', themeId: 'sanhua', maxCombo: 300, diamondsEarned: 1, victory: true, playedAt: new Date(2026,0,3,12).toISOString() }
+  ];
+  const delta = checkRetroactiveCosmeticsUnlocks(songs, null, null, history, {});
+  assert.ok(delta.includes('title_moon_blade'), 'Moon Blade should unlock with 3 distinct Ice Theme Diamond Star tracks');
+});
+
+test('G: 3 Diamond Star records for the SAME track do NOT count as 3 for Moon Blade', () => {
+  localStorage.clear();
+  const songs = [{ title: 'Track A', id: 'ta' }];
+  const history = [
+    { id: '1', trackId: 'ta', trackTitle: 'Track A', themeId: 'sanhua', maxCombo: 300, diamondsEarned: 1, victory: true, playedAt: new Date(2026,0,1,12).toISOString() },
+    { id: '2', trackId: 'ta', trackTitle: 'Track A', themeId: 'sanhua', maxCombo: 400, diamondsEarned: 1, victory: true, playedAt: new Date(2026,0,2,12).toISOString() },
+    { id: '3', trackId: 'ta', trackTitle: 'Track A', themeId: 'sanhua', maxCombo: 500, diamondsEarned: 1, victory: true, playedAt: new Date(2026,0,3,12).toISOString() }
+  ];
+  const delta = checkRetroactiveCosmeticsUnlocks(songs, null, null, history, {});
+  assert.ok(!delta.includes('title_moon_blade'), 'Moon Blade must NOT unlock — only 1 distinct track, not 3');
+});
+
+test('H: Retroactive function can run twice without duplicate rewards or notifications', () => {
+  localStorage.clear();
+  const songs = [{ title: 'IceTrack', id: 'track-ice' }];
+  const history = [{
+    id: 'dup1', trackId: 'track-ice', trackTitle: 'IceTrack',
+    themeId: 'sanhua', maxCombo: 850, victory: true, totalMisses: 0,
+    playedAt: new Date(2026, 0, 1, 12).toISOString()
+  }];
+  const notifications1 = [];
+  const delta1 = checkRetroactiveCosmeticsUnlocks(songs, null, t => notifications1.push(t), history, {});
+  assert.ok(delta1.length > 0, 'First call should award something');
+  const notifications2 = [];
+  const delta2 = checkRetroactiveCosmeticsUnlocks(songs, null, t => notifications2.push(t), history, {});
+  assert.deepEqual(delta2, [], 'Second call must return empty delta');
+  assert.equal(notifications2.length, 0, 'Second call must produce no new notifications');
+});
+
+test('I: Cosmic theme achievement (frame_abyss_portal) is evaluated when historical themeId=cosmic exists', () => {
+  localStorage.clear();
+  const songs = [{ title: 'CosmicTrack', id: 'ct' }];
+  const history = [{
+    id: 'c1', trackId: 'ct', trackTitle: 'CosmicTrack',
+    themeId: 'cosmic', maxCombo: 1000, victory: true,
+    playedAt: new Date(2026, 0, 1, 12).toISOString()
+  }];
+  const delta = checkRetroactiveCosmeticsUnlocks(songs, null, null, history, {});
+  assert.ok(delta.includes('frame_abyss_portal'), 'frame_abyss_portal should unlock with cosmic themeId + 1000+ combo');
+  // Also verify: without themeId it should NOT unlock
+  localStorage.clear();
+  const historyNoTheme = [{
+    id: 'c2', trackId: 'ct', trackTitle: 'CosmicTrack',
+    maxCombo: 1000, victory: true,
+    playedAt: new Date(2026, 0, 2, 12).toISOString()
+  }];
+  const delta2 = checkRetroactiveCosmeticsUnlocks(songs, null, null, historyNoTheme, {});
+  assert.ok(!delta2.includes('frame_abyss_portal'), 'frame_abyss_portal must NOT unlock without themeId');
 });
